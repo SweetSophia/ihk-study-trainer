@@ -65,7 +65,7 @@ export default function ThemeSelector({ currentModule, onSelectModule }: ThemeSe
       </div>
 
       {/* Desktop: Grid */}
-      <div className="hidden lg:grid grid-cols-3 xl:grid-cols-4 gap-3">
+      <div className="hidden lg:grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
         {MODULES.map((module, index) => {
           const Icon = module.icon;
           const isActive = currentModule === module.id;
@@ -77,20 +77,20 @@ export default function ThemeSelector({ currentModule, onSelectModule }: ThemeSe
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.03 }}
               onClick={() => onSelectModule(module.id)}
-              className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all ${
+              className={`flex flex-col items-center text-center p-4 rounded-xl border transition-all min-w-[140px] ${
                 isActive
                   ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-lg shadow-emerald-500/10'
                   : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-300 hover:bg-slate-900'
               }`}
             >
-              <div className={`p-2 rounded-lg ${isActive ? 'bg-emerald-500/20' : 'bg-slate-800'}`}>
-                <Icon className="w-5 h-5" />
+              <div className={`p-2.5 rounded-lg mb-2 ${isActive ? 'bg-emerald-500/20' : 'bg-slate-800'}`}>
+                <Icon className="w-6 h-6" />
               </div>
-              <div>
-                <p className={`font-semibold ${isActive ? 'text-emerald-300' : 'text-slate-200'}`}>
+              <div className="w-full">
+                <p className={`font-semibold text-sm leading-tight ${isActive ? 'text-emerald-300' : 'text-slate-200'}`}>
                   {module.name}
                 </p>
-                <p className="text-xs text-slate-500 mt-0.5">{module.description}</p>
+                <p className="text-xs text-slate-500 mt-1 line-clamp-2">{module.description}</p>
               </div>
             </motion.button>
           );
