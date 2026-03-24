@@ -1,0 +1,42 @@
+/** Question interface for all generators */
+export interface Question {
+  id: string;
+  theme: string;
+  module: string;
+  questionText: string;
+  expectedAnswers: Record<string, string | number | boolean>;
+  solutionSteps: string[];
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+/** User interface */
+export interface User {
+  id: string;
+  access_hash: string;
+  created_at: string;
+  last_login: string | null;
+}
+
+/** Progress interface */
+export interface Progress {
+  id: string;
+  user_id: string;
+  module: string;
+  questions_attempted: number;
+  questions_correct: number;
+  streak_days: number;
+  last_session: string | null;
+  created_at: string;
+}
+
+/** Question History interface */
+export interface QuestionHistory {
+  id: string;
+  user_id: string;
+  module: string;
+  question_type: string;
+  was_correct: boolean;
+  user_answer: string;
+  correct_answer: string;
+  created_at: string;
+}
