@@ -362,7 +362,7 @@ export default function Home() {
           </div>
 
           {/* Main Study Area */}
-          <div className="lg:col-span-7 xl:col-span-8">
+          <div className="lg:col-span-8 xl:col-span-9 min-w-0">
             <StudyCard
               question={currentQuestion}
               onCheckAnswer={handleCheckAnswer}
