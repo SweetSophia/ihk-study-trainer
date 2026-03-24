@@ -26,12 +26,14 @@ function formatIHKTime(totalSeconds: number): {
   display: string; 
   value: number; 
   unit: string;
+  totalEffectiveSeconds: number;
   hours?: number;
   minutes?: number;
   seconds?: number;
 } {
   // Apply 10% overhead deduction
   const effectiveSeconds = totalSeconds * 1.10;
+  const totalEffectiveSeconds = Math.round(effectiveSeconds);
   
   if (effectiveSeconds >= 3600) {
     // Convert to hours with minutes (60-system)
@@ -41,6 +43,7 @@ function formatIHKTime(totalSeconds: number): {
       display: `${hours} Stunde(n) ${remainingMinutes} Minute(n)`,
       value: Number((effectiveSeconds / 3600).toFixed(2)),
       unit: 'Stunden',
+      totalEffectiveSeconds,
       hours,
       minutes: remainingMinutes,
       seconds: Math.round(effectiveSeconds)
@@ -53,6 +56,7 @@ function formatIHKTime(totalSeconds: number): {
       display: `${minutes} Minute(n) ${remainingSeconds} Sekunde(n)`,
       value: Number((effectiveSeconds / 60).toFixed(2)),
       unit: 'Minuten',
+      totalEffectiveSeconds,
       minutes,
       seconds: remainingSeconds
     };
@@ -62,6 +66,7 @@ function formatIHKTime(totalSeconds: number): {
       display: `${Math.round(effectiveSeconds)} Sekunde(n)`,
       value: Math.round(effectiveSeconds),
       unit: 'Sekunden',
+      totalEffectiveSeconds,
       seconds: Math.round(effectiveSeconds)
     };
   }
@@ -82,7 +87,6 @@ export function generateImageTransferComboQuestion(): Question {
   const totalBytes = totalBits / 8;
   const totalKB = totalBytes / 1000;
   const totalMB = totalKB / 1000;
-  const totalGB = totalMB / 1000;
   
   // Calculate bandwidth in bit/s
   const bandwidthBps = bandwidthValue * bandwidthUnit.multiplier;
@@ -101,17 +105,6 @@ export function generateImageTransferComboQuestion(): Question {
   const difficulty: 'easy' | 'medium' | 'hard' = 
     resolution.width >= 3840 || bandwidthValue <= 250 ? 'hard' :
     resolution.width >= 2560 ? 'medium' : 'easy';
-  
-  // Format file size for display
-  let fileSizeDisplay: string;
-  let fileSizeInMB: number;
-  if (totalGB >= 1) {
-    fileSizeDisplay = `${totalGB.toFixed(2)} GB`;
-    fileSizeInMB = totalMB;
-  } else {
-    fileSizeDisplay = `${Math.round(totalMB)} MB`;
-    fileSizeInMB = totalMB;
-  }
   
   const solutionSteps: string[] = [
     `Gegeben:`,

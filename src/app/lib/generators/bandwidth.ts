@@ -10,12 +10,14 @@ function formatIHKTime(totalSeconds: number): {
   display: string; 
   value: number; 
   unit: string;
+  totalEffectiveSeconds: number;
   hours?: number;
   minutes?: number;
   seconds?: number;
 } {
   // Apply 10% overhead deduction (adds to time)
   const effectiveSeconds = totalSeconds * 1.10;
+  const totalEffectiveSeconds = Math.round(effectiveSeconds);
   
   if (effectiveSeconds >= 3600) {
     // Convert to hours with minutes (60-system)
@@ -25,6 +27,7 @@ function formatIHKTime(totalSeconds: number): {
       display: `${hours} Stunde(n) ${remainingMinutes} Minute(n)`,
       value: Number((effectiveSeconds / 3600).toFixed(2)),
       unit: 'Stunden',
+      totalEffectiveSeconds,
       hours,
       minutes: remainingMinutes,
       seconds: Math.round(effectiveSeconds)
@@ -37,6 +40,7 @@ function formatIHKTime(totalSeconds: number): {
       display: `${minutes} Minute(n) ${remainingSeconds} Sekunde(n)`,
       value: Number((effectiveSeconds / 60).toFixed(2)),
       unit: 'Minuten',
+      totalEffectiveSeconds,
       minutes,
       seconds: remainingSeconds
     };
@@ -46,6 +50,7 @@ function formatIHKTime(totalSeconds: number): {
       display: `${Math.round(effectiveSeconds)} Sekunde(n)`,
       value: Math.round(effectiveSeconds),
       unit: 'Sekunden',
+      totalEffectiveSeconds,
       seconds: Math.round(effectiveSeconds)
     };
   }
@@ -71,7 +76,6 @@ export function generateBandwidthQuestion(): Question {
   const timeResult = formatIHKTime(rawTimeSeconds);
   
   // Calculate intermediate values for solution
-  const fileSizeMB = fileSizeGB * 1000; // Decimal: 1 GB = 1000 MB
   const fileSizeMbit = fileSizeGB * 8 * 1000; // GB to Mbit (decimal: 1 GB = 8000 Mbit)
   const overheadMbit = fileSizeMbit * 0.10;
   const effectiveMbit = fileSizeMbit + overheadMbit;
@@ -106,8 +110,8 @@ export function generateBandwidthQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In Stunden und Minuten umrechnen (60-System)`,
-      `  Stunden = ⌊${timeResult.seconds} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
-      `  Restsekunden = ${timeResult.seconds} - (${timeResult.hours} × 3600)`,
+      `  Stunden = ⌊${timeResult.totalEffectiveSeconds} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
+      `  Restsekunden = ${timeResult.totalEffectiveSeconds} - (${timeResult.hours} × 3600)`,
       `  Minuten = ⌊Restsekunden ÷ 60⌋ = ${timeResult.minutes} Minuten`,
       `  Ergebnis: ${timeResult.hours} Stunde(n) ${timeResult.minutes} Minute(n)`
     );
@@ -115,8 +119,8 @@ export function generateBandwidthQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In Minuten und Sekunden umrechnen (60-System)`,
-      `  Minuten = ⌊${timeResult.seconds} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
-      `  Restsekunden = ${timeResult.seconds} - (${timeResult.minutes} × 60)`,
+      `  Minuten = ⌊${timeResult.totalEffectiveSeconds} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
+      `  Restsekunden = ${timeResult.totalEffectiveSeconds} - (${timeResult.minutes} × 60)`,
       `  Sekunden = ⌊Restsekunden⌋ = ${timeResult.seconds} Sekunden`,
       `  Ergebnis: ${timeResult.minutes} Minute(n) ${timeResult.seconds} Sekunde(n)`
     );

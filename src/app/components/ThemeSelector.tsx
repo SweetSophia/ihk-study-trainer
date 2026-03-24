@@ -28,18 +28,16 @@ interface ThemeSelectorProps {
 }
 
 export default function ThemeSelector({ currentModule, onSelectModule }: ThemeSelectorProps) {
-  const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
   
   useEffect(() => {
-    setMounted(true);
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
   
-  if (!mounted) return null;
+  if (isMobile === null) return null;
   
   if (isMobile) {
     return (
@@ -70,7 +68,7 @@ export default function ThemeSelector({ currentModule, onSelectModule }: ThemeSe
   
   // Desktop: vertical grid cards
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 gap-3">
       {MODULES.map((module, index) => {
         const Icon = module.icon;
         const isActive = currentModule === module.id;
