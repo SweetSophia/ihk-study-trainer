@@ -7,6 +7,8 @@ const unitConversions = [
   { from: 'Mbit', to: 'MB', factor: 1 / 8, baseFrom: 'Mbit', baseTo: 'MB', power: 1 }
 ];
 
+const SUPERSCRIPTS: Record<number, string> = { 2: '²', 3: '³', 4: '⁴' };
+
 export function generateUnitConversionQuestion(): Question {
   const conversion = unitConversions[Math.floor(Math.random() * unitConversions.length)];
   const value = Math.floor(Math.random() * 500) + 10; // Random value 10-510
@@ -23,8 +25,7 @@ export function generateUnitConversionQuestion(): Question {
       `Hinweis: 1 Byte = 8 Bit`
     ];
   } else {
-    const superscripts: Record<number, string> = { 2: '²', 3: '³', 4: '⁴' };
-    const sup = superscripts[conversion.power] || `^${conversion.power}`;
+    const sup = SUPERSCRIPTS[conversion.power] || `^${conversion.power}`;
     result = value * conversion.factor;
     solutionSteps = [
       `Gegeben: ${value} ${conversion.from}`,
