@@ -18,6 +18,7 @@ import {
 // Import all generators
 import { generateBandwidthQuestion } from './lib/generators/bandwidth';
 import { generateImageCalcQuestion } from './lib/generators/imageCalc';
+import { generateImageTransferComboQuestion } from './lib/generators/imageTransferCombo';
 import { generateOverheadQuestion } from './lib/generators/overhead';
 import { generateSubnettingQuestion } from './lib/generators/subnetting';
 import { generateUnitConversionQuestion } from './lib/generators/unitConversion';
@@ -32,6 +33,7 @@ import { generateCableQuestion } from './lib/generators/cables';
 const GENERATORS: Record<string, () => Question> = {
   bandwidth: generateBandwidthQuestion,
   imageCalc: generateImageCalcQuestion,
+  imageTransferCombo: generateImageTransferComboQuestion,
   overhead: generateOverheadQuestion,
   subnetting: generateSubnettingQuestion,
   unitConversion: generateUnitConversionQuestion,

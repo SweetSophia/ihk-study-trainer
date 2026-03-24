@@ -1,63 +1,145 @@
 import { Question } from '../../types';
 
-export function generateBandwidthQuestion(): Question {
-  // Random file size between 1 and 50 GiB
-  const fileSizeGiB = Math.floor(Math.random() * 50) + 1;
+/**
+ * Formats time according to IHK 60-system rules:
+ * - If >= 60 seconds, convert to minutes (60-system)
+ * - If >= 60 minutes, convert to hours and minutes
+ * - 10% overhead is deducted from transfer time
+ */
+function formatIHKTime(totalSeconds: number): { 
+  display: string; 
+  value: number; 
+  unit: string;
+  hours?: number;
+  minutes?: number;
+  seconds?: number;
+} {
+  // Apply 10% overhead deduction (adds to time)
+  const effectiveSeconds = totalSeconds * 1.10;
   
-  // Random bandwidth between 10 and 1000 Mbit/s
+  if (effectiveSeconds >= 3600) {
+    // Convert to hours with minutes (60-system)
+    const hours = Math.floor(effectiveSeconds / 3600);
+    const remainingMinutes = Math.round((effectiveSeconds % 3600) / 60);
+    return {
+      display: `${hours} Stunde(n) ${remainingMinutes} Minute(n)`,
+      value: Number((effectiveSeconds / 3600).toFixed(2)),
+      unit: 'Stunden',
+      hours,
+      minutes: remainingMinutes,
+      seconds: Math.round(effectiveSeconds)
+    };
+  } else if (effectiveSeconds >= 60) {
+    // Convert to minutes with seconds (60-system)
+    const minutes = Math.floor(effectiveSeconds / 60);
+    const remainingSeconds = Math.round(effectiveSeconds % 60);
+    return {
+      display: `${minutes} Minute(n) ${remainingSeconds} Sekunde(n)`,
+      value: Number((effectiveSeconds / 60).toFixed(2)),
+      unit: 'Minuten',
+      minutes,
+      seconds: remainingSeconds
+    };
+  } else {
+    // Keep as seconds
+    return {
+      display: `${Math.round(effectiveSeconds)} Sekunde(n)`,
+      value: Math.round(effectiveSeconds),
+      unit: 'Sekunden',
+      seconds: Math.round(effectiveSeconds)
+    };
+  }
+}
+
+export function generateBandwidthQuestion(): Question {
+  // Random file size between 1 and 50 GB (using decimal 1000-based)
+  const fileSizeGB = Math.floor(Math.random() * 50) + 1;
+  
+  // Random bandwidth options in Mbit/s
   const bandwidths = [10, 25, 50, 100, 250, 500, 1000];
   const bandwidth = bandwidths[Math.floor(Math.random() * bandwidths.length)];
   
-  // Calculate transfer time in seconds
-  // Formula: (size × 8 × 1024³) / (bandwidth × 10⁶)
-  const fileSizeBits = fileSizeGiB * 8 * 1024 * 1024 * 1024;
-  const bandwidthBps = bandwidth * 1000 * 1000;
-  const timeSeconds = fileSizeBits / bandwidthBps;
+  // Calculate transfer time in seconds using decimal (1000-based) calculations
+  // Formula: (size in GB × 8 × 1000³) / (bandwidth × 10⁶)
+  // = (size × 8 × 1,000,000,000) / (bandwidth × 1,000,000)
+  // = (size × 8 × 1000) / bandwidth
+  const fileSizeBits = fileSizeGB * 8 * 1000 * 1000 * 1000; // GB to bits (decimal)
+  const bandwidthBps = bandwidth * 1000 * 1000; // Mbit/s to bit/s
+  const rawTimeSeconds = fileSizeBits / bandwidthBps;
   
-  const timeMinutes = timeSeconds / 60;
-  const timeHours = timeMinutes / 60;
+  // Format time according to IHK 60-system with 10% overhead
+  const timeResult = formatIHKTime(rawTimeSeconds);
   
-  let timeDisplay: string;
-  let expectedAnswer: number;
-  
-  if (timeHours >= 1) {
-    timeDisplay = `${timeHours.toFixed(2)} Stunden`;
-    expectedAnswer = Number(timeHours.toFixed(2));
-  } else if (timeMinutes >= 1) {
-    timeDisplay = `${timeMinutes.toFixed(2)} Minuten`;
-    expectedAnswer = Number(timeMinutes.toFixed(2));
-  } else {
-    timeDisplay = `${Math.round(timeSeconds)} Sekunden`;
-    expectedAnswer = Math.round(timeSeconds);
-  }
+  // Calculate intermediate values for solution
+  const fileSizeMB = fileSizeGB * 1000; // Decimal: 1 GB = 1000 MB
+  const fileSizeMbit = fileSizeGB * 8 * 1000; // GB to Mbit (decimal: 1 GB = 8000 Mbit)
+  const overheadMbit = fileSizeMbit * 0.10;
+  const effectiveMbit = fileSizeMbit + overheadMbit;
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
-    fileSizeGiB > 20 || bandwidth < 50 ? 'hard' :
-    fileSizeGiB > 10 ? 'medium' : 'easy';
+    fileSizeGB > 20 || bandwidth < 50 ? 'hard' :
+    fileSizeGB > 10 ? 'medium' : 'easy';
+  
+  const solutionSteps: string[] = [
+    `Gegeben:`,
+    `  Dateigröße: ${fileSizeGB} GB`,
+    `  Bandbreite: ${bandwidth} Mbit/s`,
+    ``,
+    `Schritt 1: Dateigröße in Mbit umrechnen (dezimal, 1000-basiert)`,
+    `  1 GB = 8 Gbit = 8000 Mbit (dezimal)`,
+    `  ${fileSizeGB} GB × 8000 = ${fileSizeMbit.toLocaleString()} Mbit`,
+    ``,
+    `Schritt 2: 10% Overhead hinzufügen (IHK-Standard)`,
+    `  Overhead = ${fileSizeMbit.toLocaleString()} × 0,10`,
+    `  Overhead = ${overheadMbit.toLocaleString()} Mbit`,
+    `  Effektive Datenmenge = ${fileSizeMbit.toLocaleString()} + ${overheadMbit.toLocaleString()}`,
+    `  Effektive Datenmenge = ${effectiveMbit.toLocaleString()} Mbit`,
+    ``,
+    `Schritt 3: Übertragungszeit berechnen`,
+    `  Zeit = Datenmenge ÷ Bandbreite`,
+    `  Zeit = ${effectiveMbit.toLocaleString()} Mbit ÷ ${bandwidth} Mbit/s`,
+    `  Zeit = ${(effectiveMbit / bandwidth).toFixed(2)} Sekunden`
+  ];
+  
+  // Add time formatting explanation based on result
+  if (timeResult.hours !== undefined) {
+    solutionSteps.push(
+      ``,
+      `Schritt 4: In Stunden und Minuten umrechnen (60-System)`,
+      `  Stunden = ⌊${timeResult.seconds} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
+      `  Restsekunden = ${timeResult.seconds} - (${timeResult.hours} × 3600)`,
+      `  Minuten = ⌊Restsekunden ÷ 60⌋ = ${timeResult.minutes} Minuten`,
+      `  Ergebnis: ${timeResult.hours} Stunde(n) ${timeResult.minutes} Minute(n)`
+    );
+  } else if (timeResult.minutes !== undefined && timeResult.minutes > 0) {
+    solutionSteps.push(
+      ``,
+      `Schritt 4: In Minuten und Sekunden umrechnen (60-System)`,
+      `  Minuten = ⌊${timeResult.seconds} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
+      `  Restsekunden = ${timeResult.seconds} - (${timeResult.minutes} × 60)`,
+      `  Sekunden = ⌊Restsekunden⌋ = ${timeResult.seconds} Sekunden`,
+      `  Ergebnis: ${timeResult.minutes} Minute(n) ${timeResult.seconds} Sekunde(n)`
+    );
+  }
+  
+  solutionSteps.push(
+    ``,
+    `Ergebnis: ${timeResult.display}`
+  );
   
   return {
     id: `bandwidth-${Date.now()}`,
     theme: 'IT-Mathematik & Datenberechnung',
     module: 'bandwidth',
-    questionText: `Wie lange dauert der Transfer von ${fileSizeGiB} GiB bei einer Bandbreite von ${bandwidth} Mbit/s? Gib die Zeit in ${timeHours >= 1 ? 'Stunden' : timeMinutes >= 1 ? 'Minuten' : 'Sekunden'} an.`,
+    questionText: `Wie lange dauert der Transfer von ${fileSizeGB} GB bei einer Bandbreite von ${bandwidth} Mbit/s? Berechne mit 10% Overhead und gib das Ergebnis in ${timeResult.unit} an (60-System bei ≥ 60 Sekunden).`,
     expectedAnswers: {
-      time: expectedAnswer,
-      unit: timeHours >= 1 ? 'Stunden' : timeMinutes >= 1 ? 'Minuten' : 'Sekunden'
+      time: timeResult.value,
+      unit: timeResult.unit,
+      ...(timeResult.hours !== undefined && { hours: timeResult.hours, minutes: timeResult.minutes }),
+      ...(timeResult.hours === undefined && timeResult.minutes !== undefined && { minutes: timeResult.minutes, seconds: timeResult.seconds }),
+      ...(timeResult.hours === undefined && timeResult.minutes === undefined && { seconds: timeResult.seconds })
     },
-    solutionSteps: [
-      `Gegeben: Dateigröße = ${fileSizeGiB} GiB, Bandbreite = ${bandwidth} Mbit/s`,
-      `Schritt 1: Dateigröße in Bits umrechnen`,
-      `  ${fileSizeGiB} GiB × 8 = ${fileSizeGiB * 8} Gibit`,
-      `  ${fileSizeGiB * 8} Gibit × 1024 = ${fileSizeGiB * 8 * 1024} Mibit`,
-      `  ${fileSizeGiB * 8 * 1024} Mibit × 1,048576 = ${(fileSizeGiB * 8 * 1024 * 1.048576).toFixed(2)} Mbit`,
-      `Schritt 2: Übertragungszeit berechnen`,
-      `  Zeit = Datenmenge ÷ Bandbreite`,
-      `  Zeit = ${(fileSizeGiB * 8 * 1024 * 1.048576).toFixed(2)} Mbit ÷ ${bandwidth} Mbit/s`,
-      `  Zeit = ${timeSeconds.toFixed(2)} Sekunden`,
-      timeMinutes >= 1 ? `  Zeit = ${timeMinutes.toFixed(2)} Minuten` : '',
-      timeHours >= 1 ? `  Zeit = ${timeHours.toFixed(2)} Stunden` : '',
-      `Ergebnis: ${timeDisplay}`
-    ].filter(Boolean),
+    solutionSteps,
     difficulty
   };
 }
