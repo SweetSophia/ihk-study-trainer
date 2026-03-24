@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IHK Study Trainer
 
-## Getting Started
+Interaktiver Lernassistent für die IHK-Prüfung zum **Fachinformatiker Systemintegration**.
 
-First, run the development server:
+🔗 **Live URL**: https://ihk-study-trainer.vercel.app
+
+## Features
+
+### 12 Lernmodule
+1. **Übertragungszeit** - Dateitransfer bei gegebener Bandbreite berechnen
+2. **Bildgröße** - Speicherbedarf von Bildern berechnen
+3. **Overhead** - Protokoll-Overhead berechnen
+4. **Subnetting** - IP-Subnetze und Host-Bereiche berechnen
+5. **Einheiten** - Byte-Einheiten umrechnen (MiB vs MB)
+6. **Binär** - Binär/Dezimal Konvertierungen
+7. **Hexadezimal** - Hex/Dezimal Konvertierungen
+8. **Subnetzmaske** - CIDR zu dotted-decimal Maske
+9. **Aggregation** - Route Summarization
+10. **Ports** - Port-Nummern und Protokolle
+11. **OSI-Modell** - Schichten und Zuordnungen
+12. **Kabel** - Kabeltypen-Auswahl nach Szenario
+
+### Features
+- ✅ Zufällig generierte Übungsaufgaben pro Modul
+- ✅ Schritt-für-Schritt Lösungen
+- ✅ Fortschritts-Tracking pro Modul
+- ✅ Genauigkeits-Statistiken
+- ✅ Tägliche Lern-Streaks
+- ✅ "Fehler üben" - Modus
+- ✅ Hash-basierte Authentifizierung (keine Email nötig)
+- ✅ Mobile-optimiertes Design
+- ✅ Dark Mode (Cyber-Security Theme)
+
+## Tech Stack
+
+- **Framework**: Next.js 16 + React 19
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Animations**: Framer Motion
+- **Database**: Supabase (PostgreSQL)
+- **Deployment**: Vercel
+
+## Lokale Entwicklung
 
 ```bash
+# Repository klonen
+git clone https://github.com/SweetSophia/ihk-study-trainer.git
+cd ihk-study-trainer
+
+# Dependencies installieren
+npm install
+
+# Environment Variablen (.env.local)
+NEXT_PUBLIC_SUPABASE_URL=deine_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=dein_supabase_key
+
+# Dev Server starten
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Datenbank Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Die SQL-Datei `database/schema.sql` enthält alle nötigen Tabellen:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `users` - Benutzer mit access_hash
+- `progress` - Fortschritt pro Modul
+- `question_history` - Fragen-Verlauf
 
-## Learn More
+## Projektstruktur
 
-To learn more about Next.js, take a look at the following resources:
+```
+├── database/
+│   └── schema.sql          # Supabase Schema
+├── src/
+│   ├── app/
+│   │   ├── components/     # React Components
+│   │   ├── lib/
+│   │   │   ├── generators/ # 12 Fragen-Generatoren
+│   │   │   ├── auth.ts     # Authentifizierung
+│   │   │   └── supabase.ts # Supabase Client
+│   │   ├── types/
+│   │   │   └── index.ts    # TypeScript Interfaces
+│   │   ├── page.tsx        # Hauptseite
+│   │   └── layout.tsx
+│   └── ...
+└── package.json
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Automatisches Deployment bei jedem Push auf `main`:
 
-## Deploy on Vercel
+```bash
+git add .
+git commit -m "Update..."
+git push origin main
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Lizenz
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT License - Feel free to use and modify!
