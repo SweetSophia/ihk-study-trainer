@@ -70,7 +70,7 @@ export default function ThemeSelector({ currentModule, onSelectModule }: ThemeSe
   
   // Desktop: vertical grid cards
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-4">
       {MODULES.map((module, index) => {
         const Icon = module.icon;
         const isActive = currentModule === module.id;
@@ -81,7 +81,7 @@ export default function ThemeSelector({ currentModule, onSelectModule }: ThemeSe
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.03 }}
             onClick={() => onSelectModule(module.id)}
-            className={`flex flex-col items-center justify-center text-center p-4 rounded-xl border h-28 ${
+            className={`flex flex-col items-center justify-center text-center p-4 rounded-xl border min-w-[160px] h-28 flex-1 ${
               isActive
                 ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
                 : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700'

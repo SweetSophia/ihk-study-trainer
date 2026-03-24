@@ -284,7 +284,7 @@ export default function Home() {
     <div className="min-h-screen bg-slate-950">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-500/10 rounded-lg">
@@ -331,10 +331,10 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Sidebar - Progress */}
-          <div className="lg:col-span-4 xl:col-span-3 space-y-6 min-w-0">
+          <div className="lg:col-span-4 xl:col-span-3 2xl:col-span-3 space-y-6 min-w-[280px]">
             <AnimatePresence mode="wait">
               {user && (
                 <motion.div
@@ -364,7 +364,7 @@ export default function Home() {
           </div>
 
           {/* Main Study Area */}
-          <div className="lg:col-span-8 xl:col-span-9 min-w-0">
+          <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
             <StudyCard
               question={currentQuestion}
               onCheckAnswer={handleCheckAnswer}
