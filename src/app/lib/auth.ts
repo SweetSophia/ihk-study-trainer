@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { User } from '../types';
 
 // ---------------------------------------------------------------------------
-// localStorage helpers – used as fallback when Supabase is not configured
+// localStorage helpers - used as fallback when Supabase is not configured
 // ---------------------------------------------------------------------------
 
 const LOCAL_PROGRESS_KEY = 'ihk_progress';
@@ -208,11 +208,26 @@ export async function updateProgress(
     entry.questions_attempted += 1;
     if (wasCorrect) entry.questions_correct += 1;
 
-    // Simple streak: bump if the previous session was on a different calendar day
-    const today = new Date().toDateString();
-    const lastDay = entry.last_session ? new Date(entry.last_session).toDateString() : null;
-    if (lastDay !== today) {
-      entry.streak_days = (entry.streak_days || 0) + 1;
+    // Streak: increment if last session was yesterday, reset to 1 if it was
+    // earlier or missing, leave unchanged if it's the same calendar day.
+    const today = new Date();
+    const todayStr = today.toDateString();
+    if (entry.last_session) {
+      const lastDate = new Date(entry.last_session);
+      const lastStr = lastDate.toDateString();
+      if (lastStr === todayStr) {
+        // Same day – streak stays the same
+      } else {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (lastDate.toDateString() === yesterday.toDateString()) {
+          entry.streak_days = (entry.streak_days || 0) + 1;
+        } else {
+          entry.streak_days = 1; // gap detected – reset
+        }
+      }
+    } else {
+      entry.streak_days = 1; // first ever session
     }
 
     entry.last_session = new Date().toISOString();
