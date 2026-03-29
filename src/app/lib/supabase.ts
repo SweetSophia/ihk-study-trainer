@@ -26,6 +26,7 @@ const createMockClient = () => {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock intentionally mimics SupabaseClient without full generic type
   } as any;
 };
 
