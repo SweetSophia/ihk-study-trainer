@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Calculator, Image as ImageIcon, Network, ArrowLeftRight,
@@ -28,22 +27,10 @@ interface ThemeSelectorProps {
 }
 
 export default function ThemeSelector({ currentModule, onSelectModule }: ThemeSelectorProps) {
-  const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-    const check = () => setIsMobile(window.innerWidth < 1024);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  
-  if (!mounted) return null;
-  
-  if (isMobile) {
-    return (
-      <div className="overflow-x-auto pb-2 -mx-4 px-4">
+  return (
+    <>
+      {/* Mobile: horizontal scroll strip */}
+      <div className="overflow-x-auto pb-2 -mx-4 px-4 lg:hidden">
         <div className="flex gap-2 min-w-max">
           {MODULES.map((module) => {
             const Icon = module.icon;
@@ -65,38 +52,36 @@ export default function ThemeSelector({ currentModule, onSelectModule }: ThemeSe
           })}
         </div>
       </div>
-    );
-  }
-  
-  // Desktop: vertical grid cards
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      {MODULES.map((module, index) => {
-        const Icon = module.icon;
-        const isActive = currentModule === module.id;
-        return (
-          <motion.button
-            key={module.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.03 }}
-            onClick={() => onSelectModule(module.id)}
-            className={`flex flex-col items-center justify-center text-center p-4 rounded-xl border h-28 ${
-              isActive
-                ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
-                : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700'
-            }`}
-          >
-            <div className={`p-2 rounded-lg mb-2 ${isActive ? 'bg-emerald-500/20' : 'bg-slate-800'}`}>
-              <Icon className="w-6 h-6" />
-            </div>
-            <p className={`font-semibold text-sm ${isActive ? 'text-emerald-300' : 'text-slate-200'}`}>
-              {module.name}
-            </p>
-            <p className="text-xs text-slate-500 mt-0.5">{module.description}</p>
-          </motion.button>
-        );
-      })}
-    </div>
+
+      {/* Desktop: vertical grid cards */}
+      <div className="hidden lg:grid grid-cols-2 gap-3">
+        {MODULES.map((module, index) => {
+          const Icon = module.icon;
+          const isActive = currentModule === module.id;
+          return (
+            <motion.button
+              key={module.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+              onClick={() => onSelectModule(module.id)}
+              className={`flex flex-col items-center justify-center text-center p-4 rounded-xl border h-28 ${
+                isActive
+                  ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
+                  : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
+            >
+              <div className={`p-2 rounded-lg mb-2 ${isActive ? 'bg-emerald-500/20' : 'bg-slate-800'}`}>
+                <Icon className="w-6 h-6" />
+              </div>
+              <p className={`font-semibold text-sm ${isActive ? 'text-emerald-300' : 'text-slate-200'}`}>
+                {module.name}
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">{module.description}</p>
+            </motion.button>
+          );
+        })}
+      </div>
+    </>
   );
 }
