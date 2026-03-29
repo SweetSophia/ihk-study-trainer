@@ -3,27 +3,33 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Create a mock client for build time when env vars aren't available
+export const isSupabaseConfigured = !!(supabaseUrl && supabaseKey);
+
+// Create a mock client for build time when env vars aren't available.
+// Every query-builder method returns the same chainable object so that
+// calls like `.from('t').select('*').eq('k','v').single()` never throw.
 const createMockClient = () => {
+  const result = { data: null, error: null };
+  const chainable: Record<string, unknown> = {};
+  for (const m of ['select','insert','update','upsert','delete','eq','neq','gt','lt','gte','lte','like','ilike','is','in','order','limit','range','single','maybeSingle','csv','then']) {
+    if (m === 'then') {
+      // Make the object thenable so `await` resolves to result
+      chainable[m] = (resolve: (v: unknown) => void) => resolve(result);
+    } else {
+      chainable[m] = () => chainable;
+    }
+  }
   return {
-    from: () => ({
-      select: () => ({ data: null, error: null }),
-      insert: () => ({ data: null, error: null }),
-      update: () => ({ data: null, error: null }),
-      upsert: () => ({ data: null, error: null }),
-      delete: () => ({ data: null, error: null }),
-      eq: () => ({ data: null, error: null }),
-      single: () => ({ data: null, error: null }),
-    }),
+    from: () => chainable,
     rpc: () => ({ data: null, error: null }),
     auth: {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     },
-  } as any;
+  } as unknown as ReturnType<typeof createClient>;
 };
 
-export const supabase = supabaseUrl && supabaseKey 
+export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseKey, {
       auth: {
         persistSession: false,
