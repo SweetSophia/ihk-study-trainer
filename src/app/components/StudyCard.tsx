@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Lightbulb, ArrowRight, RotateCcw } from 'lucide-react';
+import { AnswerInputConfig } from '../types';
 
 interface StudyCardProps {
   question: {
@@ -13,6 +14,7 @@ interface StudyCardProps {
     expectedAnswers: Record<string, string | number | boolean>;
     solutionSteps: string[];
     difficulty: 'easy' | 'medium' | 'hard';
+    answerInputs?: AnswerInputConfig[];
   } | null;
   onCheckAnswer: (answers: Record<string, string>) => boolean;
   onNextQuestion: () => void;
@@ -66,6 +68,26 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
 
   const answerKeys = Object.keys(question.expectedAnswers).filter(k => k !== 'unit');
 
+  // Determine whether all required fields have been filled
+  const allAnswered = question.answerInputs
+    ? question.answerInputs.every(
+        (cfg) => answers[cfg.valueKey]?.trim() && answers[cfg.unitKey]?.trim()
+      )
+    : answerKeys.every((k) => answers[k]?.trim());
+
+  /** Shared class string for text/number inputs */
+  const inputClass = (extra = '') =>
+    `w-full px-4 py-3 bg-slate-950 border rounded-lg text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${
+      checked
+        ? isCorrect
+          ? 'border-emerald-500/50 bg-emerald-950/20'
+          : 'border-rose-500/50 bg-rose-950/20'
+        : 'border-slate-800 focus:border-emerald-500/50'
+    } ${extra}`;
+
+  /** Shared class string for select dropdowns */
+  const selectClass = inputClass('cursor-pointer');
+
   return (
     <div className="bg-slate-900/80 backdrop-blur rounded-xl border border-slate-800 overflow-hidden">
       {/* Header */}
@@ -94,27 +116,65 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
 
       {/* Answer Inputs */}
       <div className="px-6 pb-4 space-y-4">
-        {answerKeys.map((key) => (
-          <div key={key}>
-            <label className="block text-sm font-medium text-slate-400 mb-2 capitalize">
-              {key.replace(/([A-Z])/g, ' $1').trim()}
-            </label>
-            <input
-              type="text"
-              value={answers[key] || ''}
-              onChange={(e) => setAnswers({ ...answers, [key]: e.target.value })}
-              disabled={checked}
-              className={`w-full px-4 py-3 bg-slate-950 border rounded-lg text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${
-                checked
-                  ? isCorrect
-                    ? 'border-emerald-500/50 bg-emerald-950/20'
-                    : 'border-rose-500/50 bg-rose-950/20'
-                  : 'border-slate-800 focus:border-emerald-500/50'
-              }`}
-              placeholder={`${key} eingeben...`}
-            />
-          </div>
-        ))}
+        {question.answerInputs ? (
+          /* Structured [value input + unit dropdown] pairs */
+          question.answerInputs.map((cfg) => (
+            <div key={cfg.valueKey} className="flex gap-3 items-end">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-400 mb-2">
+                  Wert
+                </label>
+                <input
+                  type="number"
+                  value={answers[cfg.valueKey] || ''}
+                  onChange={(e) =>
+                    setAnswers({ ...answers, [cfg.valueKey]: e.target.value })
+                  }
+                  disabled={checked}
+                  className={inputClass()}
+                  placeholder="Wert eingeben..."
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-400 mb-2">
+                  Einheit
+                </label>
+                <select
+                  value={answers[cfg.unitKey] || ''}
+                  onChange={(e) =>
+                    setAnswers({ ...answers, [cfg.unitKey]: e.target.value })
+                  }
+                  disabled={checked}
+                  className={selectClass}
+                >
+                  <option value="">Einheit wählen…</option>
+                  {cfg.unitOptions.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {unit}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ))
+        ) : (
+          /* Generic text-input fallback for modules without answerInputs */
+          answerKeys.map((key) => (
+            <div key={key}>
+              <label className="block text-sm font-medium text-slate-400 mb-2 capitalize">
+                {key.replace(/([A-Z])/g, ' $1').trim()}
+              </label>
+              <input
+                type="text"
+                value={answers[key] || ''}
+                onChange={(e) => setAnswers({ ...answers, [key]: e.target.value })}
+                disabled={checked}
+                className={inputClass()}
+                placeholder={`${key} eingeben...`}
+              />
+            </div>
+          ))
+        )}
 
         {/* Feedback */}
         <AnimatePresence>
@@ -150,7 +210,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
         {!checked ? (
           <button
             onClick={handleCheck}
-            disabled={answerKeys.some(k => !answers[k]?.trim())}
+            disabled={!allAnswered}
             className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-lg transition-colors"
           >
             <Check className="w-4 h-4" />
