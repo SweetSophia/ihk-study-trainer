@@ -1,5 +1,7 @@
 import { Question } from '../../types';
 
+const FILE_SIZE_UNITS = ['Bytes', 'KiB', 'KB', 'MiB', 'MB', 'GiB', 'GB'];
+
 const resolutions = [
   { name: 'Full HD', width: 1920, height: 1080 },
   { name: 'WQHD', width: 2560, height: 1440 },
@@ -143,11 +145,14 @@ export function generateImageCalcQuestion(): Question {
     id: `image-calc-${Date.now()}`,
     theme: 'Bildberechnung & Digitalisierung',
     module: 'image-calc',
-    questionText: `Berechne die unkomprimierte Dateigröße eines ${resolution.name}-Bildes (${resolution.width}×${resolution.height} Pixel) mit ${colorDepth} Bit Farbtiefe. Gib das Ergebnis in ${targetUnit.unit} an.`,
+    questionText: `Berechne die unkomprimierte Dateigröße eines ${resolution.name}-Bildes (${resolution.width}×${resolution.height} Pixel) mit ${colorDepth} Bit Farbtiefe.`,
     expectedAnswers: {
       size: formattedResult,
-      unit: targetUnit.unit
+      sizeUnit: targetUnit.unit,
     },
+    answerInputs: [
+      { valueKey: 'size', unitKey: 'sizeUnit', unitOptions: FILE_SIZE_UNITS },
+    ],
     solutionSteps,
     difficulty
   };

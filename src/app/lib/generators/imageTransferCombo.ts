@@ -1,5 +1,10 @@
 import { Question } from '../../types';
 
+const TIME_UNITS = ['Sekunden', 'Minuten', 'Stunden'];
+const UNIT_SEKUNDEN = TIME_UNITS[0];
+const UNIT_MINUTEN = TIME_UNITS[1];
+const UNIT_STUNDEN = TIME_UNITS[2];
+
 const resolutions = [
   { name: 'Full HD', width: 1920, height: 1080 },
   { name: 'WQHD', width: 2560, height: 1440 },
@@ -177,14 +182,38 @@ export function generateImageTransferComboQuestion(): Question {
     id: `image-transfer-combo-${Date.now()}`,
     theme: 'IT-Mathematik & Datenberechnung',
     module: 'image-transfer-combo',
-    questionText: `Ein unkomprimiertes ${resolution.name}-Bild (${resolution.width}×${resolution.height} Pixel, ${colorDepth} Bit Farbtiefe) soll über eine Leitung mit ${bandwidthValue} ${bandwidthUnit.unit} übertragen werden. Berechne die Übertragungszeit unter Berücksichtigung eines 10% Overheads. Gib das Ergebnis in ${timeResult.unit} an (60-System bei ≥ 60 Sekunden).`,
+    questionText: `Ein unkomprimiertes ${resolution.name}-Bild (${resolution.width}×${resolution.height} Pixel, ${colorDepth} Bit Farbtiefe) soll über eine Leitung mit ${bandwidthValue} ${bandwidthUnit.unit} übertragen werden. Berechne die Übertragungszeit unter Berücksichtigung eines 10% Overheads (60-System bei ≥ 60 Sekunden).`,
     expectedAnswers: {
-      time: timeResult.value,
-      unit: timeResult.unit,
-      ...(timeResult.hours !== undefined && { hours: timeResult.hours, minutes: timeResult.minutes }),
-      ...(timeResult.hours === undefined && timeResult.minutes !== undefined && { minutes: timeResult.minutes, seconds: timeResult.seconds }),
-      ...(timeResult.hours === undefined && timeResult.minutes === undefined && { seconds: timeResult.seconds })
+      ...(timeResult.hours !== undefined && {
+        hours: timeResult.hours,
+        hourUnit: UNIT_STUNDEN,
+        minutes: timeResult.minutes,
+        minuteUnit: UNIT_MINUTEN,
+      }),
+      ...(timeResult.hours === undefined && timeResult.minutes !== undefined && {
+        minutes: timeResult.minutes,
+        minuteUnit: UNIT_MINUTEN,
+        seconds: timeResult.seconds,
+        secondUnit: UNIT_SEKUNDEN,
+      }),
+      ...(timeResult.hours === undefined && timeResult.minutes === undefined && {
+        seconds: timeResult.seconds,
+        secondUnit: UNIT_SEKUNDEN,
+      }),
     },
+    answerInputs: timeResult.hours !== undefined
+      ? [
+          { valueKey: 'hours', unitKey: 'hourUnit', unitOptions: TIME_UNITS },
+          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS },
+        ]
+      : timeResult.minutes !== undefined
+      ? [
+          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS },
+          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS },
+        ]
+      : [
+          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS },
+        ],
     solutionSteps,
     difficulty
   };

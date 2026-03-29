@@ -1,3 +1,13 @@
+/** Configuration for a single answer input pair (value + optional unit dropdown) */
+export interface AnswerInputConfig {
+  /** Key in expectedAnswers that holds the numeric value */
+  valueKey: string;
+  /** Key in expectedAnswers that holds the expected unit string */
+  unitKey: string;
+  /** Options to show in the unit dropdown */
+  unitOptions: string[];
+}
+
 /** Question interface for all generators */
 export interface Question {
   id: string;
@@ -7,6 +17,11 @@ export interface Question {
   expectedAnswers: Record<string, string | number | boolean>;
   solutionSteps: string[];
   difficulty: 'easy' | 'medium' | 'hard';
+  /**
+   * When present, StudyCard renders one [input + dropdown] row per entry
+   * instead of the generic text-input fallback.
+   */
+  answerInputs?: AnswerInputConfig[];
 }
 
 /** User interface */
