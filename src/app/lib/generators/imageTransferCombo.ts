@@ -87,7 +87,6 @@ export function generateImageTransferComboQuestion(): Question {
   const totalBytes = totalBits / 8;
   const totalKB = totalBytes / 1000;
   const totalMB = totalKB / 1000;
-  const totalGB = totalMB / 1000;
   
   // Calculate bandwidth in bit/s
   const bandwidthBps = bandwidthValue * bandwidthUnit.multiplier;
@@ -106,17 +105,6 @@ export function generateImageTransferComboQuestion(): Question {
   const difficulty: 'easy' | 'medium' | 'hard' = 
     resolution.width >= 3840 || bandwidthValue <= 250 ? 'hard' :
     resolution.width >= 2560 ? 'medium' : 'easy';
-  
-  // Format file size for display
-  let fileSizeDisplay: string;
-  let fileSizeInMB: number;
-  if (totalGB >= 1) {
-    fileSizeDisplay = `${totalGB.toFixed(2)} GB`;
-    fileSizeInMB = totalMB;
-  } else {
-    fileSizeDisplay = `${Math.round(totalMB)} MB`;
-    fileSizeInMB = totalMB;
-  }
   
   const solutionSteps: string[] = [
     `Gegeben:`,

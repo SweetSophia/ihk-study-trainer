@@ -76,7 +76,6 @@ export function generateBandwidthQuestion(): Question {
   const timeResult = formatIHKTime(rawTimeSeconds);
   
   // Calculate intermediate values for solution
-  const fileSizeMB = fileSizeGB * 1000; // Decimal: 1 GB = 1000 MB
   const fileSizeMbit = fileSizeGB * 8 * 1000; // GB to Mbit (decimal: 1 GB = 8000 Mbit)
   const overheadMbit = fileSizeMbit * 0.10;
   const effectiveMbit = fileSizeMbit + overheadMbit;
