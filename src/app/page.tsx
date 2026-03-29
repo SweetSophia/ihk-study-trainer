@@ -47,6 +47,11 @@ import { generatePortQuestion } from './lib/generators/ports';
 import { generateOsiQuestion } from './lib/generators/osi';
 import { generateCableQuestion } from './lib/generators/cables';
 
+/** Parse a numeric string, treating comma as decimal separator (German locale). */
+function parseLocaleFloat(raw: string): number {
+  return parseFloat(raw.replace(',', '.'));
+}
+
 // --- Structured answer validation (unit-conversion aware) ---
 
 /**
@@ -90,7 +95,7 @@ function validateStructuredAnswer(
     // Sum up user total in base units
     let userTotal = 0;
     for (const cfg of inputs) {
-      const val = parseFloat(answers[cfg.valueKey] || '');
+      const val = parseLocaleFloat(answers[cfg.valueKey] || '');
       const unit = (answers[cfg.unitKey] || '').toLowerCase();
       if (isNaN(val) || convMap[unit] === undefined) return false;
       userTotal += val * convMap[unit];
@@ -106,8 +111,8 @@ function validateStructuredAnswer(
   for (const [key, exp] of Object.entries(expected)) {
     const userAnswer = answers[key]?.trim().toLowerCase();
     const expectedStr = String(exp).toLowerCase();
-    const userNum = parseFloat(userAnswer);
-    const expectedNum = parseFloat(expectedStr);
+    const userNum = parseLocaleFloat(userAnswer);
+    const expectedNum = parseLocaleFloat(expectedStr);
     if (!isNaN(userNum) && !isNaN(expectedNum)) {
       const tolerance = expectedNum * 0.05;
       if (Math.abs(userNum - expectedNum) > tolerance) return false;
@@ -317,8 +322,8 @@ export default function Home() {
         const userAnswer = answers[key]?.trim().toLowerCase();
         const expectedStr = String(expected).toLowerCase();
 
-        const userNum = parseFloat(userAnswer);
-        const expectedNum = parseFloat(expectedStr);
+        const userNum = parseLocaleFloat(userAnswer);
+        const expectedNum = parseLocaleFloat(expectedStr);
 
         if (!isNaN(userNum) && !isNaN(expectedNum)) {
           const tolerance = expectedNum * 0.05;
