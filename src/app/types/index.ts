@@ -3,11 +3,13 @@ export interface AnswerInputConfig {
   /** Key in expectedAnswers that holds the numeric value */
   valueKey: string;
   /** Key in expectedAnswers that holds the expected unit string */
-  unitKey: string;
+  unitKey?: string;
   /** Options to show in the unit dropdown */
-  unitOptions: string[];
+  unitOptions?: string[];
   /** Optional label shown above the value input (e.g. "Stunden", "Dateigröße") */
   label?: string;
+  /** When present, the value field renders as a dropdown instead of a number input */
+  valueOptions?: string[];
 }
 
 /** Question interface for all generators */

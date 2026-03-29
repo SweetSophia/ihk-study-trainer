@@ -71,7 +71,9 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
   // Determine whether all required fields have been filled
   const allAnswered = question.answerInputs
     ? question.answerInputs.every(
-        (cfg) => answers[cfg.valueKey]?.trim() && answers[cfg.unitKey]?.trim()
+        (cfg) =>
+          answers[cfg.valueKey]?.trim() &&
+          (!cfg.unitKey || answers[cfg.unitKey]?.trim())
       )
     : answerKeys.every((k) => answers[k]?.trim());
 
@@ -117,44 +119,64 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
       {/* Answer Inputs */}
       <div className="px-6 pb-4 space-y-4">
         {question.answerInputs ? (
-          /* Structured [value input + unit dropdown] pairs */
+          /* Structured answer inputs – supports dropdown-only and value+unit pairs */
           question.answerInputs.map((cfg) => (
             <div key={cfg.valueKey} className="flex gap-3 items-end">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-slate-400 mb-2">
                   {cfg.label ?? 'Wert'}
                 </label>
-                <input
-                  type="number"
-                  value={answers[cfg.valueKey] || ''}
-                  onChange={(e) =>
-                    setAnswers({ ...answers, [cfg.valueKey]: e.target.value })
-                  }
-                  disabled={checked}
-                  className={inputClass()}
-                  placeholder="Wert eingeben..."
-                />
+                {cfg.valueOptions ? (
+                  <select
+                    value={answers[cfg.valueKey] || ''}
+                    onChange={(e) =>
+                      setAnswers({ ...answers, [cfg.valueKey]: e.target.value })
+                    }
+                    disabled={checked}
+                    className={selectClass}
+                  >
+                    <option value="">Bitte wählen…</option>
+                    {cfg.valueOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="number"
+                    value={answers[cfg.valueKey] || ''}
+                    onChange={(e) =>
+                      setAnswers({ ...answers, [cfg.valueKey]: e.target.value })
+                    }
+                    disabled={checked}
+                    className={inputClass()}
+                    placeholder="Wert eingeben..."
+                  />
+                )}
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-slate-400 mb-2">
-                  Einheit
-                </label>
-                <select
-                  value={answers[cfg.unitKey] || ''}
-                  onChange={(e) =>
-                    setAnswers({ ...answers, [cfg.unitKey]: e.target.value })
-                  }
-                  disabled={checked}
-                  className={selectClass}
-                >
-                  <option value="">Einheit wählen…</option>
-                  {cfg.unitOptions.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {unit}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {cfg.unitKey && cfg.unitOptions && (
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-400 mb-2">
+                    Einheit
+                  </label>
+                  <select
+                    value={answers[cfg.unitKey] || ''}
+                    onChange={(e) =>
+                      setAnswers({ ...answers, [cfg.unitKey!]: e.target.value })
+                    }
+                    disabled={checked}
+                    className={selectClass}
+                  >
+                    <option value="">Einheit wählen…</option>
+                    {cfg.unitOptions.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           ))
         ) : (
