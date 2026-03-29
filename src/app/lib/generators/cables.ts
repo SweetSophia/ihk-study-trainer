@@ -87,7 +87,7 @@ export function generateCableQuestion(): CableQuestion {
   const scenario = SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)];
   
   // Find best cable type
-  const bestCable = findBestCable(scenario.distance, scenario.speed, scenario.environment);
+  const bestCable = findBestCable(scenario.distance, scenario.speed);
   
   return {
     theme: 'Netzwerkarchitektur & Overhead',
@@ -123,7 +123,7 @@ export function generateCableQuestion(): CableQuestion {
   };
 }
 
-function findBestCable(distance: number, speed: number, environment: string) {
+function findBestCable(distance: number, speed: number) {
   // Find cables that meet requirements
   const suitable = CABLE_TYPES.filter(cable => 
     cable.maxSpeed >= speed && 
