@@ -80,6 +80,7 @@ export function generateBandwidthQuestion(): Question {
   const fileSizeMbit = fileSizeGB * 8 * 1000; // GB to Mbit (decimal: 1 GB = 8000 Mbit)
   const overheadMbit = fileSizeMbit * 0.10;
   const effectiveMbit = fileSizeMbit + overheadMbit;
+  const effectiveTimeSeconds = effectiveMbit / bandwidth;
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
     fileSizeGB > 20 || bandwidth < 50 ? 'hard' :
@@ -103,7 +104,7 @@ export function generateBandwidthQuestion(): Question {
     `Schritt 3: Übertragungszeit berechnen`,
     `  Zeit = Datenmenge ÷ Bandbreite`,
     `  Zeit = ${effectiveMbit.toLocaleString()} Mbit ÷ ${bandwidth} Mbit/s`,
-    `  Zeit = ${(effectiveMbit / bandwidth).toFixed(2)} Sekunden`
+    `  Zeit = ${effectiveTimeSeconds.toFixed(2)} Sekunden`
   ];
   
   // Add time formatting explanation based on result
@@ -111,8 +112,8 @@ export function generateBandwidthQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In Stunden und Minuten umrechnen (60-System)`,
-      `  Stunden = ⌊${timeResult.seconds} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
-      `  Restsekunden = ${timeResult.seconds} - (${timeResult.hours} × 3600)`,
+      `  Stunden = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
+      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.hours} × 3600)`,
       `  Minuten = ⌊Restsekunden ÷ 60⌋ = ${timeResult.minutes} Minuten`,
       `  Ergebnis: ${timeResult.hours} Stunde(n) ${timeResult.minutes} Minute(n)`
     );
@@ -120,8 +121,8 @@ export function generateBandwidthQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In Minuten und Sekunden umrechnen (60-System)`,
-      `  Minuten = ⌊${timeResult.seconds} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
-      `  Restsekunden = ${timeResult.seconds} - (${timeResult.minutes} × 60)`,
+      `  Minuten = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
+      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.minutes} × 60)`,
       `  Sekunden = ⌊Restsekunden⌋ = ${timeResult.seconds} Sekunden`,
       `  Ergebnis: ${timeResult.minutes} Minute(n) ${timeResult.seconds} Sekunde(n)`
     );
@@ -157,16 +158,16 @@ export function generateBandwidthQuestion(): Question {
     },
     answerInputs: timeResult.hours !== undefined
       ? [
-          { valueKey: 'hours', unitKey: 'hourUnit', unitOptions: TIME_UNITS },
-          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS },
+          { valueKey: 'hours', unitKey: 'hourUnit', unitOptions: TIME_UNITS, label: 'Stunden' },
+          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS, label: 'Minuten' },
         ]
       : timeResult.minutes !== undefined
       ? [
-          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS },
-          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS },
+          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS, label: 'Minuten' },
+          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS, label: 'Sekunden' },
         ]
       : [
-          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS },
+          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS, label: 'Sekunden' },
         ],
     solutionSteps,
     difficulty

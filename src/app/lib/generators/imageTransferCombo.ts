@@ -203,16 +203,16 @@ export function generateImageTransferComboQuestion(): Question {
     },
     answerInputs: timeResult.hours !== undefined
       ? [
-          { valueKey: 'hours', unitKey: 'hourUnit', unitOptions: TIME_UNITS },
-          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS },
+          { valueKey: 'hours', unitKey: 'hourUnit', unitOptions: TIME_UNITS, label: 'Stunden' },
+          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS, label: 'Minuten' },
         ]
       : timeResult.minutes !== undefined
       ? [
-          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS },
-          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS },
+          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS, label: 'Minuten' },
+          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS, label: 'Sekunden' },
         ]
       : [
-          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS },
+          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS, label: 'Sekunden' },
         ],
     solutionSteps,
     difficulty

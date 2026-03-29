@@ -6,6 +6,8 @@ export interface AnswerInputConfig {
   unitKey: string;
   /** Options to show in the unit dropdown */
   unitOptions: string[];
+  /** Optional label shown above the value input (e.g. "Stunden", "Dateigröße") */
+  label?: string;
 }
 
 /** Question interface for all generators */
