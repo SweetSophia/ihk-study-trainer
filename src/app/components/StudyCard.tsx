@@ -122,7 +122,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
             <div key={cfg.valueKey} className="flex gap-3 items-end">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-slate-400 mb-2">
-                  Wert
+                  {cfg.label ?? 'Wert'}
                 </label>
                 <input
                   type="number"

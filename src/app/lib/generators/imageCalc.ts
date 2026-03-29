@@ -151,7 +151,7 @@ export function generateImageCalcQuestion(): Question {
       sizeUnit: targetUnit.unit,
     },
     answerInputs: [
-      { valueKey: 'size', unitKey: 'sizeUnit', unitOptions: FILE_SIZE_UNITS },
+      { valueKey: 'size', unitKey: 'sizeUnit', unitOptions: FILE_SIZE_UNITS, label: 'Dateigröße' },
     ],
     solutionSteps,
     difficulty

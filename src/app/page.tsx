@@ -7,13 +7,30 @@ import StudyCard from './components/StudyCard';
 import AuthModal from './components/AuthModal';
 import ThemeSelector from './components/ThemeSelector';
 import ProgressDashboard from './components/ProgressDashboard';
-import { Question, User as UserType } from './types';
+import { Question, User as UserType, AnswerInputConfig } from './types';
 import { 
   generateUniqueUser, 
   getUserByHash, 
   getAllProgress,
   updateProgress 
 } from './lib/auth';
+
+// --- Unit-conversion maps for answer validation ---
+const SIZE_TO_BYTES: Record<string, number> = {
+  bytes: 1,
+  kib: 1024,
+  kb: 1000,
+  mib: 1024 * 1024,
+  mb: 1000 * 1000,
+  gib: 1024 * 1024 * 1024,
+  gb: 1000 * 1000 * 1000,
+};
+
+const TIME_TO_SECONDS: Record<string, number> = {
+  sekunden: 1,
+  minuten: 60,
+  stunden: 3600,
+};
 
 // Import all generators
 import { generateBandwidthQuestion } from './lib/generators/bandwidth';
@@ -29,6 +46,77 @@ import { generateAggregationQuestion } from './lib/generators/aggregation';
 import { generatePortQuestion } from './lib/generators/ports';
 import { generateOsiQuestion } from './lib/generators/osi';
 import { generateCableQuestion } from './lib/generators/cables';
+
+// --- Structured answer validation (unit-conversion aware) ---
+
+/**
+ * Detect the conversion map that applies for the given unit options.
+ * Returns null when no conversion-aware check is needed.
+ */
+function detectConversionMap(
+  unitOptions: string[]
+): Record<string, number> | null {
+  const lower = unitOptions.map((u) => u.toLowerCase());
+  if (lower.some((u) => u in SIZE_TO_BYTES)) return SIZE_TO_BYTES;
+  if (lower.some((u) => u in TIME_TO_SECONDS)) return TIME_TO_SECONDS;
+  return null;
+}
+
+/**
+ * Validate structured answers using unit-aware comparison.
+ *
+ * For file-size or time answers the user may choose a different (but valid)
+ * unit and supply the mathematically equivalent value.  We normalise both
+ * sides to a common base (bytes / seconds) and compare with 5 % tolerance.
+ */
+function validateStructuredAnswer(
+  inputs: AnswerInputConfig[],
+  expected: Record<string, string | number | boolean>,
+  answers: Record<string, string>
+): boolean {
+  const convMap = detectConversionMap(inputs[0].unitOptions);
+
+  if (convMap) {
+    // Sum up expected total in base units
+    let expectedTotal = 0;
+    for (const cfg of inputs) {
+      const val = Number(expected[cfg.valueKey]);
+      const unit = String(expected[cfg.unitKey]).toLowerCase();
+      const factor = convMap[unit];
+      if (factor === undefined) return false;
+      expectedTotal += val * factor;
+    }
+
+    // Sum up user total in base units
+    let userTotal = 0;
+    for (const cfg of inputs) {
+      const val = parseFloat(answers[cfg.valueKey] || '');
+      const unit = (answers[cfg.unitKey] || '').toLowerCase();
+      if (isNaN(val) || convMap[unit] === undefined) return false;
+      userTotal += val * convMap[unit];
+    }
+
+    // Compare with 5 % tolerance
+    if (expectedTotal === 0) return userTotal === 0;
+    const tolerance = Math.abs(expectedTotal) * 0.05;
+    return Math.abs(userTotal - expectedTotal) <= tolerance;
+  }
+
+  // Fallback: per-field comparison (numeric 5 % tolerance or exact string)
+  for (const [key, exp] of Object.entries(expected)) {
+    const userAnswer = answers[key]?.trim().toLowerCase();
+    const expectedStr = String(exp).toLowerCase();
+    const userNum = parseFloat(userAnswer);
+    const expectedNum = parseFloat(expectedStr);
+    if (!isNaN(userNum) && !isNaN(expectedNum)) {
+      const tolerance = expectedNum * 0.05;
+      if (Math.abs(userNum - expectedNum) > tolerance) return false;
+    } else if (userAnswer !== expectedStr) {
+      return false;
+    }
+  }
+  return true;
+}
 
 const GENERATORS: Record<string, () => Question> = {
   bandwidth: generateBandwidthQuestion,
@@ -217,31 +305,35 @@ export default function Home() {
   const handleCheckAnswer = useCallback((answers: Record<string, string>): boolean => {
     if (!currentQuestion || !user) return false;
 
-    // Check if answers match expected
-    let correct = true;
-    for (const [key, expected] of Object.entries(currentQuestion.expectedAnswers)) {
-      if (key === 'unit') continue; // Skip unit key
-      const userAnswer = answers[key]?.trim().toLowerCase();
-      const expectedStr = String(expected).toLowerCase();
-      
-      // Allow for some flexibility (numeric tolerance)
-      const userNum = parseFloat(userAnswer);
-      const expectedNum = parseFloat(expectedStr);
-      
-      if (!isNaN(userNum) && !isNaN(expectedNum)) {
-        // Numeric comparison with 5% tolerance
-        const tolerance = expectedNum * 0.05;
-        if (Math.abs(userNum - expectedNum) > tolerance) {
+    let correct: boolean;
+
+    if (currentQuestion.answerInputs) {
+      correct = validateStructuredAnswer(currentQuestion.answerInputs, currentQuestion.expectedAnswers, answers);
+    } else {
+      // Legacy validation for plain text inputs
+      correct = true;
+      for (const [key, expected] of Object.entries(currentQuestion.expectedAnswers)) {
+        if (key === 'unit') continue;
+        const userAnswer = answers[key]?.trim().toLowerCase();
+        const expectedStr = String(expected).toLowerCase();
+
+        const userNum = parseFloat(userAnswer);
+        const expectedNum = parseFloat(expectedStr);
+
+        if (!isNaN(userNum) && !isNaN(expectedNum)) {
+          const tolerance = expectedNum * 0.05;
+          if (Math.abs(userNum - expectedNum) > tolerance) {
+            correct = false;
+          }
+        } else if (userAnswer !== expectedStr) {
           correct = false;
         }
-      } else if (userAnswer !== expectedStr) {
-        correct = false;
       }
     }
 
     // Update progress
     updateProgress(user.id, currentQuestion.module, correct);
-    
+
     // Reload progress
     loadProgress(user.id);
 
