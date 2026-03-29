@@ -145,7 +145,7 @@ export function generateImageCalcQuestion(): Question {
     id: `image-calc-${Date.now()}`,
     theme: 'Bildberechnung & Digitalisierung',
     module: 'image-calc',
-    questionText: `Berechne die unkomprimierte Dateigröße eines ${resolution.name}-Bildes (${resolution.width}×${resolution.height} Pixel) mit ${colorDepth} Bit Farbtiefe.`,
+    questionText: `Berechne die unkomprimierte Dateigröße eines ${resolution.name}-Bildes (${resolution.width}×${resolution.height} Pixel) mit ${colorDepth} Bit Farbtiefe. Gib das Ergebnis in ${targetUnit.unit} an.`,
     expectedAnswers: {
       size: formattedResult,
       sizeUnit: targetUnit.unit,
