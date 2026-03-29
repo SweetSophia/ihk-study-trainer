@@ -1,5 +1,38 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import { User } from '../types';
+
+// ---------------------------------------------------------------------------
+// localStorage helpers – used as fallback when Supabase is not configured
+// ---------------------------------------------------------------------------
+
+const LOCAL_PROGRESS_KEY = 'ihk_progress';
+
+interface LocalProgress {
+  module: string;
+  questions_attempted: number;
+  questions_correct: number;
+  streak_days: number;
+  last_session: string | null;
+}
+
+function loadLocalProgress(): LocalProgress[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_PROGRESS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalProgress(data: LocalProgress[]): void {
+  try {
+    localStorage.setItem(LOCAL_PROGRESS_KEY, JSON.stringify(data));
+  } catch {
+    // storage full or unavailable – silently ignore
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 /** Generate a random 12-character alphanumeric hash */
 export function generateAccessHash(): string {
@@ -40,7 +73,7 @@ export async function createUser(hash: string): Promise<User | null> {
       .select()
       .single();
     
-    if (error) {
+    if (error || !data) {
       console.error('Error creating user:', error);
       // Return mock user for dev mode
       return {
@@ -78,7 +111,7 @@ export async function getUserByHash(hash: string): Promise<User | null> {
       .eq('access_hash', hash)
       .single();
     
-    if (error) {
+    if (error || !data) {
       // Return mock user for dev mode or if not found
       return {
         id: 'mock-' + hash.slice(0, 8),
@@ -164,6 +197,31 @@ export async function updateProgress(
   module: string, 
   wasCorrect: boolean
 ) {
+  // --- localStorage fallback when Supabase is not configured ---
+  if (!isSupabaseConfigured) {
+    const all = loadLocalProgress();
+    let entry = all.find(p => p.module === module);
+    if (!entry) {
+      entry = { module, questions_attempted: 0, questions_correct: 0, streak_days: 0, last_session: null };
+      all.push(entry);
+    }
+    entry.questions_attempted += 1;
+    if (wasCorrect) entry.questions_correct += 1;
+
+    // Simple streak: bump if the previous session was on a different calendar day
+    const today = new Date().toDateString();
+    const lastDay = entry.last_session ? new Date(entry.last_session).toDateString() : null;
+    if (lastDay !== today) {
+      entry.streak_days = (entry.streak_days || 0) + 1;
+    }
+
+    entry.last_session = new Date().toISOString();
+
+    saveLocalProgress(all);
+    return entry;
+  }
+
+  // --- Supabase path ---
   try {
     const progress = await getProgress(userId, module);
     
@@ -217,6 +275,11 @@ export async function recordQuestionAttempt(
 
 /** Get all progress for a user */
 export async function getAllProgress(userId: string) {
+  // --- localStorage fallback ---
+  if (!isSupabaseConfigured) {
+    return loadLocalProgress();
+  }
+
   try {
     const { data, error } = await supabase
       .from('progress')

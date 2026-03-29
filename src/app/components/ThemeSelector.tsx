@@ -70,7 +70,7 @@ export default function ThemeSelector({ currentModule, onSelectModule }: ThemeSe
   
   // Desktop: vertical grid cards
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 gap-3">
       {MODULES.map((module, index) => {
         const Icon = module.icon;
         const isActive = currentModule === module.id;

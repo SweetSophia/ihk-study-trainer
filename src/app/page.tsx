@@ -336,11 +336,10 @@ export default function Home() {
       }
     }
 
-    // Update progress
-    updateProgress(user.id, currentQuestion.module, correct);
-
-    // Reload progress
-    loadProgress(user.id);
+    // Update progress, then reload once the write is done
+    updateProgress(user.id, currentQuestion.module, correct).then(() => {
+      loadProgress(user.id);
+    });
 
     return correct;
   }, [currentQuestion, user, loadProgress]);
