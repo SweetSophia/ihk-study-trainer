@@ -44,7 +44,7 @@ import { generateHexQuestion } from './lib/generators/hex';
 import { generateSubnetMaskQuestion } from './lib/generators/subnetMask';
 import { generateAggregationQuestion } from './lib/generators/aggregation';
 import { generatePortQuestion } from './lib/generators/ports';
-import { generateOsiQuestion } from './lib/generators/osi';
+import { generateOsiQuestion, OSI_LAYER_NAMES } from './lib/generators/osi';
 import { generateCableQuestion } from './lib/generators/cables';
 
 /** Parse a numeric string, treating comma as decimal separator (German locale). */
@@ -79,14 +79,14 @@ function validateStructuredAnswer(
   expected: Record<string, string | number | boolean>,
   answers: Record<string, string>
 ): boolean {
-  const convMap = detectConversionMap(inputs[0].unitOptions);
+  const convMap = detectConversionMap(inputs[0].unitOptions ?? []);
 
   if (convMap) {
     // Sum up expected total in base units
     let expectedTotal = 0;
     for (const cfg of inputs) {
       const val = Number(expected[cfg.valueKey]);
-      const unit = String(expected[cfg.unitKey]).toLowerCase();
+      const unit = String(expected[cfg.unitKey ?? '']).toLowerCase();
       const factor = convMap[unit];
       if (factor === undefined) return false;
       expectedTotal += val * factor;
@@ -96,7 +96,7 @@ function validateStructuredAnswer(
     let userTotal = 0;
     for (const cfg of inputs) {
       const val = parseLocaleFloat(answers[cfg.valueKey] || '');
-      const unit = (answers[cfg.unitKey] || '').toLowerCase();
+      const unit = (answers[cfg.unitKey ?? ''] || '').toLowerCase();
       if (isNaN(val) || convMap[unit] === undefined) return false;
       userTotal += val * convMap[unit];
     }
@@ -199,7 +199,19 @@ const GENERATORS: Record<string, () => Question> = {
       questionText: q.questionText,
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
-      difficulty: 'medium'
+      difficulty: 'medium',
+      answerInputs: [
+        {
+          valueKey: 'layer',
+          label: 'Schichtnummer',
+          valueOptions: ['1', '2', '3', '4', '5', '6', '7'],
+        },
+        {
+          valueKey: 'layerName',
+          label: 'Schichtname',
+          valueOptions: Object.values(OSI_LAYER_NAMES),
+        },
+      ],
     };
   },
   cables: () => {
