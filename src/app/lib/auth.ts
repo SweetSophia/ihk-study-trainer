@@ -110,23 +110,20 @@ export async function getUserByHash(hash: string): Promise<User | null> {
   return data ? (data as User) : null;
 }
 
-/** Generate a unique hash and create user (with retry on collision) */
+/** Generate a unique hash and create user (with retry on collision).
+ *  Relies on the atomic INSERT ... ON CONFLICT in create_user_with_hash
+ *  to detect collisions — no separate hashExists pre-check needed.
+ */
 export async function generateUniqueUser(): Promise<{ user: User; hash: string } | null> {
-  let attempts = 0;
   const maxAttempts = 10;
   
-  while (attempts < maxAttempts) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const hash = generateAccessHash();
-    const exists = await hashExists(hash);
-    
-    if (!exists) {
-      const user = await createUser(hash);
-      if (user) {
-        return { user, hash };
-      }
+    const user = await createUser(hash);
+    if (user) {
+      return { user, hash };
     }
-    
-    attempts++;
+    // user is null → hash collision or error; retry with a new hash
   }
   
   console.error('Failed to generate unique hash after', maxAttempts, 'attempts');

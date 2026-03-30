@@ -74,7 +74,8 @@ END;
 $$;
 
 -- Create a new user and return the row as JSON.
--- Handles duplicate hashes gracefully via ON CONFLICT instead of raising.
+-- Returns NULL when the hash already exists (collision) so the caller can
+-- retry with a different hash.  Never returns an existing user's data.
 CREATE OR REPLACE FUNCTION create_user_with_hash(p_hash TEXT)
 RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
@@ -85,13 +86,6 @@ BEGIN
   VALUES (p_hash)
   ON CONFLICT (access_hash) DO NOTHING
   RETURNING row_to_json(users.*) INTO result;
-
-  -- If no row was inserted (hash already existed), return the existing user.
-  IF result IS NULL THEN
-    SELECT row_to_json(u.*) INTO result
-    FROM users u
-    WHERE u.access_hash = p_hash;
-  END IF;
 
   RETURN result;
 END;
