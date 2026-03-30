@@ -121,7 +121,9 @@ function validateStructuredAnswer(
       // Accept any value from the accepted list
       const userAnswer = answers[key]?.trim();
       if (!cfg.acceptedValues.some((v) => v === userAnswer)) return false;
-      acceptedFieldAnswers.push(userAnswer);
+      if (cfg.acceptedValues.length > 1) {
+        acceptedFieldAnswers.push(userAnswer);
+      }
       continue;
     }
 
@@ -253,6 +255,7 @@ const GENERATORS: Record<string, () => Question> = {
           valueKey: 'cableType',
           label: 'Kabeltyp',
           valueOptions: CABLE_TYPES.map(c => c.type),
+          acceptedValues: [String(q.expectedAnswers.cableType)],
         },
         ...reasonInputs,
       ],
@@ -539,4 +542,3 @@ export default function Home() {
     </div>
   );
 }
-

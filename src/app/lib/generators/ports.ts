@@ -70,11 +70,13 @@ export function generatePortQuestion(): PortQuestion {
           valueKey: 'service',
           label: 'Dienst',
           valueOptions: SERVICE_OPTIONS,
+          acceptedValues: [entry.service],
         },
         {
           valueKey: 'protocol',
           label: 'Protokoll',
           valueOptions: PROTOCOL_OPTIONS,
+          acceptedValues: [entry.protocol],
         },
       ],
       solutionSteps: [
@@ -116,6 +118,7 @@ export function generatePortQuestion(): PortQuestion {
           valueKey: 'protocol',
           label: 'Protokoll',
           valueOptions: PROTOCOL_OPTIONS,
+          acceptedValues: [entry.protocol],
         },
       ],
       solutionSteps: [

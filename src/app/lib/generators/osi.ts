@@ -97,11 +97,13 @@ export function generateOsiQuestion(): OsiQuestion {
         valueKey: 'layer',
         label: 'Schichtnummer',
         valueOptions: ['1', '2', '3', '4', '5', '6', '7'],
+        acceptedValues: [String(entry.layer)],
       },
       {
         valueKey: 'layerName',
         label: 'Schichtname',
         valueOptions: Object.values(OSI_LAYER_NAMES),
+        acceptedValues: [layerName],
       },
     ],
     solutionSteps: [
