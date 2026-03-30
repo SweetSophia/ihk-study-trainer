@@ -10,6 +10,8 @@ export interface AnswerInputConfig {
   label?: string;
   /** When present, the value field renders as a dropdown instead of a number input */
   valueOptions?: string[];
+  /** When present, validation accepts any value in this list (order-independent multi-correct) */
+  acceptedValues?: string[];
 }
 
 /** Question interface for all generators */

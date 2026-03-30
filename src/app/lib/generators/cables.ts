@@ -2,11 +2,15 @@ export interface CableQuestion {
   theme: string;
   questionText: string;
   scenario: { distance: number; speed: number; environment: string };
-  expectedAnswers: { cableType: string; reason: string };
+  expectedAnswers: Record<string, string>;
+  /** All pros of the correct cable (used to build acceptedValues) */
+  correctPros: string[];
+  /** Number of reason dropdowns to show (bare minimum: pros.length − 1, at least 1) */
+  reasonCount: number;
   solutionSteps: string[];
 }
 
-const CABLE_TYPES: Array<{ 
+export const CABLE_TYPES: Array<{ 
   type: string; 
   maxSpeed: number; 
   maxDistance: number; 
@@ -72,6 +76,11 @@ const CABLE_TYPES: Array<{
   }
 ];
 
+/** All unique pro/advantage strings across every cable type (pre-computed). */
+export const ALL_CABLE_PROS: string[] = [
+  ...new Set(CABLE_TYPES.flatMap((c) => c.pros)),
+];
+
 const SCENARIOS = [
   { distance: 30, speed: 1000, environment: 'Bürogebäude (Indoor)' },
   { distance: 80, speed: 1000, environment: 'Bürogebäude (Indoor)' },
@@ -89,14 +98,20 @@ export function generateCableQuestion(): CableQuestion {
   // Find best cable type
   const bestCable = findBestCable(scenario.distance, scenario.speed);
   
+  // Build expectedAnswers with one key per bare-minimum reason dropdown
+  const reasonCount = Math.max(1, bestCable.pros.length - 1);
+  const expectedAnswers: Record<string, string> = { cableType: bestCable.type };
+  for (let i = 0; i < reasonCount; i++) {
+    expectedAnswers[`reason${i + 1}`] = bestCable.pros[i];
+  }
+
   return {
     theme: 'Netzwerkarchitektur & Overhead',
-    questionText: `Wähle das passende Kabelmedium für folgendes Szenario:\nEntfernung: ${scenario.distance}m\nGeschwindigkeit: ${scenario.speed >= 1000 ? scenario.speed / 1000 + ' Gbit/s' : scenario.speed + ' Mbit/s'}\nUmgebung: ${scenario.environment}`,
+    questionText: `Wähle das passende Kabelmedium und nenne Vorteile für folgendes Szenario:\nEntfernung: ${scenario.distance}m\nGeschwindigkeit: ${scenario.speed >= 1000 ? scenario.speed / 1000 + ' Gbit/s' : scenario.speed + ' Mbit/s'}\nUmgebung: ${scenario.environment}`,
     scenario: scenario,
-    expectedAnswers: {
-      cableType: bestCable.type,
-      reason: `Maximale Geschwindigkeit ${bestCable.maxSpeed >= 1000 ? bestCable.maxSpeed / 1000 + ' Gbit/s' : bestCable.maxSpeed + ' Mbit/s'}, maximale Distanz ${bestCable.maxDistance}m, geeignet für ${bestCable.environments.join(', ')}`
-    },
+    expectedAnswers,
+    correctPros: bestCable.pros,
+    reasonCount,
     solutionSteps: [
       `Szenario:`,
       `  Entfernung: ${scenario.distance}m`,
