@@ -291,9 +291,9 @@ export default function Home() {
     }
   }, []);
 
-  const loadProgress = useCallback(async (userId: string) => {
+  const loadProgress = useCallback(async (hash: string) => {
     try {
-      const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days: number }[] = await getAllProgress(userId);
+      const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days: number }[] = await getAllProgress(hash);
       setProgress(userProgress);
       
       // Calculate streak (simplified)
@@ -311,15 +311,17 @@ export default function Home() {
         setUser(userData);
         setAccessHash(hash);
         localStorage.setItem('ihk_access_hash', hash);
-        await loadProgress(userData.id);
+        await loadProgress(hash);
         setShowAuthModal(false);
       } else {
-        // Invalid hash
+        // Confirmed not-found (no error, just null data) – invalid hash
         localStorage.removeItem('ihk_access_hash');
         setShowAuthModal(true);
       }
     } catch (error) {
+      // RPC/network error – keep the stored hash so it can retry on next load
       console.error('Login error:', error);
+      setShowAuthModal(true);
     } finally {
       setIsLoading(false);
     }
@@ -362,7 +364,7 @@ export default function Home() {
   };
 
   const handleCheckAnswer = useCallback((answers: Record<string, string>): boolean => {
-    if (!currentQuestion || !user) return false;
+    if (!currentQuestion || !user || !accessHash) return false;
 
     let correct: boolean;
 
@@ -391,12 +393,12 @@ export default function Home() {
     }
 
     // Update progress, then reload once the write is done
-    updateProgress(user.id, currentQuestion.module, correct).then(() => {
-      loadProgress(user.id);
-    });
+    updateProgress(accessHash, currentQuestion.module, correct)
+      .then(() => loadProgress(accessHash))
+      .catch((err) => console.error('Error updating progress:', err));
 
     return correct;
-  }, [currentQuestion, user, loadProgress]);
+  }, [currentQuestion, user, accessHash, loadProgress]);
 
   const handleNextQuestion = () => {
     if (currentModule) {

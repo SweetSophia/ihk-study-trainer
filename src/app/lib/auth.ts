@@ -46,47 +46,23 @@ export function generateAccessHash(): string {
 
 /** Check if a hash already exists in the database */
 export async function hashExists(hash: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
   try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('id')
-      .eq('access_hash', hash)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') {
+    const { data, error } = await supabase.rpc('check_hash_exists', { p_hash: hash });
+    if (error) {
       console.error('Error checking hash:', error);
+      return false;
     }
-    
     return !!data;
   } catch {
-    // Return false if supabase is not configured (dev mode)
     return false;
   }
 }
 
 /** Create a new user with the given hash */
 export async function createUser(hash: string): Promise<User | null> {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .insert([{ access_hash: hash }])
-      .select()
-      .single();
-    
-    if (error || !data) {
-      console.error('Error creating user:', error);
-      // Return mock user for dev mode
-      return {
-        id: 'mock-' + hash.slice(0, 8),
-        access_hash: hash,
-        created_at: new Date().toISOString(),
-        last_login: null
-      };
-    }
-    
-    return data as User;
-  } catch {
-    // Return mock user if supabase is not configured
+  if (!isSupabaseConfigured) {
+    // Return mock user for dev mode
     return {
       id: 'mock-' + hash.slice(0, 8),
       access_hash: hash,
@@ -94,36 +70,28 @@ export async function createUser(hash: string): Promise<User | null> {
       last_login: null
     };
   }
+
+  try {
+    const { data, error } = await supabase.rpc('create_user_with_hash', { p_hash: hash });
+
+    if (error || !data) {
+      console.error('Error creating user:', error);
+      return null;
+    }
+
+    return data as User;
+  } catch (err) {
+    console.error('Error creating user:', err);
+    return null;
+  }
 }
 
-/** Get user by access hash (login) */
+/** Get user by access hash (login).
+ *  Throws on RPC/network errors so callers can distinguish from "not found".
+ */
 export async function getUserByHash(hash: string): Promise<User | null> {
-  try {
-    // Update last_login
-    await supabase
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('access_hash', hash);
-    
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('access_hash', hash)
-      .single();
-    
-    if (error || !data) {
-      // Return mock user for dev mode or if not found
-      return {
-        id: 'mock-' + hash.slice(0, 8),
-        access_hash: hash,
-        created_at: new Date().toISOString(),
-        last_login: new Date().toISOString()
-      };
-    }
-    
-    return data as User;
-  } catch {
-    // Return mock user if supabase is not configured
+  if (!isSupabaseConfigured) {
+    // Return mock user for dev mode
     return {
       id: 'mock-' + hash.slice(0, 8),
       access_hash: hash,
@@ -131,69 +99,42 @@ export async function getUserByHash(hash: string): Promise<User | null> {
       last_login: new Date().toISOString()
     };
   }
+
+  const { data, error } = await supabase.rpc('get_user_by_hash', { p_hash: hash });
+
+  if (error) {
+    throw new Error(`getUserByHash RPC failed: ${error.message}`);
+  }
+
+  // data is null when the hash doesn't exist – legitimate "not found"
+  return data ? (data as User) : null;
 }
 
-/** Generate a unique hash and create user (with retry on collision) */
+/** Generate a unique hash and create user (with retry on collision).
+ *  Relies on the atomic INSERT ... ON CONFLICT in create_user_with_hash
+ *  to detect collisions — no separate hashExists pre-check needed.
+ */
 export async function generateUniqueUser(): Promise<{ user: User; hash: string } | null> {
-  let attempts = 0;
   const maxAttempts = 10;
   
-  while (attempts < maxAttempts) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const hash = generateAccessHash();
-    const exists = await hashExists(hash);
-    
-    if (!exists) {
-      const user = await createUser(hash);
-      if (user) {
-        return { user, hash };
-      }
+    const user = await createUser(hash);
+    if (user) {
+      return { user, hash };
     }
-    
-    attempts++;
+    // user is null → hash collision or error; retry with a new hash
   }
   
   console.error('Failed to generate unique hash after', maxAttempts, 'attempts');
   return null;
 }
 
-/** Get or create progress record for a user and module */
-export async function getProgress(userId: string, module: string) {
-  try {
-    const { data, error } = await supabase
-      .from('progress')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('module', module)
-      .single();
-    
-    if (error && error.code === 'PGRST116') {
-      // No record found, create one
-      const { data: newData, error: createError } = await supabase
-        .from('progress')
-        .insert([{ user_id: userId, module }])
-        .select()
-        .single();
-      
-      if (createError) {
-        return { user_id: userId, module, questions_attempted: 0, questions_correct: 0, streak_days: 0 };
-      }
-      
-      return newData;
-    }
-    
-    if (error) {
-      return { user_id: userId, module, questions_attempted: 0, questions_correct: 0, streak_days: 0 };
-    }
-    
-    return data;
-  } catch {
-    return { user_id: userId, module, questions_attempted: 0, questions_correct: 0, streak_days: 0 };
-  }
-}
-
-/** Update progress for a module */
+/** Update progress for a module.
+ *  @param accessHash - the 12-char access hash identifying the user
+ */
 export async function updateProgress(
-  userId: string, 
+  accessHash: string, 
   module: string, 
   wasCorrect: boolean
 ) {
@@ -209,18 +150,17 @@ export async function updateProgress(
     if (wasCorrect) entry.questions_correct += 1;
 
     // Streak: increment if last session was yesterday, reset to 1 if it was
-    // earlier or missing, leave unchanged if it's the same calendar day.
-    const today = new Date();
-    const todayStr = today.toDateString();
+    // earlier or missing, leave unchanged if it's the same calendar day (UTC).
+    const todayUTC = new Date().toISOString().slice(0, 10);
     if (entry.last_session) {
-      const lastDate = new Date(entry.last_session);
-      const lastStr = lastDate.toDateString();
-      if (lastStr === todayStr) {
+      const lastUTC = new Date(entry.last_session).toISOString().slice(0, 10);
+      if (lastUTC === todayUTC) {
         // Same day – streak stays the same
       } else {
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        if (lastDate.toDateString() === yesterday.toDateString()) {
+        const yesterday = new Date();
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+        const yesterdayUTC = yesterday.toISOString().slice(0, 10);
+        if (lastUTC === yesterdayUTC) {
           entry.streak_days = (entry.streak_days || 0) + 1;
         } else {
           entry.streak_days = 1; // gap detected – reset
@@ -236,75 +176,70 @@ export async function updateProgress(
     return entry;
   }
 
-  // --- Supabase path ---
+  // --- Supabase path – use RPC function ---
   try {
-    const progress = await getProgress(userId, module);
-    
-    if (!progress) return null;
-    
-    const { data, error } = await supabase
-      .from('progress')
-      .update({
-        questions_attempted: (progress.questions_attempted || 0) + 1,
-        questions_correct: (progress.questions_correct || 0) + (wasCorrect ? 1 : 0),
-        last_session: new Date().toISOString()
-      })
-      .eq('id', progress.id)
-      .select()
-      .single();
-    
+    const { data, error } = await supabase.rpc('upsert_progress', {
+      p_hash: accessHash,
+      p_module: module,
+      p_was_correct: wasCorrect
+    });
+
     if (error) {
-      return progress;
+      console.error('Error updating progress:', error);
+      return null;
     }
-    
+
     return data;
-  } catch {
+  } catch (err) {
+    console.error('Error updating progress:', err);
     return null;
   }
 }
 
 /** Record question attempt in history */
 export async function recordQuestionAttempt(
-  userId: string,
+  accessHash: string,
   module: string,
   questionType: string,
   wasCorrect: boolean,
   userAnswer: string,
   correctAnswer: string
 ) {
+  if (!isSupabaseConfigured) return;
   try {
-    await supabase
-      .from('question_history')
-      .insert([{
-        user_id: userId,
-        module,
-        question_type: questionType,
-        was_correct: wasCorrect,
-        user_answer: userAnswer,
-        correct_answer: correctAnswer
-      }]);
-  } catch {
-    // Silently fail in dev mode
+    const { error } = await supabase.rpc('record_question', {
+      p_hash: accessHash,
+      p_module: module,
+      p_question_type: questionType,
+      p_was_correct: wasCorrect,
+      p_user_answer: userAnswer,
+      p_correct_answer: correctAnswer
+    });
+    if (error) {
+      console.error(`record_question RPC failed (hash=${accessHash}, module=${module}, type=${questionType}):`, error);
+    }
+  } catch (err) {
+    console.error(`record_question RPC failed (hash=${accessHash}, module=${module}, type=${questionType}):`, err);
   }
 }
 
-/** Get all progress for a user */
-export async function getAllProgress(userId: string) {
+/** Get all progress for a user.
+ *  @param accessHash - the 12-char access hash identifying the user
+ */
+export async function getAllProgress(accessHash: string) {
   // --- localStorage fallback ---
   if (!isSupabaseConfigured) {
     return loadLocalProgress();
   }
 
   try {
-    const { data, error } = await supabase
-      .from('progress')
-      .select('*')
-      .eq('user_id', userId);
-    
+    const { data, error } = await supabase.rpc('get_all_progress', { p_hash: accessHash });
+
     if (error) {
+      console.error('Error loading progress:', error);
       return [];
     }
-    
+
     return data || [];
   } catch {
     return [];
