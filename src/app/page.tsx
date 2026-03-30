@@ -45,7 +45,7 @@ import { generateSubnetMaskQuestion } from './lib/generators/subnetMask';
 import { generateAggregationQuestion } from './lib/generators/aggregation';
 import { generatePortQuestion } from './lib/generators/ports';
 import { generateOsiQuestion, OSI_LAYER_NAMES } from './lib/generators/osi';
-import { generateCableQuestion } from './lib/generators/cables';
+import { generateCableQuestion, CABLE_TYPES } from './lib/generators/cables';
 
 /** Parse a numeric string, treating comma as decimal separator (German locale). */
 function parseLocaleFloat(raw: string): number {
@@ -108,7 +108,23 @@ function validateStructuredAnswer(
   }
 
   // Fallback: per-field comparison (numeric 5 % tolerance or exact string)
+  // Build a lookup from valueKey → its AnswerInputConfig
+  const configByKey = new Map(inputs.map((cfg) => [cfg.valueKey, cfg]));
+
+  // Collect answers for fields that use acceptedValues (multi-correct)
+  const acceptedFieldAnswers: string[] = [];
+
   for (const [key, exp] of Object.entries(expected)) {
+    const cfg = configByKey.get(key);
+
+    if (cfg?.acceptedValues) {
+      // Accept any value from the accepted list
+      const userAnswer = answers[key]?.trim();
+      if (!cfg.acceptedValues.some((v) => v === userAnswer)) return false;
+      acceptedFieldAnswers.push(userAnswer);
+      continue;
+    }
+
     const userAnswer = answers[key]?.trim().toLowerCase();
     const expectedStr = String(exp).toLowerCase();
     const userNum = parseLocaleFloat(userAnswer);
@@ -120,6 +136,15 @@ function validateStructuredAnswer(
       return false;
     }
   }
+
+  // Prevent duplicate picks among acceptedValues fields
+  if (
+    acceptedFieldAnswers.length > 1 &&
+    new Set(acceptedFieldAnswers).size !== acceptedFieldAnswers.length
+  ) {
+    return false;
+  }
+
   return true;
 }
 
@@ -216,6 +241,19 @@ const GENERATORS: Record<string, () => Question> = {
   },
   cables: () => {
     const q = generateCableQuestion();
+
+    // Collect all unique pros across every cable type for the dropdown options
+    const allPros = [...new Set(CABLE_TYPES.flatMap(c => c.pros))];
+
+    // Build reason inputs: bare minimum = pros.length - 1 (at least 1)
+    const reasonCount = Math.max(1, q.correctPros.length - 1);
+    const reasonInputs = Array.from({ length: reasonCount }, (_, i) => ({
+      valueKey: `reason${i + 1}`,
+      label: `Vorteil ${i + 1}`,
+      valueOptions: allPros,
+      acceptedValues: q.correctPros,
+    }));
+
     return {
       id: `cables-${Date.now()}`,
       theme: q.theme,
@@ -223,7 +261,15 @@ const GENERATORS: Record<string, () => Question> = {
       questionText: q.questionText,
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
-      difficulty: 'medium'
+      difficulty: 'medium',
+      answerInputs: [
+        {
+          valueKey: 'cableType',
+          label: 'Kabeltyp',
+          valueOptions: CABLE_TYPES.map(c => c.type),
+        },
+        ...reasonInputs,
+      ],
     };
   }
 };
