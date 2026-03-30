@@ -314,12 +314,14 @@ export default function Home() {
         await loadProgress(hash);
         setShowAuthModal(false);
       } else {
-        // Invalid hash
+        // Confirmed not-found (no error, just null data) – invalid hash
         localStorage.removeItem('ihk_access_hash');
         setShowAuthModal(true);
       }
     } catch (error) {
+      // RPC/network error – keep the stored hash so it can retry on next load
       console.error('Login error:', error);
+      setShowAuthModal(true);
     } finally {
       setIsLoading(false);
     }
@@ -362,7 +364,7 @@ export default function Home() {
   };
 
   const handleCheckAnswer = useCallback((answers: Record<string, string>): boolean => {
-    if (!currentQuestion || !user) return false;
+    if (!currentQuestion || !user || !accessHash) return false;
 
     let correct: boolean;
 
@@ -391,9 +393,9 @@ export default function Home() {
     }
 
     // Update progress, then reload once the write is done
-    updateProgress(accessHash!, currentQuestion.module, correct).then(() => {
-      loadProgress(accessHash!);
-    });
+    updateProgress(accessHash, currentQuestion.module, correct)
+      .then(() => loadProgress(accessHash))
+      .catch((err) => console.error('Error updating progress:', err));
 
     return correct;
   }, [currentQuestion, user, accessHash, loadProgress]);

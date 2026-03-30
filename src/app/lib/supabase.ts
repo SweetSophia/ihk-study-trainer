@@ -11,11 +11,14 @@ export const isSupabaseConfigured = !!(supabaseUrl && supabaseKey);
 // The `rpc` mock is also thenable so `await supabase.rpc(...)` resolves.
 const createMockClient = () => {
   const result = { data: null, error: null };
+
+  // Shared thenable handler – used by both chainable queries and rpc()
+  const thenHandler = (resolve: (v: unknown) => void) => resolve(result);
+
   const chainable: Record<string, unknown> = {};
   for (const m of ['select','insert','update','upsert','delete','eq','neq','gt','lt','gte','lte','like','ilike','is','in','order','limit','range','single','maybeSingle','csv','then']) {
     if (m === 'then') {
-      // Make the object thenable so `await` resolves to result
-      chainable[m] = (resolve: (v: unknown) => void) => resolve(result);
+      chainable[m] = thenHandler;
     } else {
       chainable[m] = () => chainable;
     }
@@ -24,7 +27,7 @@ const createMockClient = () => {
   // rpc mock returns a thenable object so `await supabase.rpc(...)` works
   const rpcResult = {
     ...result,
-    then: (resolve: (v: unknown) => void) => resolve(result),
+    then: thenHandler,
   };
 
   return {

@@ -73,7 +73,8 @@ BEGIN
 END;
 $$;
 
--- Create a new user and return the row as JSON
+-- Create a new user and return the row as JSON.
+-- Handles duplicate hashes gracefully via ON CONFLICT instead of raising.
 CREATE OR REPLACE FUNCTION create_user_with_hash(p_hash TEXT)
 RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
@@ -82,20 +83,32 @@ DECLARE
 BEGIN
   INSERT INTO users (access_hash)
   VALUES (p_hash)
+  ON CONFLICT (access_hash) DO NOTHING
   RETURNING row_to_json(users.*) INTO result;
+
+  -- If no row was inserted (hash already existed), return the existing user.
+  IF result IS NULL THEN
+    SELECT row_to_json(u.*) INTO result
+    FROM users u
+    WHERE u.access_hash = p_hash;
+  END IF;
+
   RETURN result;
 END;
 $$;
 
--- Look up a user by hash, update last_login, return JSON
+-- Look up a user by hash, update last_login, return JSON.
+-- Only touches the row when the user actually exists.
 CREATE OR REPLACE FUNCTION get_user_by_hash(p_hash TEXT)
 RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
   result JSON;
 BEGIN
-  UPDATE users SET last_login = NOW() WHERE access_hash = p_hash;
-  SELECT row_to_json(u.*) INTO result FROM users u WHERE u.access_hash = p_hash;
+  UPDATE users SET last_login = NOW()
+  WHERE access_hash = p_hash
+  RETURNING row_to_json(users.*) INTO result;
+
   RETURN result;
 END;
 $$;
@@ -122,6 +135,7 @@ RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
   v_user_id UUID;
+  v_today DATE := (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date;
   result JSON;
 BEGIN
   SELECT id INTO v_user_id FROM users WHERE access_hash = p_hash;
@@ -141,8 +155,8 @@ BEGIN
     questions_correct   = progress.questions_correct + CASE WHEN p_was_correct THEN 1 ELSE 0 END,
     streak_days         = CASE
                             WHEN progress.last_session IS NULL THEN 1
-                            WHEN (progress.last_session AT TIME ZONE 'UTC')::date = CURRENT_DATE THEN progress.streak_days
-                            WHEN (progress.last_session AT TIME ZONE 'UTC')::date = CURRENT_DATE - 1 THEN progress.streak_days + 1
+                            WHEN (progress.last_session AT TIME ZONE 'UTC')::date = v_today THEN progress.streak_days
+                            WHEN (progress.last_session AT TIME ZONE 'UTC')::date = v_today - 1 THEN progress.streak_days + 1
                             ELSE 1
                           END,
     last_session        = NOW()

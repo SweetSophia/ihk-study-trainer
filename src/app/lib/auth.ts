@@ -86,7 +86,9 @@ export async function createUser(hash: string): Promise<User | null> {
   }
 }
 
-/** Get user by access hash (login) */
+/** Get user by access hash (login).
+ *  Throws on RPC/network errors so callers can distinguish from "not found".
+ */
 export async function getUserByHash(hash: string): Promise<User | null> {
   if (!isSupabaseConfigured) {
     // Return mock user for dev mode
@@ -98,19 +100,14 @@ export async function getUserByHash(hash: string): Promise<User | null> {
     };
   }
 
-  try {
-    const { data, error } = await supabase.rpc('get_user_by_hash', { p_hash: hash });
+  const { data, error } = await supabase.rpc('get_user_by_hash', { p_hash: hash });
 
-    if (error || !data) {
-      if (error) console.error('Error getting user by hash:', error);
-      return null;
-    }
-
-    return data as User;
-  } catch (err) {
-    console.error('Error getting user by hash:', err);
-    return null;
+  if (error) {
+    throw new Error(`getUserByHash RPC failed: ${error.message}`);
   }
+
+  // data is null when the hash doesn't exist – legitimate "not found"
+  return data ? (data as User) : null;
 }
 
 /** Generate a unique hash and create user (with retry on collision) */
@@ -156,18 +153,17 @@ export async function updateProgress(
     if (wasCorrect) entry.questions_correct += 1;
 
     // Streak: increment if last session was yesterday, reset to 1 if it was
-    // earlier or missing, leave unchanged if it's the same calendar day.
-    const today = new Date();
-    const todayStr = today.toDateString();
+    // earlier or missing, leave unchanged if it's the same calendar day (UTC).
+    const todayUTC = new Date().toISOString().slice(0, 10);
     if (entry.last_session) {
-      const lastDate = new Date(entry.last_session);
-      const lastStr = lastDate.toDateString();
-      if (lastStr === todayStr) {
+      const lastUTC = new Date(entry.last_session).toISOString().slice(0, 10);
+      if (lastUTC === todayUTC) {
         // Same day – streak stays the same
       } else {
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        if (lastDate.toDateString() === yesterday.toDateString()) {
+        const yesterday = new Date();
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+        const yesterdayUTC = yesterday.toISOString().slice(0, 10);
+        if (lastUTC === yesterdayUTC) {
           entry.streak_days = (entry.streak_days || 0) + 1;
         } else {
           entry.streak_days = 1; // gap detected – reset
@@ -214,7 +210,7 @@ export async function recordQuestionAttempt(
 ) {
   if (!isSupabaseConfigured) return;
   try {
-    await supabase.rpc('record_question', {
+    const { error } = await supabase.rpc('record_question', {
       p_hash: accessHash,
       p_module: module,
       p_question_type: questionType,
@@ -222,8 +218,11 @@ export async function recordQuestionAttempt(
       p_user_answer: userAnswer,
       p_correct_answer: correctAnswer
     });
-  } catch {
-    // Silently fail in dev mode
+    if (error) {
+      console.error(`record_question RPC failed (hash=${accessHash}, module=${module}, type=${questionType}):`, error);
+    }
+  } catch (err) {
+    console.error(`record_question RPC failed (hash=${accessHash}, module=${module}, type=${questionType}):`, err);
   }
 }
 
