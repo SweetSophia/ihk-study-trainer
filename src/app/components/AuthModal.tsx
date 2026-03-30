@@ -48,18 +48,20 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
   };
 
   const handleLogin = async () => {
-    if (!inputHash.trim() || inputHash.length !== 12) {
+    const trimmedHash = inputHash.trim();
+
+    if (!trimmedHash || trimmedHash.length !== 12) {
       setError('Bitte gib einen gültigen 12-stelligen Code ein.');
       return;
     }
     setError('');
     setLoading(true);
     try {
-      const result = await onLogin(inputHash.trim());
+      const result = await onLogin(trimmedHash);
       if (!result.success && result.error) {
         setError(result.error);
       }
-    } catch (err) {
+    } catch {
       setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
     } finally {
       setLoading(false);
@@ -74,7 +76,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
       if (!result.success && result.error) {
         setError(result.error);
       }
-    } catch (err) {
+    } catch {
       setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
     } finally {
       setLoading(false);
@@ -228,14 +230,17 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                   <input
                     type="text"
                     value={inputHash}
-                    onChange={(e) => setInputHash(e.target.value.toUpperCase())}
+                    onChange={(e) => setInputHash(e.target.value)}
                     maxLength={12}
                     disabled={loading}
                     placeholder="XXXXXXXXXXXX"
-                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono text-lg tracking-wider uppercase placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all disabled:opacity-50"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono text-lg tracking-wider placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all disabled:opacity-50"
                   />
                   <p className="mt-2 text-xs text-slate-500">
-                    12-stelliger alphanumerischer Code
+                    12-stelliger alphanumerischer Code – Groß-/Kleinschreibung beachten
                   </p>
                 </div>
 
