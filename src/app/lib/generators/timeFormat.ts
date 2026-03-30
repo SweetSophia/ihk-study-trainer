@@ -8,9 +8,11 @@ export const UNIT_STUNDEN = TIME_UNITS[2];
  *  For the total, use `value` (in the unit given by `unit`). */
 export interface IHKTimeResult {
   display: string;
-  /** Decimal value in the primary unit (hours, minutes, or seconds). */
+  /** Decimal value in the primary unit (hours, minutes, or seconds), based on the rounded total seconds. */
   value: number;
   unit: string;
+  /** Total transfer time in whole seconds after adding overhead and rounding once. */
+  roundedSeconds: number;
   hours?: number;
   minutes?: number;
   /** Component seconds (0-59). Always the remainder after extracting
@@ -24,8 +26,8 @@ export interface IHKTimeResult {
  * - If >= 60 seconds, convert to minutes (60-system).
  * - If >= 60 minutes, convert to hours and minutes.
  *
- * Component fields (hours, minutes, seconds) are always remainder values
- * derived from integer division / modulo of the total rounded seconds.
+ * `value` and the component fields are both derived from the same rounded
+ * total seconds so the decimal value matches the displayed 60-system breakdown.
  */
 export function formatIHKTime(totalSeconds: number): IHKTimeResult {
   // Apply 10% overhead (adds to time)
@@ -39,8 +41,9 @@ export function formatIHKTime(totalSeconds: number): IHKTimeResult {
     const remainingSeconds = roundedSeconds % 60;
     return {
       display: `${hours} Stunde(n) ${remainingMinutes} Minute(n)`,
-      value: Number((effectiveSeconds / 3600).toFixed(2)),
+      value: Number((roundedSeconds / 3600).toFixed(2)),
       unit: 'Stunden',
+      roundedSeconds,
       hours,
       minutes: remainingMinutes,
       seconds: remainingSeconds,
@@ -51,8 +54,9 @@ export function formatIHKTime(totalSeconds: number): IHKTimeResult {
     const remainingSeconds = roundedSeconds % 60;
     return {
       display: `${minutes} Minute(n) ${remainingSeconds} Sekunde(n)`,
-      value: Number((effectiveSeconds / 60).toFixed(2)),
+      value: Number((roundedSeconds / 60).toFixed(2)),
       unit: 'Minuten',
+      roundedSeconds,
       minutes,
       seconds: remainingSeconds,
     };
@@ -62,6 +66,7 @@ export function formatIHKTime(totalSeconds: number): IHKTimeResult {
       display: `${roundedSeconds} Sekunde(n)`,
       value: roundedSeconds,
       unit: 'Sekunden',
+      roundedSeconds,
       seconds: roundedSeconds,
     };
   }

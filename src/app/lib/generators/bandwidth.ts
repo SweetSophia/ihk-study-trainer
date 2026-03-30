@@ -25,6 +25,7 @@ export function generateBandwidthQuestion(): Question {
   const overheadMbit = fileSizeMbit * 0.10;
   const effectiveMbit = fileSizeMbit + overheadMbit;
   const effectiveTimeSeconds = effectiveMbit / bandwidth;
+  const roundedEffectiveSeconds = timeResult.roundedSeconds;
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
     fileSizeGB > 20 || bandwidth < 50 ? 'hard' :
@@ -56,8 +57,9 @@ export function generateBandwidthQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In Stunden und Minuten umrechnen (60-System)`,
-      `  Stunden = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
-      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.hours} × 3600)`,
+      `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
+      `  Stunden = ⌊${roundedEffectiveSeconds} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.hours} × 3600) = ${roundedEffectiveSeconds - (timeResult.hours * 3600)} s`,
       `  Minuten = ⌊Restsekunden ÷ 60⌋ = ${timeResult.minutes} Minuten`,
       `  Ergebnis: ${timeResult.hours} Stunde(n) ${timeResult.minutes} Minute(n)`
     );
@@ -65,8 +67,9 @@ export function generateBandwidthQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In Minuten und Sekunden umrechnen (60-System)`,
-      `  Minuten = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
-      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.minutes} × 60)`,
+      `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
+      `  Minuten = ⌊${roundedEffectiveSeconds} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.minutes} × 60) = ${roundedEffectiveSeconds - (timeResult.minutes * 60)} s`,
       `  Sekunden = ⌊Restsekunden⌋ = ${timeResult.seconds} Sekunden`,
       `  Ergebnis: ${timeResult.minutes} Minute(n) ${timeResult.seconds} Sekunde(n)`
     );

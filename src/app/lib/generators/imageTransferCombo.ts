@@ -47,6 +47,7 @@ export function generateImageTransferComboQuestion(): Question {
   const overheadBytes = totalBytes * 0.10;
   const effectiveBytes = totalBytes + overheadBytes;
   const effectiveTimeSeconds = (effectiveBytes * 8) / bandwidthBps;
+  const roundedEffectiveSeconds = timeResult.roundedSeconds;
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
     resolution.width >= 3840 || bandwidthValue <= 250 ? 'hard' :
@@ -91,8 +92,9 @@ export function generateImageTransferComboQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 7: In Stunden und Minuten umrechnen (60-System)`,
-      `  Stunden = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
-      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.hours} × 3600)`,
+      `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
+      `  Stunden = ⌊${roundedEffectiveSeconds} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.hours} × 3600) = ${roundedEffectiveSeconds - (timeResult.hours * 3600)} s`,
       `  Minuten = ⌊Restsekunden ÷ 60⌋ = ${timeResult.minutes} Minuten`,
       `  Ergebnis: ${timeResult.hours} Stunde(n) ${timeResult.minutes} Minute(n)`
     );
@@ -100,8 +102,9 @@ export function generateImageTransferComboQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 7: In Minuten und Sekunden umrechnen (60-System)`,
-      `  Minuten = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
-      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.minutes} × 60)`,
+      `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
+      `  Minuten = ⌊${roundedEffectiveSeconds} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.minutes} × 60) = ${roundedEffectiveSeconds - (timeResult.minutes * 60)} s`,
       `  Sekunden = ⌊Restsekunden⌋ = ${timeResult.seconds} Sekunden`,
       `  Ergebnis: ${timeResult.minutes} Minute(n) ${timeResult.seconds} Sekunde(n)`
     );
