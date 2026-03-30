@@ -1,9 +1,5 @@
 import { Question } from '../../types';
-
-const TIME_UNITS = ['Sekunden', 'Minuten', 'Stunden'];
-const UNIT_SEKUNDEN = TIME_UNITS[0];
-const UNIT_MINUTEN = TIME_UNITS[1];
-const UNIT_STUNDEN = TIME_UNITS[2];
+import { formatIHKTime, TIME_UNITS, UNIT_SEKUNDEN, UNIT_MINUTEN, UNIT_STUNDEN } from './timeFormat';
 
 const resolutions = [
   { name: 'Full HD', width: 1920, height: 1080 },
@@ -21,56 +17,6 @@ const bandwidthUnits = [
   { unit: 'Mbit/s', multiplier: 1000 * 1000 },
   { unit: 'Gbit/s', multiplier: 1000 * 1000 * 1000 }
 ];
-
-/**
- * Formats time according to IHK 60-system rules:
- * - If >= 60 seconds, convert to minutes (60-system)
- * - If >= 60 minutes, convert to hours and minutes
- */
-function formatIHKTime(totalSeconds: number): { 
-  display: string; 
-  value: number; 
-  unit: string;
-  hours?: number;
-  minutes?: number;
-  seconds?: number;
-} {
-  // Apply 10% overhead deduction
-  const effectiveSeconds = totalSeconds * 1.10;
-  
-  if (effectiveSeconds >= 3600) {
-    // Convert to hours with minutes (60-system)
-    const hours = Math.floor(effectiveSeconds / 3600);
-    const remainingMinutes = Math.round((effectiveSeconds % 3600) / 60);
-    return {
-      display: `${hours} Stunde(n) ${remainingMinutes} Minute(n)`,
-      value: Number((effectiveSeconds / 3600).toFixed(2)),
-      unit: 'Stunden',
-      hours,
-      minutes: remainingMinutes,
-      seconds: Math.round(effectiveSeconds)
-    };
-  } else if (effectiveSeconds >= 60) {
-    // Convert to minutes with seconds (60-system)
-    const minutes = Math.floor(effectiveSeconds / 60);
-    const remainingSeconds = Math.round(effectiveSeconds % 60);
-    return {
-      display: `${minutes} Minute(n) ${remainingSeconds} Sekunde(n)`,
-      value: Number((effectiveSeconds / 60).toFixed(2)),
-      unit: 'Minuten',
-      minutes,
-      seconds: remainingSeconds
-    };
-  } else {
-    // Keep as seconds
-    return {
-      display: `${Math.round(effectiveSeconds)} Sekunde(n)`,
-      value: Math.round(effectiveSeconds),
-      unit: 'Sekunden',
-      seconds: Math.round(effectiveSeconds)
-    };
-  }
-}
 
 export function generateImageTransferComboQuestion(): Question {
   // Random resolution and color depth
@@ -101,6 +47,7 @@ export function generateImageTransferComboQuestion(): Question {
   const overheadBytes = totalBytes * 0.10;
   const effectiveBytes = totalBytes + overheadBytes;
   const effectiveTimeSeconds = (effectiveBytes * 8) / bandwidthBps;
+  const roundedEffectiveSeconds = timeResult.roundedSeconds;
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
     resolution.width >= 3840 || bandwidthValue <= 250 ? 'hard' :
@@ -145,8 +92,9 @@ export function generateImageTransferComboQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 7: In Stunden und Minuten umrechnen (60-System)`,
-      `  Stunden = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
-      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.hours} × 3600)`,
+      `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
+      `  Stunden = ⌊${roundedEffectiveSeconds} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.hours} × 3600) = ${roundedEffectiveSeconds - (timeResult.hours * 3600)} s`,
       `  Minuten = ⌊Restsekunden ÷ 60⌋ = ${timeResult.minutes} Minuten`,
       `  Ergebnis: ${timeResult.hours} Stunde(n) ${timeResult.minutes} Minute(n)`
     );
@@ -154,8 +102,9 @@ export function generateImageTransferComboQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 7: In Minuten und Sekunden umrechnen (60-System)`,
-      `  Minuten = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
-      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.minutes} × 60)`,
+      `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
+      `  Minuten = ⌊${roundedEffectiveSeconds} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.minutes} × 60) = ${roundedEffectiveSeconds - (timeResult.minutes * 60)} s`,
       `  Sekunden = ⌊Restsekunden⌋ = ${timeResult.seconds} Sekunden`,
       `  Ergebnis: ${timeResult.minutes} Minute(n) ${timeResult.seconds} Sekunde(n)`
     );

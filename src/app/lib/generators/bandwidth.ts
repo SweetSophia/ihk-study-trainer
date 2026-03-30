@@ -1,60 +1,5 @@
 import { Question } from '../../types';
-
-const TIME_UNITS = ['Sekunden', 'Minuten', 'Stunden'];
-const UNIT_SEKUNDEN = TIME_UNITS[0];
-const UNIT_MINUTEN = TIME_UNITS[1];
-const UNIT_STUNDEN = TIME_UNITS[2];
-
-/**
- * Formats time according to IHK 60-system rules:
- * - If >= 60 seconds, convert to minutes (60-system)
- * - If >= 60 minutes, convert to hours and minutes
- * - 10% overhead is deducted from transfer time
- */
-function formatIHKTime(totalSeconds: number): { 
-  display: string; 
-  value: number; 
-  unit: string;
-  hours?: number;
-  minutes?: number;
-  seconds?: number;
-} {
-  // Apply 10% overhead deduction (adds to time)
-  const effectiveSeconds = totalSeconds * 1.10;
-  
-  if (effectiveSeconds >= 3600) {
-    // Convert to hours with minutes (60-system)
-    const hours = Math.floor(effectiveSeconds / 3600);
-    const remainingMinutes = Math.round((effectiveSeconds % 3600) / 60);
-    return {
-      display: `${hours} Stunde(n) ${remainingMinutes} Minute(n)`,
-      value: Number((effectiveSeconds / 3600).toFixed(2)),
-      unit: 'Stunden',
-      hours,
-      minutes: remainingMinutes,
-      seconds: Math.round(effectiveSeconds)
-    };
-  } else if (effectiveSeconds >= 60) {
-    // Convert to minutes with seconds (60-system)
-    const minutes = Math.floor(effectiveSeconds / 60);
-    const remainingSeconds = Math.round(effectiveSeconds % 60);
-    return {
-      display: `${minutes} Minute(n) ${remainingSeconds} Sekunde(n)`,
-      value: Number((effectiveSeconds / 60).toFixed(2)),
-      unit: 'Minuten',
-      minutes,
-      seconds: remainingSeconds
-    };
-  } else {
-    // Keep as seconds
-    return {
-      display: `${Math.round(effectiveSeconds)} Sekunde(n)`,
-      value: Math.round(effectiveSeconds),
-      unit: 'Sekunden',
-      seconds: Math.round(effectiveSeconds)
-    };
-  }
-}
+import { formatIHKTime, TIME_UNITS, UNIT_SEKUNDEN, UNIT_MINUTEN, UNIT_STUNDEN } from './timeFormat';
 
 export function generateBandwidthQuestion(): Question {
   // Random file size between 1 and 50 GB (using decimal 1000-based)
@@ -80,6 +25,7 @@ export function generateBandwidthQuestion(): Question {
   const overheadMbit = fileSizeMbit * 0.10;
   const effectiveMbit = fileSizeMbit + overheadMbit;
   const effectiveTimeSeconds = effectiveMbit / bandwidth;
+  const roundedEffectiveSeconds = timeResult.roundedSeconds;
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
     fileSizeGB > 20 || bandwidth < 50 ? 'hard' :
@@ -111,8 +57,9 @@ export function generateBandwidthQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In Stunden und Minuten umrechnen (60-System)`,
-      `  Stunden = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
-      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.hours} × 3600)`,
+      `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
+      `  Stunden = ⌊${roundedEffectiveSeconds} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.hours} × 3600) = ${roundedEffectiveSeconds - (timeResult.hours * 3600)} s`,
       `  Minuten = ⌊Restsekunden ÷ 60⌋ = ${timeResult.minutes} Minuten`,
       `  Ergebnis: ${timeResult.hours} Stunde(n) ${timeResult.minutes} Minute(n)`
     );
@@ -120,8 +67,9 @@ export function generateBandwidthQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In Minuten und Sekunden umrechnen (60-System)`,
-      `  Minuten = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
-      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.minutes} × 60)`,
+      `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
+      `  Minuten = ⌊${roundedEffectiveSeconds} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.minutes} × 60) = ${roundedEffectiveSeconds - (timeResult.minutes * 60)} s`,
       `  Sekunden = ⌊Restsekunden⌋ = ${timeResult.seconds} Sekunden`,
       `  Ergebnis: ${timeResult.minutes} Minute(n) ${timeResult.seconds} Sekunde(n)`
     );
