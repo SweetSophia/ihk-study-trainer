@@ -1,9 +1,5 @@
 import { Question } from '../../types';
-
-const TIME_UNITS = ['Sekunden', 'Minuten', 'Stunden'];
-const UNIT_SEKUNDEN = TIME_UNITS[0];
-const UNIT_MINUTEN = TIME_UNITS[1];
-const UNIT_STUNDEN = TIME_UNITS[2];
+import { formatIHKTime, TIME_UNITS, UNIT_SEKUNDEN, UNIT_MINUTEN, UNIT_STUNDEN } from './timeFormat';
 
 const resolutions = [
   { name: 'Full HD', width: 1920, height: 1080 },
@@ -21,57 +17,6 @@ const bandwidthUnits = [
   { unit: 'Mbit/s', multiplier: 1000 * 1000 },
   { unit: 'Gbit/s', multiplier: 1000 * 1000 * 1000 }
 ];
-
-/**
- * Formats time according to IHK 60-system rules:
- * - If >= 60 seconds, convert to minutes (60-system)
- * - If >= 60 minutes, convert to hours and minutes
- */
-function formatIHKTime(totalSeconds: number): { 
-  display: string; 
-  value: number; 
-  unit: string;
-  hours?: number;
-  minutes?: number;
-  seconds?: number;
-} {
-  // Apply 10% overhead deduction
-  const effectiveSeconds = totalSeconds * 1.10;
-  const roundedSeconds = Math.round(effectiveSeconds);
-  
-  if (roundedSeconds >= 3600) {
-    // Convert to hours with minutes (60-system)
-    const hours = Math.floor(roundedSeconds / 3600);
-    const remainingMinutes = Math.floor((roundedSeconds % 3600) / 60);
-    return {
-      display: `${hours} Stunde(n) ${remainingMinutes} Minute(n)`,
-      value: Number((effectiveSeconds / 3600).toFixed(2)),
-      unit: 'Stunden',
-      hours,
-      minutes: remainingMinutes,
-      seconds: roundedSeconds
-    };
-  } else if (roundedSeconds >= 60) {
-    // Convert to minutes with seconds (60-system)
-    const minutes = Math.floor(roundedSeconds / 60);
-    const remainingSeconds = roundedSeconds % 60;
-    return {
-      display: `${minutes} Minute(n) ${remainingSeconds} Sekunde(n)`,
-      value: Number((effectiveSeconds / 60).toFixed(2)),
-      unit: 'Minuten',
-      minutes,
-      seconds: remainingSeconds
-    };
-  } else {
-    // Keep as seconds
-    return {
-      display: `${roundedSeconds} Sekunde(n)`,
-      value: roundedSeconds,
-      unit: 'Sekunden',
-      seconds: roundedSeconds
-    };
-  }
-}
 
 export function generateImageTransferComboQuestion(): Question {
   // Random resolution and color depth
