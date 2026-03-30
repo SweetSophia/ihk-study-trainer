@@ -102,11 +102,13 @@ export async function getUserByHash(hash: string): Promise<User | null> {
     const { data, error } = await supabase.rpc('get_user_by_hash', { p_hash: hash });
 
     if (error || !data) {
+      if (error) console.error('Error getting user by hash:', error);
       return null;
     }
 
     return data as User;
-  } catch {
+  } catch (err) {
+    console.error('Error getting user by hash:', err);
     return null;
   }
 }
