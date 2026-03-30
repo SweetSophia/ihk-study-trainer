@@ -67,7 +67,7 @@ ALTER TABLE question_history ENABLE ROW LEVEL SECURITY;
 -- Check whether a hash already exists
 CREATE OR REPLACE FUNCTION check_hash_exists(p_hash TEXT)
 RETURNS BOOLEAN
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 BEGIN
   RETURN EXISTS(SELECT 1 FROM users WHERE access_hash = p_hash);
 END;
@@ -76,7 +76,7 @@ $$;
 -- Create a new user and return the row as JSON
 CREATE OR REPLACE FUNCTION create_user_with_hash(p_hash TEXT)
 RETURNS JSON
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
   result JSON;
 BEGIN
@@ -90,7 +90,7 @@ $$;
 -- Look up a user by hash, update last_login, return JSON
 CREATE OR REPLACE FUNCTION get_user_by_hash(p_hash TEXT)
 RETURNS JSON
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
   result JSON;
 BEGIN
@@ -103,7 +103,7 @@ $$;
 -- Return all progress rows for the user identified by hash
 CREATE OR REPLACE FUNCTION get_all_progress(p_hash TEXT)
 RETURNS JSON
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 BEGIN
   RETURN (
     SELECT COALESCE(json_agg(p.*), '[]'::json)
@@ -114,51 +114,39 @@ BEGIN
 END;
 $$;
 
--- Upsert a progress row: increment counters, recalculate streak, return JSON
+-- Upsert a progress row: atomically increment counters, recalculate streak,
+-- return the resulting JSON.  Uses INSERT ... ON CONFLICT to avoid race
+-- conditions from concurrent requests (double-clicks, multi-tab, retries).
 CREATE OR REPLACE FUNCTION upsert_progress(p_hash TEXT, p_module TEXT, p_was_correct BOOLEAN)
 RETURNS JSON
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
   v_user_id UUID;
-  v_progress progress%ROWTYPE;
-  v_new_streak INTEGER;
   result JSON;
 BEGIN
   SELECT id INTO v_user_id FROM users WHERE access_hash = p_hash;
   IF v_user_id IS NULL THEN RETURN NULL; END IF;
 
-  SELECT * INTO v_progress FROM progress
-    WHERE user_id = v_user_id AND module = p_module;
-
-  IF v_progress IS NULL THEN
-    -- First attempt in this module
-    INSERT INTO progress (user_id, module, questions_attempted, questions_correct, streak_days, last_session)
-    VALUES (
-      v_user_id, p_module, 1,
-      CASE WHEN p_was_correct THEN 1 ELSE 0 END,
-      1, NOW()
-    )
-    RETURNING row_to_json(progress.*) INTO result;
-  ELSE
-    -- Streak calculation
-    IF v_progress.last_session IS NULL THEN
-      v_new_streak := 1;
-    ELSIF (v_progress.last_session AT TIME ZONE 'UTC')::date = CURRENT_DATE THEN
-      v_new_streak := v_progress.streak_days;            -- same day
-    ELSIF (v_progress.last_session AT TIME ZONE 'UTC')::date = CURRENT_DATE - 1 THEN
-      v_new_streak := v_progress.streak_days + 1;        -- consecutive day
-    ELSE
-      v_new_streak := 1;                                 -- gap detected
-    END IF;
-
-    UPDATE progress SET
-      questions_attempted = v_progress.questions_attempted + 1,
-      questions_correct   = v_progress.questions_correct + CASE WHEN p_was_correct THEN 1 ELSE 0 END,
-      streak_days         = v_new_streak,
-      last_session        = NOW()
-    WHERE id = v_progress.id
-    RETURNING row_to_json(progress.*) INTO result;
-  END IF;
+  INSERT INTO progress (user_id, module, questions_attempted, questions_correct, streak_days, last_session)
+  VALUES (
+    v_user_id,
+    p_module,
+    1,
+    CASE WHEN p_was_correct THEN 1 ELSE 0 END,
+    1,
+    NOW()
+  )
+  ON CONFLICT (user_id, module) DO UPDATE SET
+    questions_attempted = progress.questions_attempted + 1,
+    questions_correct   = progress.questions_correct + CASE WHEN p_was_correct THEN 1 ELSE 0 END,
+    streak_days         = CASE
+                            WHEN progress.last_session IS NULL THEN 1
+                            WHEN (progress.last_session AT TIME ZONE 'UTC')::date = CURRENT_DATE THEN progress.streak_days
+                            WHEN (progress.last_session AT TIME ZONE 'UTC')::date = CURRENT_DATE - 1 THEN progress.streak_days + 1
+                            ELSE 1
+                          END,
+    last_session        = NOW()
+  RETURNING row_to_json(progress.*) INTO result;
 
   RETURN result;
 END;
@@ -170,7 +158,7 @@ CREATE OR REPLACE FUNCTION record_question(
   p_was_correct BOOLEAN, p_user_answer TEXT, p_correct_answer TEXT
 )
 RETURNS VOID
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
   v_user_id UUID;
 BEGIN
