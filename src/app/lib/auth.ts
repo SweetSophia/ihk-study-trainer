@@ -59,7 +59,10 @@ export async function hashExists(hash: string): Promise<boolean> {
   }
 }
 
-/** Create a new user with the given hash */
+/** Create a new user with the given hash.
+ *  Returns null on hash collision (expected, caller should retry with a new hash).
+ *  Throws on RPC/network errors so callers can abort early instead of retrying.
+ */
 export async function createUser(hash: string): Promise<User | null> {
   if (!isSupabaseConfigured) {
     // Return mock user for dev mode
@@ -71,19 +74,14 @@ export async function createUser(hash: string): Promise<User | null> {
     };
   }
 
-  try {
-    const { data, error } = await supabase.rpc('create_user_with_hash', { p_hash: hash });
+  const { data, error } = await supabase.rpc('create_user_with_hash', { p_hash: hash });
 
-    if (error || !data) {
-      console.error('Error creating user:', error);
-      return null;
-    }
-
-    return data as User;
-  } catch (err) {
-    console.error('Error creating user:', err);
-    return null;
+  if (error) {
+    throw new Error(`createUser RPC failed: ${error.message}`);
   }
+
+  // data is null when the hash already exists – legitimate collision
+  return data ? (data as User) : null;
 }
 
 /** Get user by access hash (login).
@@ -113,17 +111,19 @@ export async function getUserByHash(hash: string): Promise<User | null> {
 /** Generate a unique hash and create user (with retry on collision).
  *  Relies on the atomic INSERT ... ON CONFLICT in create_user_with_hash
  *  to detect collisions — no separate hashExists pre-check needed.
+ *  Throws if createUser() fails with an RPC/network error (so the caller
+ *  surfaces a single failure instead of 10 pointless retries).
  */
 export async function generateUniqueUser(): Promise<{ user: User; hash: string } | null> {
   const maxAttempts = 10;
   
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const hash = generateAccessHash();
-    const user = await createUser(hash);
+    const user = await createUser(hash); // throws on RPC error; propagate immediately
     if (user) {
       return { user, hash };
     }
-    // user is null → hash collision or error; retry with a new hash
+    // user is null → hash collision; retry with a new hash
   }
   
   console.error('Failed to generate unique hash after', maxAttempts, 'attempts');

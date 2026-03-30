@@ -72,6 +72,8 @@ BEGIN
   RETURN EXISTS(SELECT 1 FROM users WHERE access_hash = p_hash);
 END;
 $$;
+REVOKE ALL ON FUNCTION check_hash_exists(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION check_hash_exists(TEXT) TO anon, authenticated;
 
 -- Create a new user and return the row as JSON.
 -- Returns NULL when the hash already exists (collision) so the caller can
@@ -90,6 +92,8 @@ BEGIN
   RETURN result;
 END;
 $$;
+REVOKE ALL ON FUNCTION create_user_with_hash(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION create_user_with_hash(TEXT) TO anon, authenticated;
 
 -- Look up a user by hash, update last_login, return JSON.
 -- Only touches the row when the user actually exists.
@@ -106,6 +110,8 @@ BEGIN
   RETURN result;
 END;
 $$;
+REVOKE ALL ON FUNCTION get_user_by_hash(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION get_user_by_hash(TEXT) TO anon, authenticated;
 
 -- Return all progress rows for the user identified by hash
 CREATE OR REPLACE FUNCTION get_all_progress(p_hash TEXT)
@@ -120,6 +126,8 @@ BEGIN
   );
 END;
 $$;
+REVOKE ALL ON FUNCTION get_all_progress(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION get_all_progress(TEXT) TO anon, authenticated;
 
 -- Upsert a progress row: atomically increment counters, recalculate streak,
 -- return the resulting JSON.  Uses INSERT ... ON CONFLICT to avoid race
@@ -159,6 +167,8 @@ BEGIN
   RETURN result;
 END;
 $$;
+REVOKE ALL ON FUNCTION upsert_progress(TEXT, TEXT, BOOLEAN) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION upsert_progress(TEXT, TEXT, BOOLEAN) TO anon, authenticated;
 
 -- Record an individual question attempt
 CREATE OR REPLACE FUNCTION record_question(
@@ -177,3 +187,5 @@ BEGIN
   VALUES (v_user_id, p_module, p_question_type, p_was_correct, p_user_answer, p_correct_answer);
 END;
 $$;
+REVOKE ALL ON FUNCTION record_question(TEXT, TEXT, TEXT, BOOLEAN, TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION record_question(TEXT, TEXT, TEXT, BOOLEAN, TEXT, TEXT) TO anon, authenticated;
