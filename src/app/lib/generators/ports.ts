@@ -44,15 +44,16 @@ const PORT_DATABASE: Array<{ port: number; service: string; protocol: string; de
   { port: 8443, service: 'HTTPS-Alt', protocol: 'TCP', description: 'Alternative HTTPS Port' }
 ];
 
+// Computed once at module load — used by both directions
+const SERVICE_OPTIONS = [...new Set(PORT_DATABASE.map(p => p.service))];
+const PROTOCOL_OPTIONS = [...new Set(PORT_DATABASE.map(p => p.protocol))];
+
 export function generatePortQuestion(): PortQuestion {
   // Randomly select a port from the database
   const entry = PORT_DATABASE[Math.floor(Math.random() * PORT_DATABASE.length)];
   
   // Randomly choose between "identify service" or "identify port"
   const direction = Math.random() > 0.5 ? 'portToService' : 'serviceToPort';
-  
-  const SERVICE_OPTIONS = [...new Set(PORT_DATABASE.map(p => p.service))];
-  const PROTOCOL_OPTIONS = [...new Set(PORT_DATABASE.map(p => p.protocol))];
   
   if (direction === 'portToService') {
     return {
