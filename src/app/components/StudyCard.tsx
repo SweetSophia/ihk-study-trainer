@@ -230,38 +230,50 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
       {/* Actions */}
       <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/30 flex flex-wrap gap-3">
         {!checked ? (
-          <button
-            onClick={handleCheck}
-            disabled={!allAnswered}
-            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-lg transition-colors"
-          >
-            <Check className="w-4 h-4" />
-            Antwort prüfen
-          </button>
+          <>
+            <button
+              onClick={handleCheck}
+              disabled={!allAnswered}
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-lg transition-colors"
+            >
+              <Check className="w-4 h-4" />
+              Antwort prüfen
+            </button>
+
+            <button
+              onClick={handleNext}
+              className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-lg transition-colors"
+            >
+              <ArrowRight className="w-4 h-4" />
+              Überspringen
+            </button>
+          </>
         ) : (
-          <button
-            onClick={handleNext}
-            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold rounded-lg transition-colors"
-          >
-            <ArrowRight className="w-4 h-4" />
-            Nächste Frage
-          </button>
+          <>
+            <button
+              onClick={handleNext}
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold rounded-lg transition-colors"
+            >
+              <ArrowRight className="w-4 h-4" />
+              Weiter
+            </button>
+
+            <button
+              onClick={handleNext}
+              className="flex items-center gap-2 px-5 py-2.5 border border-slate-700 hover:border-slate-600 text-slate-400 hover:text-slate-200 rounded-lg transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Überspringen
+            </button>
+          </>
         )}
 
         <button
           onClick={() => setShowSolution(!showSolution)}
-          className="flex items-center gap-2 px-5 py-2.5 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-slate-100 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-slate-100 rounded-lg transition-colors ml-auto"
         >
           <Lightbulb className="w-4 h-4" />
           {showSolution ? 'Lösung ausblenden' : 'Lösung anzeigen'}
-        </button>
-
-        <button
-          onClick={handleNext}
-          className="flex items-center gap-2 px-5 py-2.5 border border-slate-700 hover:border-slate-600 text-slate-400 hover:text-slate-200 rounded-lg transition-colors ml-auto"
-        >
-          <RotateCcw className="w-4 h-4" />
-          Überspringen
         </button>
       </div>
 
