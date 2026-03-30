@@ -233,7 +233,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                     onChange={(e) => setInputHash(e.target.value)}
                     maxLength={12}
                     disabled={loading}
-                    placeholder="XXXXXXXXXXXX"
+                    placeholder="Ab12cD34eF56"
                     autoCapitalize="off"
                     autoCorrect="off"
                     spellCheck={false}
