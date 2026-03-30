@@ -8,6 +8,7 @@ export const isSupabaseConfigured = !!(supabaseUrl && supabaseKey);
 // Create a mock client for build time when env vars aren't available.
 // Every query-builder method returns the same chainable object so that
 // calls like `.from('t').select('*').eq('k','v').single()` never throw.
+// The `rpc` mock is also thenable so `await supabase.rpc(...)` resolves.
 const createMockClient = () => {
   const result = { data: null, error: null };
   const chainable: Record<string, unknown> = {};
@@ -19,9 +20,16 @@ const createMockClient = () => {
       chainable[m] = () => chainable;
     }
   }
+
+  // rpc mock returns a thenable object so `await supabase.rpc(...)` works
+  const rpcResult = {
+    ...result,
+    then: (resolve: (v: unknown) => void) => resolve(result),
+  };
+
   return {
     from: () => chainable,
-    rpc: () => ({ data: null, error: null }),
+    rpc: () => rpcResult,
     auth: {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
@@ -37,12 +45,3 @@ export const supabase = isSupabaseConfigured
       }
     })
   : createMockClient();
-
-// Helper to set the current hash for RLS
-export async function setUserContext(hash: string) {
-  if (!supabaseUrl || !supabaseKey) return;
-  await supabase.rpc('set_config', {
-    parameter: 'app.current_hash',
-    value: hash
-  });
-}

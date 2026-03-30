@@ -291,9 +291,9 @@ export default function Home() {
     }
   }, []);
 
-  const loadProgress = useCallback(async (userId: string) => {
+  const loadProgress = useCallback(async (hash: string) => {
     try {
-      const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days: number }[] = await getAllProgress(userId);
+      const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days: number }[] = await getAllProgress(hash);
       setProgress(userProgress);
       
       // Calculate streak (simplified)
@@ -311,7 +311,7 @@ export default function Home() {
         setUser(userData);
         setAccessHash(hash);
         localStorage.setItem('ihk_access_hash', hash);
-        await loadProgress(userData.id);
+        await loadProgress(hash);
         setShowAuthModal(false);
       } else {
         // Invalid hash
@@ -391,12 +391,12 @@ export default function Home() {
     }
 
     // Update progress, then reload once the write is done
-    updateProgress(user.id, currentQuestion.module, correct).then(() => {
-      loadProgress(user.id);
+    updateProgress(accessHash!, currentQuestion.module, correct).then(() => {
+      loadProgress(accessHash!);
     });
 
     return correct;
-  }, [currentQuestion, user, loadProgress]);
+  }, [currentQuestion, user, accessHash, loadProgress]);
 
   const handleNextQuestion = () => {
     if (currentModule) {
