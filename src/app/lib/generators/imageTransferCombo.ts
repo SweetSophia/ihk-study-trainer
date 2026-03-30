@@ -37,23 +37,24 @@ function formatIHKTime(totalSeconds: number): {
 } {
   // Apply 10% overhead deduction
   const effectiveSeconds = totalSeconds * 1.10;
+  const roundedSeconds = Math.round(effectiveSeconds);
   
-  if (effectiveSeconds >= 3600) {
+  if (roundedSeconds >= 3600) {
     // Convert to hours with minutes (60-system)
-    const hours = Math.floor(effectiveSeconds / 3600);
-    const remainingMinutes = Math.round((effectiveSeconds % 3600) / 60);
+    const hours = Math.floor(roundedSeconds / 3600);
+    const remainingMinutes = Math.floor((roundedSeconds % 3600) / 60);
     return {
       display: `${hours} Stunde(n) ${remainingMinutes} Minute(n)`,
       value: Number((effectiveSeconds / 3600).toFixed(2)),
       unit: 'Stunden',
       hours,
       minutes: remainingMinutes,
-      seconds: Math.round(effectiveSeconds)
+      seconds: roundedSeconds
     };
-  } else if (effectiveSeconds >= 60) {
+  } else if (roundedSeconds >= 60) {
     // Convert to minutes with seconds (60-system)
-    const minutes = Math.floor(effectiveSeconds / 60);
-    const remainingSeconds = Math.round(effectiveSeconds % 60);
+    const minutes = Math.floor(roundedSeconds / 60);
+    const remainingSeconds = roundedSeconds % 60;
     return {
       display: `${minutes} Minute(n) ${remainingSeconds} Sekunde(n)`,
       value: Number((effectiveSeconds / 60).toFixed(2)),
@@ -64,10 +65,10 @@ function formatIHKTime(totalSeconds: number): {
   } else {
     // Keep as seconds
     return {
-      display: `${Math.round(effectiveSeconds)} Sekunde(n)`,
-      value: Math.round(effectiveSeconds),
+      display: `${roundedSeconds} Sekunde(n)`,
+      value: roundedSeconds,
       unit: 'Sekunden',
-      seconds: Math.round(effectiveSeconds)
+      seconds: roundedSeconds
     };
   }
 }
