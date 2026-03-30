@@ -57,9 +57,14 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     setError('');
     setLoading(true);
     try {
-      const result = await onLogin(trimmedHash);
-      if (!result.success && result.error) {
-        setError(result.error);
+      const result = await onLogin(inputHash.trim());
+      if (result.success) {
+        // Login succeeded in page.tsx (user set, modal closed there).
+        // Just reset local loading state; the modal will close via page.tsx state.
+        setInputHash(''); // Clear the input for next time
+      } else {
+        // Login failed – show error message
+        setError(result.error || 'Anmeldung fehlgeschlagen.');
       }
     } catch {
       setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
@@ -73,8 +78,11 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     setError('');
     try {
       const result = await onLogin(hash);
-      if (!result.success && result.error) {
-        setError(result.error);
+      if (result.success) {
+        // Login succeeded in page.tsx. Modal will close via page.tsx state.
+        setHash(''); // Clear registered hash after successful login
+      } else {
+        setError(result.error || 'Anmeldung fehlgeschlagen.');
       }
     } catch {
       setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
@@ -143,6 +151,10 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
               <div className="space-y-4">
                 <p className="text-slate-400 text-center">
                   Wähle eine Option, um fortzufahren
+                </p>
+
+                <p className="text-slate-500 text-sm text-center">
+                  Eine Anmeldung ist nur erforderlich, wenn du deinen aktuellen Übungsstand sichern möchtest. Ansonsten drücke einfach auf das X.
                 </p>
                 
                 <button
