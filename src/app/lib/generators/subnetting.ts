@@ -23,7 +23,7 @@ function maskToDotted(mask: number): string {
 
 export function generateSubnettingQuestion(): Question {
   // Random CIDR between /17 and /29
-  const cidrs = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29];
+  const cidrs = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
   const cidr = cidrs[Math.floor(Math.random() * cidrs.length)];
   
   // Random IP in 10.x.x.x range

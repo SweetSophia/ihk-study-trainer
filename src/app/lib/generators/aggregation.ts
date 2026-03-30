@@ -9,7 +9,7 @@ export interface AggregationQuestion {
 export function generateAggregationQuestion(): AggregationQuestion {
   // Generate 2-4 networks that can be aggregated
   const numNetworks = Math.floor(Math.random() * 3) + 2; // 2-4 networks
-  const baseCidr = [22, 23, 24][Math.floor(Math.random() * 3)];
+  const baseCidr = [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30][Math.floor(Math.random() * 11)];
   const baseNetwork = generateRandomNetwork();
   
   // Generate contiguous networks
