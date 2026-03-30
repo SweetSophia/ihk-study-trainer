@@ -98,4 +98,5 @@ git push origin main
 
 ## Lizenz
 
-MIT License - Feel free to use and modify!
+MIT License - Feel free to use and modify!  
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/SweetSophia/ihk-study-trainer?utm_source=oss&utm_medium=github&utm_campaign=SweetSophia%2Fihk-study-trainer&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)

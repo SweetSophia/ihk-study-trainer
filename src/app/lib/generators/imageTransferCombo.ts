@@ -1,4 +1,5 @@
 import { Question } from '../../types';
+import { formatIHKTime, TIME_UNITS, UNIT_SEKUNDEN, UNIT_MINUTEN, UNIT_STUNDEN } from './timeFormat';
 
 const resolutions = [
   { name: 'Full HD', width: 1920, height: 1080 },
@@ -17,56 +18,6 @@ const bandwidthUnits = [
   { unit: 'Gbit/s', multiplier: 1000 * 1000 * 1000 }
 ];
 
-/**
- * Formats time according to IHK 60-system rules:
- * - If >= 60 seconds, convert to minutes (60-system)
- * - If >= 60 minutes, convert to hours and minutes
- */
-function formatIHKTime(totalSeconds: number): { 
-  display: string; 
-  value: number; 
-  unit: string;
-  hours?: number;
-  minutes?: number;
-  seconds?: number;
-} {
-  // Apply 10% overhead deduction
-  const effectiveSeconds = totalSeconds * 1.10;
-  
-  if (effectiveSeconds >= 3600) {
-    // Convert to hours with minutes (60-system)
-    const hours = Math.floor(effectiveSeconds / 3600);
-    const remainingMinutes = Math.round((effectiveSeconds % 3600) / 60);
-    return {
-      display: `${hours} Stunde(n) ${remainingMinutes} Minute(n)`,
-      value: Number((effectiveSeconds / 3600).toFixed(2)),
-      unit: 'Stunden',
-      hours,
-      minutes: remainingMinutes,
-      seconds: Math.round(effectiveSeconds)
-    };
-  } else if (effectiveSeconds >= 60) {
-    // Convert to minutes with seconds (60-system)
-    const minutes = Math.floor(effectiveSeconds / 60);
-    const remainingSeconds = Math.round(effectiveSeconds % 60);
-    return {
-      display: `${minutes} Minute(n) ${remainingSeconds} Sekunde(n)`,
-      value: Number((effectiveSeconds / 60).toFixed(2)),
-      unit: 'Minuten',
-      minutes,
-      seconds: remainingSeconds
-    };
-  } else {
-    // Keep as seconds
-    return {
-      display: `${Math.round(effectiveSeconds)} Sekunde(n)`,
-      value: Math.round(effectiveSeconds),
-      unit: 'Sekunden',
-      seconds: Math.round(effectiveSeconds)
-    };
-  }
-}
-
 export function generateImageTransferComboQuestion(): Question {
   // Random resolution and color depth
   const resolution = resolutions[Math.floor(Math.random() * resolutions.length)];
@@ -82,7 +33,6 @@ export function generateImageTransferComboQuestion(): Question {
   const totalBytes = totalBits / 8;
   const totalKB = totalBytes / 1000;
   const totalMB = totalKB / 1000;
-  const totalGB = totalMB / 1000;
   
   // Calculate bandwidth in bit/s
   const bandwidthBps = bandwidthValue * bandwidthUnit.multiplier;
@@ -97,21 +47,11 @@ export function generateImageTransferComboQuestion(): Question {
   const overheadBytes = totalBytes * 0.10;
   const effectiveBytes = totalBytes + overheadBytes;
   const effectiveTimeSeconds = (effectiveBytes * 8) / bandwidthBps;
+  const roundedEffectiveSeconds = timeResult.roundedSeconds;
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
     resolution.width >= 3840 || bandwidthValue <= 250 ? 'hard' :
     resolution.width >= 2560 ? 'medium' : 'easy';
-  
-  // Format file size for display
-  let fileSizeDisplay: string;
-  let fileSizeInMB: number;
-  if (totalGB >= 1) {
-    fileSizeDisplay = `${totalGB.toFixed(2)} GB`;
-    fileSizeInMB = totalMB;
-  } else {
-    fileSizeDisplay = `${Math.round(totalMB)} MB`;
-    fileSizeInMB = totalMB;
-  }
   
   const solutionSteps: string[] = [
     `Gegeben:`,
@@ -152,8 +92,9 @@ export function generateImageTransferComboQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 7: In Stunden und Minuten umrechnen (60-System)`,
-      `  Stunden = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
-      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.hours} × 3600)`,
+      `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
+      `  Stunden = ⌊${roundedEffectiveSeconds} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.hours} × 3600) = ${roundedEffectiveSeconds - (timeResult.hours * 3600)} s`,
       `  Minuten = ⌊Restsekunden ÷ 60⌋ = ${timeResult.minutes} Minuten`,
       `  Ergebnis: ${timeResult.hours} Stunde(n) ${timeResult.minutes} Minute(n)`
     );
@@ -161,8 +102,9 @@ export function generateImageTransferComboQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 7: In Minuten und Sekunden umrechnen (60-System)`,
-      `  Minuten = ⌊${effectiveTimeSeconds.toFixed(2)} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
-      `  Restsekunden = ${effectiveTimeSeconds.toFixed(2)} - (${timeResult.minutes} × 60)`,
+      `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
+      `  Minuten = ⌊${roundedEffectiveSeconds} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.minutes} × 60) = ${roundedEffectiveSeconds - (timeResult.minutes * 60)} s`,
       `  Sekunden = ⌊Restsekunden⌋ = ${timeResult.seconds} Sekunden`,
       `  Ergebnis: ${timeResult.minutes} Minute(n) ${timeResult.seconds} Sekunde(n)`
     );
@@ -177,14 +119,38 @@ export function generateImageTransferComboQuestion(): Question {
     id: `image-transfer-combo-${Date.now()}`,
     theme: 'IT-Mathematik & Datenberechnung',
     module: 'image-transfer-combo',
-    questionText: `Ein unkomprimiertes ${resolution.name}-Bild (${resolution.width}×${resolution.height} Pixel, ${colorDepth} Bit Farbtiefe) soll über eine Leitung mit ${bandwidthValue} ${bandwidthUnit.unit} übertragen werden. Berechne die Übertragungszeit unter Berücksichtigung eines 10% Overheads. Gib das Ergebnis in ${timeResult.unit} an (60-System bei ≥ 60 Sekunden).`,
+    questionText: `Ein unkomprimiertes ${resolution.name}-Bild (${resolution.width}×${resolution.height} Pixel, ${colorDepth} Bit Farbtiefe) soll über eine Leitung mit ${bandwidthValue} ${bandwidthUnit.unit} übertragen werden. Berechne die Übertragungszeit unter Berücksichtigung eines 10% Overheads (60-System bei ≥ 60 Sekunden).`,
     expectedAnswers: {
-      time: timeResult.value,
-      unit: timeResult.unit,
-      ...(timeResult.hours !== undefined && { hours: timeResult.hours, minutes: timeResult.minutes }),
-      ...(timeResult.hours === undefined && timeResult.minutes !== undefined && { minutes: timeResult.minutes, seconds: timeResult.seconds }),
-      ...(timeResult.hours === undefined && timeResult.minutes === undefined && { seconds: timeResult.seconds })
+      ...(timeResult.hours !== undefined && {
+        hours: timeResult.hours,
+        hourUnit: UNIT_STUNDEN,
+        minutes: timeResult.minutes,
+        minuteUnit: UNIT_MINUTEN,
+      }),
+      ...(timeResult.hours === undefined && timeResult.minutes !== undefined && {
+        minutes: timeResult.minutes,
+        minuteUnit: UNIT_MINUTEN,
+        seconds: timeResult.seconds,
+        secondUnit: UNIT_SEKUNDEN,
+      }),
+      ...(timeResult.hours === undefined && timeResult.minutes === undefined && {
+        seconds: timeResult.seconds,
+        secondUnit: UNIT_SEKUNDEN,
+      }),
     },
+    answerInputs: timeResult.hours !== undefined
+      ? [
+          { valueKey: 'hours', unitKey: 'hourUnit', unitOptions: TIME_UNITS, label: 'Stunden' },
+          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS, label: 'Minuten' },
+        ]
+      : timeResult.minutes !== undefined
+      ? [
+          { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS, label: 'Minuten' },
+          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS, label: 'Sekunden' },
+        ]
+      : [
+          { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS, label: 'Sekunden' },
+        ],
     solutionSteps,
     difficulty
   };

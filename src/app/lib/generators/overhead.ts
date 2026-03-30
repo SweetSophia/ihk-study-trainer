@@ -21,7 +21,6 @@ export function generateOverheadQuestion(): Question {
   
   // Calculate total bytes transmitted
   const overheadPerFrame = ETHERNET_HEADER + IPV4_HEADER + TCP_HEADER;
-  const fullFrameSize = MSS + IPV4_HEADER + TCP_HEADER; // 1500 bytes (fits in MTU)
   
   let totalBytes = 0;
   

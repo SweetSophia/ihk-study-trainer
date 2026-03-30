@@ -68,7 +68,7 @@ export default function ProgressDashboard({
   return (
     <div className="space-y-4">
       {/* Main Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
