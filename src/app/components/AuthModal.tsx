@@ -7,7 +7,7 @@ import { X, Copy, Check, AlertTriangle, LogIn, Key } from 'lucide-react';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (hash: string) => void;
+  onLogin: (hash: string) => Promise<{ success: boolean; error?: string }>;
   onRegister: () => Promise<string | null>;
 }
 
@@ -55,9 +55,12 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     setError('');
     setLoading(true);
     try {
-      await onLogin(inputHash.trim());
+      const result = await onLogin(inputHash.trim());
+      if (!result.success && result.error) {
+        setError(result.error);
+      }
     } catch (err) {
-      setError('Anmeldung fehlgeschlagen. Bitte überprüfe deinen Code und versuche es erneut.');
+      setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
     } finally {
       setLoading(false);
     }
@@ -67,7 +70,10 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     setLoading(true);
     setError('');
     try {
-      await onLogin(hash);
+      const result = await onLogin(hash);
+      if (!result.success && result.error) {
+        setError(result.error);
+      }
     } catch (err) {
       setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
     } finally {

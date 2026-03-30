@@ -294,7 +294,7 @@ export default function Home() {
     }
   }, []);
 
-  const handleLogin = async (hash: string) => {
+  const handleLogin = async (hash: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const userData = await getUserByHash(hash);
       if (userData) {
@@ -303,17 +303,16 @@ export default function Home() {
         localStorage.setItem('ihk_access_hash', hash);
         await loadProgress(hash);
         setShowAuthModal(false);
+        return { success: true };
       } else {
         // Confirmed not-found (no error, just null data) – invalid hash
         localStorage.removeItem('ihk_access_hash');
-        setShowAuthModal(true);
+        return { success: false, error: 'Dieser Code wurde nicht gefunden. Bitte überprüfe deinen Code.' };
       }
     } catch (error) {
-      // RPC/network error – keep the stored hash so it can retry on next load
+      // RPC/network error
       console.error('Login error:', error);
-      setShowAuthModal(true);
-    } finally {
-      setIsLoading(false);
+      return { success: false, error: 'Verbindungsfehler. Bitte versuche es erneut.' };
     }
   };
 
