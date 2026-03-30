@@ -533,7 +533,7 @@ export default function Home() {
       {/* Auth Modal */}
       <AuthModal
         isOpen={showAuthModal}
-        onClose={() => user && setShowAuthModal(false)}
+        onClose={() => setShowAuthModal(false)}
         onLogin={handleLogin}
         onRegister={handleRegister}
       />
