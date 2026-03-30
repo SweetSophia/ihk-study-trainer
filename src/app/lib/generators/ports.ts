@@ -108,7 +108,8 @@ export function generatePortQuestion(): PortQuestion {
         {
           valueKey: 'port',
           label: 'Portnummer',
-          // No valueOptions = renders as numeric text input
+          // acceptedValues ensures exact-match validation (not ±5% numeric tolerance)
+          acceptedValues: [String(entry.port)],
         },
         {
           valueKey: 'protocol',
