@@ -47,13 +47,32 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     }
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!inputHash.trim() || inputHash.length !== 12) {
       setError('Bitte gib einen gültigen 12-stelligen Code ein.');
       return;
     }
     setError('');
-    onLogin(inputHash.trim());
+    setLoading(true);
+    try {
+      await onLogin(inputHash.trim());
+    } catch (err) {
+      setError('Anmeldung fehlgeschlagen. Bitte überprüfe deinen Code und versuche es erneut.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoginWithHash = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await onLogin(hash);
+    } catch (err) {
+      setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copyToClipboard = async () => {
@@ -185,10 +204,11 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                 </div>
 
                 <button
-                  onClick={() => onLogin(hash)}
-                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold rounded-lg transition-colors"
+                  onClick={handleLoginWithHash}
+                  disabled={loading}
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-800 disabled:text-emerald-200 text-slate-950 font-semibold rounded-lg transition-colors"
                 >
-                  Weiter zum Lernen
+                  {loading ? 'Anmeldung läuft...' : 'Weiter zum Lernen'}
                 </button>
               </div>
             )}
@@ -204,8 +224,9 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                     value={inputHash}
                     onChange={(e) => setInputHash(e.target.value.toUpperCase())}
                     maxLength={12}
+                    disabled={loading}
                     placeholder="XXXXXXXXXXXX"
-                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono text-lg tracking-wider uppercase placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
+                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono text-lg tracking-wider uppercase placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all disabled:opacity-50"
                   />
                   <p className="mt-2 text-xs text-slate-500">
                     12-stelliger alphanumerischer Code
@@ -220,9 +241,10 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
 
                 <button
                   onClick={handleLogin}
-                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold rounded-lg transition-colors"
+                  disabled={loading}
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-800 disabled:text-emerald-200 text-slate-950 font-semibold rounded-lg transition-colors"
                 >
-                  Anmelden
+                  {loading ? 'Anmeldung läuft...' : 'Anmelden'}
                 </button>
 
                 <button
