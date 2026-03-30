@@ -5,6 +5,8 @@ export interface CableQuestion {
   expectedAnswers: Record<string, string>;
   /** All pros of the correct cable (used to build acceptedValues) */
   correctPros: string[];
+  /** Number of reason dropdowns to show (bare minimum: pros.length − 1, at least 1) */
+  reasonCount: number;
   solutionSteps: string[];
 }
 
@@ -74,6 +76,11 @@ export const CABLE_TYPES: Array<{
   }
 ];
 
+/** All unique pro/advantage strings across every cable type (pre-computed). */
+export const ALL_CABLE_PROS: string[] = [
+  ...new Set(CABLE_TYPES.flatMap((c) => c.pros)),
+];
+
 const SCENARIOS = [
   { distance: 30, speed: 1000, environment: 'Bürogebäude (Indoor)' },
   { distance: 80, speed: 1000, environment: 'Bürogebäude (Indoor)' },
@@ -104,6 +111,7 @@ export function generateCableQuestion(): CableQuestion {
     scenario: scenario,
     expectedAnswers,
     correctPros: bestCable.pros,
+    reasonCount,
     solutionSteps: [
       `Szenario:`,
       `  Entfernung: ${scenario.distance}m`,

@@ -45,7 +45,7 @@ import { generateSubnetMaskQuestion } from './lib/generators/subnetMask';
 import { generateAggregationQuestion } from './lib/generators/aggregation';
 import { generatePortQuestion } from './lib/generators/ports';
 import { generateOsiQuestion, OSI_LAYER_NAMES } from './lib/generators/osi';
-import { generateCableQuestion, CABLE_TYPES } from './lib/generators/cables';
+import { generateCableQuestion, CABLE_TYPES, ALL_CABLE_PROS } from './lib/generators/cables';
 
 /** Parse a numeric string, treating comma as decimal separator (German locale). */
 function parseLocaleFloat(raw: string): number {
@@ -242,15 +242,11 @@ const GENERATORS: Record<string, () => Question> = {
   cables: () => {
     const q = generateCableQuestion();
 
-    // Collect all unique pros across every cable type for the dropdown options
-    const allPros = [...new Set(CABLE_TYPES.flatMap(c => c.pros))];
-
-    // Build reason inputs: bare minimum = pros.length - 1 (at least 1)
-    const reasonCount = Math.max(1, q.correctPros.length - 1);
-    const reasonInputs = Array.from({ length: reasonCount }, (_, i) => ({
+    // Build reason inputs using the pre-computed reasonCount from the generator
+    const reasonInputs = Array.from({ length: q.reasonCount }, (_, i) => ({
       valueKey: `reason${i + 1}`,
       label: `Vorteil ${i + 1}`,
-      valueOptions: allPros,
+      valueOptions: ALL_CABLE_PROS,
       acceptedValues: q.correctPros,
     }));
 
