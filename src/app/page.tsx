@@ -212,7 +212,19 @@ const GENERATORS: Record<string, () => Question> = {
       questionText: q.questionText,
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
-      difficulty: 'easy'
+      difficulty: 'easy',
+      answerInputs: [
+        {
+          valueKey: 'service',
+          label: 'Dienst',
+          valueOptions: ['FTP-DATA', 'FTP', 'SSH', 'Telnet', 'SMTP', 'DNS', 'DHCP-Server', 'DHCP-Client', 'HTTP', 'POP3', 'NTP', 'IMAP', 'SNMP', 'SNMP-Trap', 'LDAP', 'HTTPS', 'SMTPS', 'Syslog', 'SMTP-Submission', 'LDAPS', 'IMAPS', 'POP3S', 'MSSQL', 'Oracle', 'MySQL', 'RDP', 'PostgreSQL', 'VNC', 'HTTP-Alt', 'HTTPS-Alt'],
+        },
+        {
+          valueKey: 'protocol',
+          label: 'Protokoll',
+          valueOptions: ['TCP', 'UDP', 'TCP/UDP'],
+        },
+      ],
     };
   },
   osi: () => {
