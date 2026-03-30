@@ -212,7 +212,8 @@ const GENERATORS: Record<string, () => Question> = {
       questionText: q.questionText,
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
-      difficulty: 'easy'
+      difficulty: 'easy',
+      answerInputs: q.answerInputs,
     };
   },
   osi: () => {
@@ -225,18 +226,7 @@ const GENERATORS: Record<string, () => Question> = {
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
       difficulty: 'medium',
-      answerInputs: [
-        {
-          valueKey: 'layer',
-          label: 'Schichtnummer',
-          valueOptions: ['1', '2', '3', '4', '5', '6', '7'],
-        },
-        {
-          valueKey: 'layerName',
-          label: 'Schichtname',
-          valueOptions: Object.values(OSI_LAYER_NAMES),
-        },
-      ],
+      answerInputs: q.answerInputs,
     };
   },
   cables: () => {

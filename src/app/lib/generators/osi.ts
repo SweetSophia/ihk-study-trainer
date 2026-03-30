@@ -1,8 +1,11 @@
+import { AnswerInputConfig } from '../../types';
+
 export interface OsiQuestion {
   theme: string;
   questionText: string;
   item: string;
   expectedAnswers: { layer: number; layerName: string };
+  answerInputs?: AnswerInputConfig[];
   solutionSteps: string[];
 }
 
@@ -89,6 +92,18 @@ export function generateOsiQuestion(): OsiQuestion {
       layer: entry.layer,
       layerName
     },
+    answerInputs: [
+      {
+        valueKey: 'layer',
+        label: 'Schichtnummer',
+        valueOptions: ['1', '2', '3', '4', '5', '6', '7'],
+      },
+      {
+        valueKey: 'layerName',
+        label: 'Schichtname',
+        valueOptions: Object.values(OSI_LAYER_NAMES),
+      },
+    ],
     solutionSteps: [
       `Gegeben: ${entry.item}`,
       ``,

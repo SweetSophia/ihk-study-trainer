@@ -1,8 +1,13 @@
+import { AnswerInputConfig } from '../../types';
+
 export interface PortQuestion {
   theme: string;
   questionText: string;
   port: number;
-  expectedAnswers: { service: string; protocol: string };
+  expectedAnswers: { service: string; protocol: string } | { port: number; protocol: string };
+  /** 'portToService' = given port, identify service+protocol; 'serviceToPort' = given service, identify port+protocol */
+  direction: 'portToService' | 'serviceToPort';
+  answerInputs: AnswerInputConfig[];
   solutionSteps: string[];
 }
 
@@ -39,6 +44,10 @@ const PORT_DATABASE: Array<{ port: number; service: string; protocol: string; de
   { port: 8443, service: 'HTTPS-Alt', protocol: 'TCP', description: 'Alternative HTTPS Port' }
 ];
 
+// Computed once at module load — used by both directions
+const SERVICE_OPTIONS = [...new Set(PORT_DATABASE.map(p => p.service))];
+const PROTOCOL_OPTIONS = [...new Set(PORT_DATABASE.map(p => p.protocol))];
+
 export function generatePortQuestion(): PortQuestion {
   // Randomly select a port from the database
   const entry = PORT_DATABASE[Math.floor(Math.random() * PORT_DATABASE.length)];
@@ -51,10 +60,23 @@ export function generatePortQuestion(): PortQuestion {
       theme: 'TCP/IP-Referenzmodell & Protokolle',
       questionText: `Welcher Dienst und welches Protokoll gehören zu Port ${entry.port}?`,
       port: entry.port,
+      direction: 'portToService',
       expectedAnswers: {
         service: entry.service,
         protocol: entry.protocol
       },
+      answerInputs: [
+        {
+          valueKey: 'service',
+          label: 'Dienst',
+          valueOptions: SERVICE_OPTIONS,
+        },
+        {
+          valueKey: 'protocol',
+          label: 'Protokoll',
+          valueOptions: PROTOCOL_OPTIONS,
+        },
+      ],
       solutionSteps: [
         `Gegeben: Port ${entry.port}`,
         ``,
@@ -78,10 +100,24 @@ export function generatePortQuestion(): PortQuestion {
       theme: 'TCP/IP-Referenzmodell & Protokolle',
       questionText: `Welcher Port wird vom Dienst "${entry.service}" verwendet und welches Protokoll kommt zum Einsatz?`,
       port: entry.port,
+      direction: 'serviceToPort',
       expectedAnswers: {
-        service: entry.service,
+        port: entry.port,
         protocol: entry.protocol
       },
+      answerInputs: [
+        {
+          valueKey: 'port',
+          label: 'Portnummer',
+          // acceptedValues ensures exact-match validation (not ±5% numeric tolerance)
+          acceptedValues: [String(entry.port)],
+        },
+        {
+          valueKey: 'protocol',
+          label: 'Protokoll',
+          valueOptions: PROTOCOL_OPTIONS,
+        },
+      ],
       solutionSteps: [
         `Gegeben: Dienst = ${entry.service}`,
         ``,
