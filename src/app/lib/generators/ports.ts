@@ -1,8 +1,13 @@
+import { AnswerInputConfig } from '../../types';
+
 export interface PortQuestion {
   theme: string;
   questionText: string;
   port: number;
-  expectedAnswers: { service: string; protocol: string };
+  expectedAnswers: { service: string; protocol: string } | { port: number; protocol: string };
+  /** 'portToService' = given port, identify service+protocol; 'serviceToPort' = given service, identify port+protocol */
+  direction: 'portToService' | 'serviceToPort';
+  answerInputs: AnswerInputConfig[];
   solutionSteps: string[];
 }
 
@@ -46,15 +51,31 @@ export function generatePortQuestion(): PortQuestion {
   // Randomly choose between "identify service" or "identify port"
   const direction = Math.random() > 0.5 ? 'portToService' : 'serviceToPort';
   
+  const SERVICE_OPTIONS = [...new Set(PORT_DATABASE.map(p => p.service))];
+  const PROTOCOL_OPTIONS = [...new Set(PORT_DATABASE.map(p => p.protocol))];
+  
   if (direction === 'portToService') {
     return {
       theme: 'TCP/IP-Referenzmodell & Protokolle',
       questionText: `Welcher Dienst und welches Protokoll gehören zu Port ${entry.port}?`,
       port: entry.port,
+      direction: 'portToService',
       expectedAnswers: {
         service: entry.service,
         protocol: entry.protocol
       },
+      answerInputs: [
+        {
+          valueKey: 'service',
+          label: 'Dienst',
+          valueOptions: SERVICE_OPTIONS,
+        },
+        {
+          valueKey: 'protocol',
+          label: 'Protokoll',
+          valueOptions: PROTOCOL_OPTIONS,
+        },
+      ],
       solutionSteps: [
         `Gegeben: Port ${entry.port}`,
         ``,
@@ -78,10 +99,23 @@ export function generatePortQuestion(): PortQuestion {
       theme: 'TCP/IP-Referenzmodell & Protokolle',
       questionText: `Welcher Port wird vom Dienst "${entry.service}" verwendet und welches Protokoll kommt zum Einsatz?`,
       port: entry.port,
+      direction: 'serviceToPort',
       expectedAnswers: {
-        service: entry.service,
+        port: entry.port,
         protocol: entry.protocol
       },
+      answerInputs: [
+        {
+          valueKey: 'port',
+          label: 'Portnummer',
+          // No valueOptions = renders as numeric text input
+        },
+        {
+          valueKey: 'protocol',
+          label: 'Protokoll',
+          valueOptions: PROTOCOL_OPTIONS,
+        },
+      ],
       solutionSteps: [
         `Gegeben: Dienst = ${entry.service}`,
         ``,

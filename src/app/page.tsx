@@ -213,18 +213,7 @@ const GENERATORS: Record<string, () => Question> = {
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
       difficulty: 'easy',
-      answerInputs: [
-        {
-          valueKey: 'service',
-          label: 'Dienst',
-          valueOptions: ['FTP-DATA', 'FTP', 'SSH', 'Telnet', 'SMTP', 'DNS', 'DHCP-Server', 'DHCP-Client', 'HTTP', 'POP3', 'NTP', 'IMAP', 'SNMP', 'SNMP-Trap', 'LDAP', 'HTTPS', 'SMTPS', 'Syslog', 'SMTP-Submission', 'LDAPS', 'IMAPS', 'POP3S', 'MSSQL', 'Oracle', 'MySQL', 'RDP', 'PostgreSQL', 'VNC', 'HTTP-Alt', 'HTTPS-Alt'],
-        },
-        {
-          valueKey: 'protocol',
-          label: 'Protokoll',
-          valueOptions: ['TCP', 'UDP', 'TCP/UDP'],
-        },
-      ],
+      answerInputs: q.answerInputs,
     };
   },
   osi: () => {
@@ -237,18 +226,7 @@ const GENERATORS: Record<string, () => Question> = {
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
       difficulty: 'medium',
-      answerInputs: [
-        {
-          valueKey: 'layer',
-          label: 'Schichtnummer',
-          valueOptions: ['1', '2', '3', '4', '5', '6', '7'],
-        },
-        {
-          valueKey: 'layerName',
-          label: 'Schichtname',
-          valueOptions: Object.values(OSI_LAYER_NAMES),
-        },
-      ],
+      answerInputs: q.answerInputs,
     };
   },
   cables: () => {
