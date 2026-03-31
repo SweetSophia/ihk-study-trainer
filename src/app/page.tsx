@@ -47,6 +47,7 @@ import { generateAggregationQuestion } from './lib/generators/aggregation';
 import { generatePortQuestion } from './lib/generators/ports';
 import { generateOsiQuestion, OSI_LAYER_NAMES } from './lib/generators/osi';
 import { generateCableQuestion, CABLE_TYPES, ALL_CABLE_PROS } from './lib/generators/cables';
+import { generateLinuxQuestion } from './lib/generators/linux';
 
 /** Parse a numeric string, treating comma as decimal separator (German locale). */
 function parseLocaleFloat(raw: string): number {
@@ -119,9 +120,9 @@ function validateStructuredAnswer(
     const cfg = configByKey.get(key);
 
     if (cfg?.acceptedValues) {
-      // Accept any value from the accepted list
+      // Accept any value from the accepted list (case-insensitive, trimmed)
       const userAnswer = answers[key]?.trim();
-      if (!cfg.acceptedValues.some((v) => v === userAnswer)) return false;
+      if (!cfg.acceptedValues.some((v) => v.toLowerCase() === userAnswer.toLowerCase())) return false;
       if (cfg.acceptedValues.length > 1) {
         acceptedFieldAnswers.push(userAnswer);
       }
@@ -260,6 +261,19 @@ const GENERATORS: Record<string, () => Question> = {
         },
         ...reasonInputs,
       ],
+    };
+  },
+  linux: () => {
+    const q = generateLinuxQuestion();
+    return {
+      id: `linux-${Date.now()}`,
+      theme: q.theme,
+      module: 'linux',
+      questionText: q.questionText,
+      expectedAnswers: q.expectedAnswers,
+      solutionSteps: q.solutionSteps,
+      difficulty: q.difficulty,
+      answerInputs: q.answerInputs,
     };
   }
 };
