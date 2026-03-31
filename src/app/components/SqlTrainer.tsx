@@ -38,7 +38,6 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
   const [userQuery, setUserQuery] = useState('');
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
-  const [dbError, setDbError] = useState<string | null>(null);
 
   const fetchNewExercise = useCallback(() => {
     if (!accessHash) {
@@ -49,7 +48,6 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
     startTransition(async () => {
       try {
         setFeedback(null);
-        setDbError(null);
         setUserQuery('');
         const newExercise = await generateSqlExercise(accessHash);
         setExercise(newExercise);
@@ -78,7 +76,6 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
     }
 
     setFeedback(null);
-    setDbError(null);
 
     // Spin up a fresh, isolated PostgreSQL instance in the browser
     const db = new PGlite();
