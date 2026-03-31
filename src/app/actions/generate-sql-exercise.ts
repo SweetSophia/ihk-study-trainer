@@ -164,7 +164,7 @@ WICHTIG - Antworte NUR mit diesem exakten JSON-Format (keine andere textuelle Er
 Regeln:
 - theme: Eines der oberen Themen
 - themeDescription: 1-2 Sätze auf Deutsch
-- setup_sql: Gültige PostgreSQL CREATE TABLE + INSERT Statements
+- setup_sql: Gültige PostgreSQL CREATE TABLE + INSERT Statements, FORMATIERT mit Zeilenumbrüchen (jeder Befehl auf neuer Zeile)
 - question: Aufgabe auf Deutsch, IHK-Stil
 - solution_query: Vollständige PostgreSQL SELECT Query
 - difficulty: "easy" ODER "medium" ODER "hard"

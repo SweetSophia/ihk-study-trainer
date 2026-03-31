@@ -206,7 +206,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
           {/* Database Schema */}
           <div>
             <h3 className="text-sm font-medium text-slate-400 mb-2">Datenbank-Struktur</h3>
-            <pre className="bg-slate-950 border border-slate-700 rounded-lg p-4 text-xs text-slate-300 overflow-x-auto font-mono">
+            <pre className="bg-slate-950 border border-slate-700 rounded-lg p-4 text-xs text-slate-300 font-mono whitespace-pre-wrap break-word overflow-x-auto max-h-64 overflow-y-auto">
               <code>{exercise.setup_sql}</code>
             </pre>
           </div>
@@ -267,7 +267,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
               💡 Musterlösung anzeigen
             </summary>
             <div className="mt-3">
-              <pre className="bg-slate-950 border border-slate-700 rounded-lg p-4 text-xs text-emerald-400 overflow-x-auto font-mono">
+              <pre className="bg-slate-950 border border-slate-700 rounded-lg p-4 text-xs text-emerald-400 font-mono whitespace-pre-wrap break-word overflow-x-auto">
                 <code>{exercise.solution_query}</code>
               </pre>
             </div>

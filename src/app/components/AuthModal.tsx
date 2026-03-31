@@ -154,7 +154,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                 </p>
 
                 <p className="text-slate-500 text-sm text-center">
-                  Eine Anmeldung ist nur erforderlich, wenn du deinen aktuellen Übungsstand sichern möchtest. Ansonsten drücke einfach auf das X.
+                  Anmeldung nur erforderlich für SQL Aufgaben und Übungsstand sichern. Sonst X drücken.
                 </p>
                 
                 <button
