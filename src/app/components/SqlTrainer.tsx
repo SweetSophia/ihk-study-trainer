@@ -3,15 +3,16 @@
 import { useState, useTransition, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { PGlite } from '@electric-sql/pglite';
-import { Database, Play, RefreshCw, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { Database, Play, RefreshCw, AlertCircle, CheckCircle2, XCircle, Lock } from 'lucide-react';
 import { generateSqlExercise, SqlExercise } from '../actions/generate-sql-exercise';
 
 interface SqlTrainerProps {
+  accessHash: string | null;
   onCorrect?: () => void;
   onIncorrect?: () => void;
 }
 
-export default function SqlTrainer({ onCorrect, onIncorrect }: SqlTrainerProps) {
+export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTrainerProps) {
   const [exercise, setExercise] = useState<SqlExercise | null>(null);
   const [userQuery, setUserQuery] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -19,22 +20,34 @@ export default function SqlTrainer({ onCorrect, onIncorrect }: SqlTrainerProps) 
   const [dbError, setDbError] = useState<string | null>(null);
 
   const fetchNewExercise = useCallback(() => {
+    if (!accessHash) {
+      setFeedback({ type: 'info', message: 'Bitte melde dich an, um SQL-Übungen zu nutzen.' });
+      return;
+    }
+
     startTransition(async () => {
       try {
         setFeedback(null);
         setDbError(null);
         setUserQuery('');
-        const newExercise = await generateSqlExercise();
+        const newExercise = await generateSqlExercise(accessHash);
         setExercise(newExercise);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error generating exercise:', error);
-        setFeedback({
-          type: 'error',
-          message: 'Fehler bei der Aufgaben-Generierung. Bitte erneut versuchen.',
-        });
+        if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+          setFeedback({
+            type: 'error',
+            message: 'Rate limit erreicht. Bitte warte einen Moment.',
+          });
+        } else {
+          setFeedback({
+            type: 'error',
+            message: 'Fehler bei der Aufgaben-Generierung. Bitte erneut versuchen.',
+          });
+        }
       }
     });
-  }, []);
+  }, [accessHash]);
 
   const validateAnswer = useCallback(async () => {
     if (!exercise || !userQuery.trim()) {
@@ -45,10 +58,10 @@ export default function SqlTrainer({ onCorrect, onIncorrect }: SqlTrainerProps) 
     setFeedback(null);
     setDbError(null);
 
-    try {
-      // Spin up a fresh, isolated PostgreSQL instance in the browser
-      const db = new PGlite();
+    // Spin up a fresh, isolated PostgreSQL instance in the browser
+    const db = new PGlite();
 
+    try {
       // Execute the AI's schema and dummy data
       await db.query(exercise.setup_sql);
 
@@ -101,6 +114,9 @@ export default function SqlTrainer({ onCorrect, onIncorrect }: SqlTrainerProps) 
         type: 'error',
         message: `Validierungsfehler: ${error.message}`,
       });
+    } finally {
+      // Always close the PGlite instance to prevent memory leaks
+      await db.close();
     }
   }, [exercise, userQuery, onCorrect, onIncorrect]);
 
@@ -214,8 +230,24 @@ export default function SqlTrainer({ onCorrect, onIncorrect }: SqlTrainerProps) 
         </motion.div>
       )}
 
-      {/* Initial State */}
-      {!exercise && !isPending && (
+      {/* Locked State - User not authenticated */}
+      {!accessHash && (
+        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center">
+          <Lock className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+          <p className="text-slate-300 font-medium mb-2">
+            Anmeldung erforderlich
+          </p>
+          <p className="text-slate-500 text-sm mb-4">
+            Melde dich an, um SQL-Übungen zu nutzen.
+          </p>
+          <p className="text-xs text-slate-600">
+            Die SQL-Übungen verwenden AI-generierte Aufgaben und erfordern eine Anmeldung.
+          </p>
+        </div>
+      )}
+
+      {/* Initial State - Authenticated but no exercise loaded */}
+      {accessHash && !exercise && !isPending && (
         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center">
           <Database className="w-12 h-12 text-slate-600 mx-auto mb-4" />
           <p className="text-slate-400 mb-2">
@@ -232,5 +264,14 @@ export default function SqlTrainer({ onCorrect, onIncorrect }: SqlTrainerProps) 
 
 /** Sort rows by all values to enable order-independent comparison */
 function sortRows(rows: any[]): any[] {
-  return rows.map(row => Object.entries(row).sort().reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {}));
+  // Normalize each row by sorting its keys
+  const normalized = rows.map(row =>
+    Object.entries(row).sort().reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {})
+  );
+  // Sort the array of normalized rows deterministically
+  return normalized.sort((a, b) => {
+    const aStr = JSON.stringify(a);
+    const bStr = JSON.stringify(b);
+    return aStr.localeCompare(bStr);
+  });
 }

@@ -6,7 +6,7 @@ import {
   Binary, Hexagon, Shield, Layers, Cable, Server, Globe, Settings, Database
 } from 'lucide-react';
 
-const MODULES = [
+const BASE_MODULES = [
   { id: 'bandwidth', name: 'Übertragungszeit', icon: ArrowLeftRight, description: 'Dateitransfer' },
   { id: 'imageCalc', name: 'Bildgröße', icon: ImageIcon, description: 'Speicher' },
   { id: 'overhead', name: 'Overhead', icon: Calculator, description: 'Protokoll' },
@@ -19,15 +19,20 @@ const MODULES = [
   { id: 'ports', name: 'Ports', icon: Server, description: 'Port/Protokoll' },
   { id: 'osi', name: 'OSI', icon: Globe, description: 'OSI-Schichten' },
   { id: 'cables', name: 'Kabel', icon: Cable, description: 'Kabelauswahl' },
-  { id: 'sql', name: 'SQL', icon: Database, description: 'Datenbankabfragen' },
 ];
+
+// SQL module requires authentication
+const SQL_MODULE = { id: 'sql', name: 'SQL', icon: Database, description: 'Datenbankabfragen' };
 
 interface ThemeSelectorProps {
   currentModule: string | null;
   onSelectModule: (module: string) => void;
+  isAuthenticated: boolean;
 }
 
-export default function ThemeSelector({ currentModule, onSelectModule }: ThemeSelectorProps) {
+export default function ThemeSelector({ currentModule, onSelectModule, isAuthenticated }: ThemeSelectorProps) {
+  const MODULES = isAuthenticated ? [...BASE_MODULES, SQL_MODULE] : BASE_MODULES;
+
   return (
     <>
       {/* Mobile: horizontal scroll strip */}

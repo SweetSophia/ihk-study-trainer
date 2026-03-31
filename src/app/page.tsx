@@ -504,6 +504,7 @@ export default function Home() {
               <ThemeSelector
                 currentModule={currentModule}
                 onSelectModule={handleSelectModule}
+                isAuthenticated={!!user}
               />
             </div>
           </div>
@@ -511,7 +512,7 @@ export default function Home() {
           {/* Main Study Area */}
           <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
             {currentModule === 'sql' ? (
-              <SqlTrainer />
+              <SqlTrainer accessHash={accessHash} />
             ) : (
               <StudyCard
                 question={currentQuestion}

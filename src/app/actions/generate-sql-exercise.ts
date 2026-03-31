@@ -3,7 +3,38 @@
 import { generateObject } from 'ai';
 import { groq } from '@ai-sdk/groq';
 import { z } from 'zod';
+import { hashExists } from '../lib/auth';
+import { headers } from 'next/headers';
 
+// ---------------------------------------------------------------------------
+// Rate limiting — in-memory store (per-instance, reset on cold start)
+// For multi-instance production, replace with Redis/KV
+// ---------------------------------------------------------------------------
+const rateLimitWindowMs = 60 * 1000; // 1 minute
+const rateLimitMaxCalls = 5; // max 5 calls per minute per accessHash
+
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(accessHash: string): { allowed: boolean; retryAfterMs?: number } {
+  const now = Date.now();
+  const entry = rateLimitStore.get(accessHash);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(accessHash, { count: 1, resetAt: now + rateLimitWindowMs });
+    return { allowed: true };
+  }
+
+  if (entry.count >= rateLimitMaxCalls) {
+    return { allowed: false, retryAfterMs: entry.resetAt - now };
+  }
+
+  entry.count++;
+  return { allowed: true };
+}
+
+// ---------------------------------------------------------------------------
+// Themes & Concepts
+// ---------------------------------------------------------------------------
 const THEMES = [
   'Network Infrastructure Asset Inventory',
   'Cyber Security Incident Logging',
@@ -18,7 +49,7 @@ const SQL_CONCEPTS = [
   'INNER JOIN zwischen zwei Tabellen',
   'GROUP BY mit HAVING Klausel',
   'INSERT INTO mit mehreren Werten',
-  'UPDATE mit WHERE Bedingung',
+  'UPDATE mit Bedingung',
   'DELETE mit WHERE Klausel',
   'COUNT, SUM, AVG Aggregation',
   'Subquery mit IN Operator',
@@ -26,6 +57,9 @@ const SQL_CONCEPTS = [
   'DISTINCT und LIMIT',
 ];
 
+// ---------------------------------------------------------------------------
+// Zod Schema
+// ---------------------------------------------------------------------------
 const schema = z.object({
   theme: z.string(),
   themeDescription: z.string().describe('Kurze Beschreibung des Szenarios auf Deutsch'),
@@ -37,7 +71,24 @@ const schema = z.object({
 
 export type SqlExercise = z.infer<typeof schema>;
 
-export async function generateSqlExercise(): Promise<SqlExercise> {
+// ---------------------------------------------------------------------------
+// Server Action
+// ---------------------------------------------------------------------------
+export async function generateSqlExercise(accessHash: string): Promise<SqlExercise> {
+  // 1. Validate accessHash exists in DB
+  const valid = await hashExists(accessHash);
+  if (!valid) {
+    throw new Error('Unauthorized: Bitte melde dich an.');
+  }
+
+  // 2. Check rate limit
+  const { allowed, retryAfterMs } = checkRateLimit(accessHash);
+  if (!allowed) {
+    const retryAfterSec = Math.ceil((retryAfterMs ?? rateLimitWindowMs) / 1000);
+    throw new Error(`rate limit: Bitte warte ${retryAfterSec}s.`);
+  }
+
+  // 3. Generate exercise
   const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
   const randomConcept = SQL_CONCEPTS[Math.floor(Math.random() * SQL_CONCEPTS.length)];
 
