@@ -512,7 +512,23 @@ export default function Home() {
           {/* Main Study Area */}
           <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
             {currentModule === 'sql' ? (
-              <SqlTrainer accessHash={accessHash} />
+              <SqlTrainer
+                accessHash={accessHash}
+                onCorrect={() => {
+                  if (accessHash) {
+                    updateProgress(accessHash, 'sql', true)
+                      .then(() => loadProgress(accessHash))
+                      .catch((err) => console.error('Error updating progress:', err));
+                  }
+                }}
+                onIncorrect={() => {
+                  if (accessHash) {
+                    updateProgress(accessHash, 'sql', false)
+                      .then(() => loadProgress(accessHash))
+                      .catch((err) => console.error('Error updating progress:', err));
+                  }
+                }}
+              />
             ) : (
               <StudyCard
                 question={currentQuestion}

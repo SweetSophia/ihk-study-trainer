@@ -6,6 +6,27 @@ import { PGlite } from '@electric-sql/pglite';
 import { Database, Play, RefreshCw, AlertCircle, CheckCircle2, XCircle, Lock } from 'lucide-react';
 import { generateSqlExercise, SqlExercise } from '../actions/generate-sql-exercise';
 
+// ---------------------------------------------------------------------------
+// Type guard for error objects
+// ---------------------------------------------------------------------------
+function isErrorWithMessage(value: unknown): value is { message: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'message' in value &&
+    typeof (value as Record<string, unknown>).message === 'string'
+  );
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (isErrorWithMessage(error)) return error.message;
+  if (typeof error === 'string') return error;
+  return fallback;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 interface SqlTrainerProps {
   accessHash: string | null;
   onCorrect?: () => void;
@@ -32,9 +53,10 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
         setUserQuery('');
         const newExercise = await generateSqlExercise(accessHash);
         setExercise(newExercise);
-      } catch (error: any) {
-        console.error('Error generating exercise:', error);
-        if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+      } catch (error: unknown) {
+        const message = getErrorMessage(error, 'Unbekannter Fehler');
+        console.error('Error generating exercise:', message);
+        if (message.includes('rate limit') || message.includes('429')) {
           setFeedback({
             type: 'error',
             message: 'Rate limit erreicht. Bitte warte einen Moment.',
@@ -69,11 +91,12 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
       let expectedResult;
       try {
         expectedResult = await db.query(exercise.solution_query);
-      } catch (solError: any) {
-        console.error('Solution query failed:', solError);
+      } catch (solError: unknown) {
+        const msg = getErrorMessage(solError, 'Unbekannter Fehler');
+        console.error('Solution query failed:', msg);
         setFeedback({
           type: 'error',
-          message: `Die generierte Musterlösung enthält einen Fehler: ${solError.message}`,
+          message: `Die generierte Musterlösung enthält einen Fehler: ${msg}`,
         });
         return;
       }
@@ -82,18 +105,19 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
       let userResult;
       try {
         userResult = await db.query(userQuery);
-      } catch (userError: any) {
+      } catch (userError: unknown) {
+        const msg = getErrorMessage(userError, 'Unbekannter Fehler');
         setFeedback({
           type: 'error',
-          message: `SQL Fehler: ${userError.message}`,
+          message: `SQL Fehler: ${msg}`,
         });
         onIncorrect?.();
         return;
       }
 
       // Compare the result sets (order-independent comparison)
-      const expectedRows = JSON.stringify(sortRows(expectedResult.rows || []));
-      const userRows = JSON.stringify(sortRows(userResult.rows || []));
+      const expectedRows = JSON.stringify(sortRows((expectedResult.rows || []) as Record<string, unknown>[]));
+      const userRows = JSON.stringify(sortRows((userResult.rows || []) as Record<string, unknown>[]));
 
       if (expectedRows === userRows) {
         setFeedback({
@@ -108,11 +132,12 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
         });
         onIncorrect?.();
       }
-    } catch (error: any) {
-      console.error('Validation error:', error);
+    } catch (error: unknown) {
+      const msg = getErrorMessage(error, 'Unbekannter Fehler');
+      console.error('Validation error:', msg);
       setFeedback({
         type: 'error',
-        message: `Validierungsfehler: ${error.message}`,
+        message: `Validierungsfehler: ${msg}`,
       });
     } finally {
       // Always close the PGlite instance to prevent memory leaks
@@ -177,8 +202,11 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
 
           {/* Query Input */}
           <div>
-            <h3 className="text-sm font-medium text-slate-400 mb-2">Deine Query</h3>
+            <label htmlFor="user-query" className="text-sm font-medium text-slate-400 mb-2 block">
+              Deine Query
+            </label>
             <textarea
+              id="user-query"
               value={userQuery}
               onChange={(e) => setUserQuery(e.target.value)}
               className="w-full h-36 p-4 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-y"
@@ -263,7 +291,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
 }
 
 /** Sort rows by all values to enable order-independent comparison */
-function sortRows(rows: any[]): any[] {
+function sortRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
   // Normalize each row by sorting its keys
   const normalized = rows.map(row =>
     Object.entries(row).sort().reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {})

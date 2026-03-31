@@ -4,7 +4,24 @@ import { generateObject } from 'ai';
 import { groq } from '@ai-sdk/groq';
 import { z } from 'zod';
 import { hashExists } from '../lib/auth';
-import { headers } from 'next/headers';
+
+// ---------------------------------------------------------------------------
+// Type guard for error objects
+// ---------------------------------------------------------------------------
+function isErrorWithMessage(value: unknown): value is { message: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'message' in value &&
+    typeof (value as Record<string, unknown>).message === 'string'
+  );
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (isErrorWithMessage(error)) return error.message;
+  if (typeof error === 'string') return error;
+  return fallback;
+}
 
 // ---------------------------------------------------------------------------
 // Rate limiting — in-memory store (per-instance, reset on cold start)
@@ -75,6 +92,11 @@ export type SqlExercise = z.infer<typeof schema>;
 // Server Action
 // ---------------------------------------------------------------------------
 export async function generateSqlExercise(accessHash: string): Promise<SqlExercise> {
+  // 0. Check GROQ_API_KEY presence
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error('GROQ_API_KEY ist nicht konfiguriert. Bitte wende dich an den Administrator.');
+  }
+
   // 1. Validate accessHash exists in DB
   const valid = await hashExists(accessHash);
   if (!valid) {
@@ -92,10 +114,11 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
   const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
   const randomConcept = SQL_CONCEPTS[Math.floor(Math.random() * SQL_CONCEPTS.length)];
 
-  const { object } = await generateObject({
-    model: groq('llama-3.3-70b-versatile'),
-    schema,
-    prompt: `Du bist ein erfahrener Datenbank-Dozent für die deutsche IHK-Prüfung zum Fachinformatiker für Systemintegration.
+  try {
+    const { object } = await generateObject({
+      model: groq('llama-3.3-70b-versatile'),
+      schema,
+      prompt: `Du bist ein erfahrener Datenbank-Dozent für die deutsche IHK-Prüfung zum Fachinformatiker für Systemintegration.
 Erstelle eine einzelne PostgreSQL-Übungsaufgabe basierend auf folgendem Thema und Konzept.
 
 THEMA: ${randomTheme}
@@ -109,7 +132,24 @@ Anforderungen:
 - Alles muss in einem einzigen JSON-Objekt zurückgegeben werden
 
 Gib NUR das JSON-Objekt zurück, ohne Markdown-Formatierung oder zusätzlichen Text.`,
-  });
+    });
 
-  return object;
+    return object;
+  } catch (error: unknown) {
+    // Handle known error patterns
+    const message = getErrorMessage(error, 'Unbekannter Fehler');
+
+    if (message.includes('rate limit') || message.includes('429')) {
+      throw new Error(`rate limit: Bitte warte einen Moment.`);
+    }
+    if (message.includes('401') || message.includes('API key') || message.includes('authentication')) {
+      throw new Error('GROQ_API_KEY ist ungültig oder abgelaufen. Bitte wende dich an den Administrator.');
+    }
+    if (message.includes('timeout') || message.includes('ETIMEDOUT') || message.includes('ECONNRESET')) {
+      throw new Error('Zeitüberschreitung bei der Generierung. Bitte erneut versuchen.');
+    }
+
+    console.error('generateObject error:', error);
+    throw new Error(`Fehler bei der Generierung: ${message}`);
+  }
 }
