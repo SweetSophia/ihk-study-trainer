@@ -36,28 +36,26 @@ export default function ThemeSelector({ currentModule, onSelectModule, isAuthent
 
   return (
     <>
-      {/* Mobile: horizontal scroll strip */}
-      <div className="overflow-x-auto pb-2 -mx-4 px-4 lg:hidden">
-        <div className="flex gap-2 min-w-max">
-          {MODULES.map((module) => {
-            const Icon = module.icon;
-            const isActive = currentModule === module.id;
-            return (
-              <button
-                key={module.id}
-                onClick={() => onSelectModule(module.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border whitespace-nowrap ${
-                  isActive
-                    ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
-                    : 'bg-slate-900/50 border-slate-800 text-slate-400'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{module.name}</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Mobile: wrapped grid of topic cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 lg:hidden">
+        {MODULES.map((module) => {
+          const Icon = module.icon;
+          const isActive = currentModule === module.id;
+          return (
+            <button
+              key={module.id}
+              onClick={() => onSelectModule(module.id)}
+              className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${
+                isActive
+                  ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
+                  : 'bg-slate-900/50 border-slate-800 text-slate-400'
+              }`}
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm font-medium truncate">{module.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Desktop: vertical grid cards */}
