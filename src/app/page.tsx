@@ -325,6 +325,7 @@ export default function Home() {
         localStorage.setItem('ihk_access_hash', hash);
         await loadProgress(hash);
         setShowAuthModal(false);
+        setIsLoading(false);
         return { success: true };
       } else {
         // Confirmed not-found (no error, just null data) – invalid hash
