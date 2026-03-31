@@ -26,8 +26,16 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
     );
   }
 
-  const handleCheck = () => {
-    const correct = onCheckAnswer(answers);
+  const handleCheck = (inputValueOrEvent?: string | React.MouseEvent) => {
+    // Linux terminal passes a string directly to avoid stale state
+    // Regular buttons pass a MouseEvent which we ignore
+    const inputValue = typeof inputValueOrEvent === 'string' ? inputValueOrEvent : undefined;
+    // If inputValue is provided (Linux terminal), use it directly to avoid stale state
+    // Otherwise fall back to the answers state (for regular inputs)
+    const answersToCheck = inputValue !== undefined && linuxTerminalConfig
+      ? { ...answers, [linuxTerminalConfig.valueKey]: inputValue }
+      : answers;
+    const correct = onCheckAnswer(answersToCheck);
     setIsCorrect(correct);
     setChecked(true);
   };

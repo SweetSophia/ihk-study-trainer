@@ -10,8 +10,8 @@ interface LinuxTerminalProps {
   value: string;
   /** Callback when input changes */
   onChange: (value: string) => void;
-  /** Callback when Enter is pressed */
-  onSubmit: () => void;
+  /** Callback when Enter is pressed - passes current input value directly to avoid stale state */
+  onSubmit: (inputValue: string) => void;
   /** Whether the answer was correct (null = not yet checked) */
   isCorrect: boolean | null;
   /** Whether answer has been checked */
@@ -48,7 +48,7 @@ export default function LinuxTerminal({
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter' && !disabled && value.trim()) {
-      onSubmit();
+      onSubmit(value.trim());
     }
   };
 

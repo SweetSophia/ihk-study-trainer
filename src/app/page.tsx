@@ -122,13 +122,10 @@ function validateStructuredAnswer(
     if (cfg?.acceptedValues) {
       // Accept any value from the accepted list (case-insensitive, whitespace-normalized, trimmed)
       const userAnswer = (answers[key] ?? '').trim().replace(/\s+/g, ' ');
-      console.log('[DEBUG validate] key:', key, 'userAnswer:', JSON.stringify(userAnswer), 'acceptedValues:', JSON.stringify(cfg.acceptedValues));
       if (!userAnswer) return false; // Guard against undefined/empty
       const userNorm = userAnswer.toLowerCase();
       // Normalize acceptedValues too for consistent comparison
-      const matchResult = cfg.acceptedValues.some((v) => v.toLowerCase().replace(/\s+/g, ' ') === userNorm);
-      console.log('[DEBUG validate] userNorm:', JSON.stringify(userNorm), 'matchResult:', matchResult);
-      if (!matchResult) return false;
+      if (!cfg.acceptedValues.some((v) => v.toLowerCase().replace(/\s+/g, ' ') === userNorm)) return false;
       if (cfg.acceptedValues.length > 1) {
         acceptedFieldAnswers.push(userNorm); // Push normalized for case-insensitive duplicate detection
       }
