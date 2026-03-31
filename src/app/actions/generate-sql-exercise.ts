@@ -97,10 +97,16 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
     throw new Error('GROQ_API_KEY ist nicht konfiguriert. Bitte wende dich an den Administrator.');
   }
 
-  // 1. Validate accessHash exists in DB
-  const valid = await hashExists(accessHash);
-  if (!valid) {
-    throw new Error('Unauthorized: Bitte melde dich an.');
+  // 1. Validate accessHash exists in DB (throws on error with descriptive message)
+  try {
+    const valid = await hashExists(accessHash);
+    if (!valid) {
+      throw new Error('Unauthorized: Bitte melde dich an.');
+    }
+  } catch (error: unknown) {
+    // Re-throw descriptive errors from hashExists
+    const message = getErrorMessage(error, 'Fehler bei der Anmeldung');
+    throw new Error(message);
   }
 
   // 2. Check rate limit
