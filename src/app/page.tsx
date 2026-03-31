@@ -121,10 +121,12 @@ function validateStructuredAnswer(
 
     if (cfg?.acceptedValues) {
       // Accept any value from the accepted list (case-insensitive, trimmed)
-      const userAnswer = answers[key]?.trim();
-      if (!cfg.acceptedValues.some((v) => v.toLowerCase() === userAnswer.toLowerCase())) return false;
+      const userAnswer = (answers[key] ?? '').trim();
+      if (!userAnswer) return false; // Guard against undefined/empty
+      const userNorm = userAnswer.toLowerCase();
+      if (!cfg.acceptedValues.some((v) => v.toLowerCase() === userNorm)) return false;
       if (cfg.acceptedValues.length > 1) {
-        acceptedFieldAnswers.push(userAnswer);
+        acceptedFieldAnswers.push(userNorm); // Push normalized for case-insensitive duplicate detection
       }
       continue;
     }
@@ -274,6 +276,7 @@ const GENERATORS: Record<string, () => Question> = {
       solutionSteps: q.solutionSteps,
       difficulty: q.difficulty,
       answerInputs: q.answerInputs,
+      direction: q.direction,
     };
   }
 };

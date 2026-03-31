@@ -820,7 +820,6 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'iptables -L -n -v',
     category: 'Netzwerk (erweitert)',
     difficulty: 'hard',
-    aliases: ['nft'],
   },
   {
     command: 'tracepath',
@@ -1031,10 +1030,10 @@ const COMMAND_DATABASE: CommandEntry[] = [
     difficulty: 'medium',
   },
   {
-    command: 'daemon-reload',
+    command: 'systemctl daemon-reload',
     description: 'Lädt die Systemd-Konfigurationsdateien neu (nach Änderungen an Unit-Files)',
     explanation:
-      'systemctl daemon-reload lädt alle Unit-Dateien neu. Muss nach manuellen Änderungen an .service-Dateien oder neuen Unit-Files ausgeführt werden.',
+      'systemctl daemon-reload lädt alle Unit-Dateien neu. Dies ist ein systemctl-Unterbefehl, der nach manuellen Änderungen an .service-Dateien oder neuen Unit-Files ausgeführt werden muss.',
     example: 'systemctl daemon-reload',
     category: 'Systemd (erweitert)',
     difficulty: 'hard',

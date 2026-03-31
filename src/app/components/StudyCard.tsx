@@ -3,20 +3,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Lightbulb, ArrowRight, RotateCcw } from 'lucide-react';
-import { AnswerInputConfig } from '../types';
+import { AnswerInputConfig, Question } from '../types';
 import LinuxTerminal from './LinuxTerminal';
 
 interface StudyCardProps {
-  question: {
-    id: string;
-    theme: string;
-    module: string;
-    questionText: string;
-    expectedAnswers: Record<string, string | number | boolean>;
-    solutionSteps: string[];
-    difficulty: 'easy' | 'medium' | 'hard';
-    answerInputs?: AnswerInputConfig[];
-  } | null;
+  question: Question | null;
   onCheckAnswer: (answers: Record<string, string>) => boolean;
   onNextQuestion: () => void;
 }
@@ -79,11 +70,11 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
     : answerKeys.every((k) => answers[k]?.trim());
 
   // Check if we should use the LinuxTerminal component:
-  // Linux module + descriptionToCommand (text input, no valueOptions)
+  // Linux module + descriptionToCommand direction (explicit) OR fallback inference
   const isLinuxTerminal =
     question.module === 'linux' &&
-    question.answerInputs?.length === 1 &&
-    !question.answerInputs[0].valueOptions;
+    (question.direction === 'descriptionToCommand' ||
+      (question.answerInputs?.length === 1 && !question.answerInputs[0].valueOptions));
 
   const linuxTerminalConfig = isLinuxTerminal ? question.answerInputs![0] : null;
 

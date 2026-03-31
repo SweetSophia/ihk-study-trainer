@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect, type KeyboardEvent } from 'react';
 import { Terminal } from 'lucide-react';
 
 interface LinuxTerminalProps {
@@ -46,7 +46,7 @@ export default function LinuxTerminal({
     }
   }, [value, checked]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter' && !disabled && value.trim()) {
       onSubmit();
     }
