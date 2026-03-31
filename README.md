@@ -19,7 +19,7 @@ Interaktiver Lernassistent für die IHK-Prüfung zum **Fachinformatiker Systemin
 10. **Ports** - Port-Nummern und Protokolle
 11. **OSI-Modell** - Schichten und Zuordnungen
 12. **Kabel** - Kabeltypen-Auswahl nach Szenario
-13. **SQL** - Echte einzigartige SQL Aufgaben, geprüft in einer Live-Datenbank (31/03/2026)
+13. **SQL** - AI generierte SQL Aufgaben, geprüft in einer Live-Datenbank (31/03/2026)
 14. **Linux** - Linux-Befehle (Befehl → Beschreibung oder Beschreibung → Befehl)
 
 ### Features
