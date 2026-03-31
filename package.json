@@ -21,6 +21,9 @@
     "react-dom": "19.2.4",
     "zod": "^4.3.6"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
