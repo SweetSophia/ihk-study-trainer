@@ -1,6 +1,6 @@
 'use server';
 
-import { generateObject } from 'ai';
+import { generateText } from 'ai';
 import { groq } from '@ai-sdk/groq';
 import { z } from 'zod';
 import { hashExists } from '../lib/auth';
@@ -92,51 +92,37 @@ export type SqlExercise = z.infer<typeof schema>;
 // Server Action
 // ---------------------------------------------------------------------------
 export async function generateSqlExercise(accessHash: string): Promise<SqlExercise> {
-  console.log('[generateSqlExercise] Called with hash:', accessHash ? `${accessHash.slice(0, 8)}...` : 'MISSING');
-  console.log('[generateSqlExercise] GROQ_API_KEY set:', !!process.env.GROQ_API_KEY);
-  
   // 0. Check GROQ_API_KEY presence
   if (!process.env.GROQ_API_KEY) {
-    console.error('[generateSqlExercise] GROQ_API_KEY missing!');
     throw new Error('GROQ_API_KEY ist nicht konfiguriert. Bitte wende dich an den Administrator.');
   }
 
   // 1. Validate accessHash exists in DB (throws on error with descriptive message)
-  console.log('[generateSqlExercise] Calling hashExists...');
   try {
     const valid = await hashExists(accessHash);
-    console.log('[generateSqlExercise] hashExists returned:', valid);
     if (!valid) {
       throw new Error('Unauthorized: Bitte melde dich an.');
     }
   } catch (error: unknown) {
     // Re-throw descriptive errors from hashExists
     const message = getErrorMessage(error, 'Fehler bei der Anmeldung');
-    console.error('[generateSqlExercise] hashExists error:', message);
     throw new Error(message);
   }
-  console.log('[generateSqlExercise] hash validated OK');
 
   // 2. Check rate limit
-  console.log('[generateSqlExercise] Checking rate limit...');
   const { allowed, retryAfterMs } = checkRateLimit(accessHash);
   if (!allowed) {
     const retryAfterSec = Math.ceil((retryAfterMs ?? rateLimitWindowMs) / 1000);
-    console.error('[generateSqlExercise] Rate limit exceeded');
     throw new Error(`rate limit: Bitte warte ${retryAfterSec}s.`);
   }
-  console.log('[generateSqlExercise] Rate limit OK');
 
   // 3. Generate exercise
-  console.log('[generateSqlExercise] Generating exercise with Groq...');
   const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
   const randomConcept = SQL_CONCEPTS[Math.floor(Math.random() * SQL_CONCEPTS.length)];
 
   try {
-    console.log('[generateSqlExercise] Calling generateObject with theme:', randomTheme);
-    const { object } = await generateObject({
+    const { text } = await generateText({
       model: groq('llama-3.3-70b-versatile'),
-      schema,
       prompt: `Du bist ein erfahrener Datenbank-Dozent für die deutsche IHK-Prüfung zum Fachinformatiker für Systemintegration.
 Erstelle eine einzelne PostgreSQL-Übungsaufgabe basierend auf folgendem Thema und Konzept.
 
@@ -148,15 +134,25 @@ Anforderungen:
 - Es sollen 2 Tabellen mit je 3-5 Zeilen Dummy-Daten erstellt werden
 - Die Frage muss auf Deutsch sein und zum IHK-Stil passen (praxisnah, technisch präzise)
 - Die solution_query muss die Aufgabe korrekt lösen
-- Alles muss in einem einzigen JSON-Objekt zurückgegeben werden
+- Gib das Ergebnis als reines JSON-Objekt zurück ohne Markdown-Formatierung
 
-Gib NUR das JSON-Objekt zurück, ohne Markdown-Formatierung oder zusätzlichen Text.`,
+Gib NUR das JSON-Objekt zurück, ohne jeglichen umgebenden Text, Markdown-Codeblöcke oder Erklärungen.`,
     });
-    console.log('[generateSqlExercise] generateObject succeeded');
 
-    return object;
+    // Parse the JSON response manually
+    let jsonText = text.trim();
+    // Remove any markdown code blocks if present
+    if (jsonText.startsWith('```')) {
+      jsonText = jsonText.slice(jsonText.indexOf('\n') + 1);
+    }
+    if (jsonText.endsWith('```')) {
+      jsonText = jsonText.slice(0, -3);
+    }
+    jsonText = jsonText.trim();
+
+    const parsed = schema.parse(JSON.parse(jsonText));
+    return parsed;
   } catch (error: unknown) {
-    console.error('[generateSqlExercise] generateObject failed:', error);
     // Handle known error patterns
     const message = getErrorMessage(error, 'Unbekannter Fehler');
 
