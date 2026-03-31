@@ -28,6 +28,11 @@ export interface Question {
    * instead of the generic text-input fallback.
    */
   answerInputs?: AnswerInputConfig[];
+  /**
+   * Optional direction hint for modules that support multiple question modes
+   * (e.g., Linux: 'commandToDescription' vs 'descriptionToCommand')
+   */
+  direction?: string;
 }
 
 /** User interface */

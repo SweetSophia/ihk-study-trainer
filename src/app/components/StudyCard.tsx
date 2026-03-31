@@ -3,19 +3,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Lightbulb, ArrowRight, RotateCcw } from 'lucide-react';
-import { AnswerInputConfig } from '../types';
+import { AnswerInputConfig, Question } from '../types';
+import LinuxTerminal from './LinuxTerminal';
 
 interface StudyCardProps {
-  question: {
-    id: string;
-    theme: string;
-    module: string;
-    questionText: string;
-    expectedAnswers: Record<string, string | number | boolean>;
-    solutionSteps: string[];
-    difficulty: 'easy' | 'medium' | 'hard';
-    answerInputs?: AnswerInputConfig[];
-  } | null;
+  question: Question | null;
   onCheckAnswer: (answers: Record<string, string>) => boolean;
   onNextQuestion: () => void;
 }
@@ -77,6 +69,15 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
       )
     : answerKeys.every((k) => answers[k]?.trim());
 
+  // Check if we should use the LinuxTerminal component:
+  // Linux module + descriptionToCommand direction (explicit) OR fallback inference
+  const isLinuxTerminal =
+    question.module === 'linux' &&
+    (question.direction === 'descriptionToCommand' ||
+      (question.answerInputs?.length === 1 && !question.answerInputs[0].valueOptions));
+
+  const linuxTerminalConfig = isLinuxTerminal ? question.answerInputs![0] : null;
+
   /** Shared class string for text/number inputs */
   const inputClass = (extra = '') =>
     `w-full px-4 py-3 bg-slate-950 border rounded-lg text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${
@@ -118,7 +119,18 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
 
       {/* Answer Inputs */}
       <div className="px-6 pb-4 space-y-4">
-        {question.answerInputs ? (
+        {isLinuxTerminal && linuxTerminalConfig ? (
+          /* Linux terminal-style input for description→command questions */
+          <LinuxTerminal
+            disabled={checked}
+            value={answers[linuxTerminalConfig.valueKey] || ''}
+            onChange={(v) => setAnswers({ ...answers, [linuxTerminalConfig.valueKey]: v })}
+            onSubmit={handleCheck}
+            isCorrect={isCorrect}
+            checked={checked}
+            correctAnswer={String(question.expectedAnswers[linuxTerminalConfig.valueKey] ?? question.expectedAnswers.answer ?? '')}
+          />
+        ) : question.answerInputs ? (
           /* Structured answer inputs – supports dropdown-only and value+unit pairs */
           question.answerInputs.map((cfg) => (
             <div key={cfg.valueKey} className="flex gap-3 items-end">
