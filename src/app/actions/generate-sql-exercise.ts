@@ -89,6 +89,30 @@ const schema = z.object({
 export type SqlExercise = z.infer<typeof schema>;
 
 // ---------------------------------------------------------------------------
+// Helper to extract JSON from model response
+// ---------------------------------------------------------------------------
+function extractJSON(text: string): string {
+  let jsonText = text.trim();
+
+  // Try to match code blocks first
+  const codeBlockMatch = jsonText.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/);
+  if (codeBlockMatch) {
+    jsonText = codeBlockMatch[1].trim();
+  }
+
+  // If still has code block markers, try to find JSON between braces
+  if (jsonText.startsWith('```') || jsonText.startsWith('{')) {
+    const startIdx = jsonText.indexOf('{');
+    const endIdx = jsonText.lastIndexOf('}');
+    if (startIdx !== -1 && endIdx !== -1) {
+      jsonText = jsonText.slice(startIdx, endIdx + 1);
+    }
+  }
+
+  return jsonText.trim();
+}
+
+// ---------------------------------------------------------------------------
 // Server Action
 // ---------------------------------------------------------------------------
 export async function generateSqlExercise(accessHash: string): Promise<SqlExercise> {
@@ -104,7 +128,6 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
       throw new Error('Unauthorized: Bitte melde dich an.');
     }
   } catch (error: unknown) {
-    // Re-throw descriptive errors from hashExists
     const message = getErrorMessage(error, 'Fehler bei der Anmeldung');
     throw new Error(message);
   }
@@ -116,57 +139,78 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
     throw new Error(`rate limit: Bitte warte ${retryAfterSec}s.`);
   }
 
-  // 3. Generate exercise
+  // 3. Generate exercise with retry logic
   const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
   const randomConcept = SQL_CONCEPTS[Math.floor(Math.random() * SQL_CONCEPTS.length)];
 
-  try {
-    const { text } = await generateText({
-      model: groq('llama-3.3-70b-versatile'),
-      prompt: `Du bist ein erfahrener Datenbank-Dozent für die deutsche IHK-Prüfung zum Fachinformatiker für Systemintegration.
-Erstelle eine einzelne PostgreSQL-Übungsaufgabe basierend auf folgendem Thema und Konzept.
+  const maxRetries = 3;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[generateSqlExercise] Attempt ${attempt}/${maxRetries}`);
+
+      const { text } = await generateText({
+        model: groq('llama-3.3-70b-versatile'),
+        prompt: `Du bist ein erfahrener Datenbank-Dozent für die deutsche IHK-Prüfung zum Fachinformatiker für Systemintegration.
+Erstelle EINE einzelne PostgreSQL-Übungsaufgabe im JSON-Format.
 
 THEMA: ${randomTheme}
 SQL-KONZEPT: ${randomConcept}
 
-Anforderungen:
-- Die setup_sql muss gültige PostgreSQL CREATE TABLE und INSERT Statements enthalten
-- Es sollen 2 Tabellen mit je 3-5 Zeilen Dummy-Daten erstellt werden
-- Die Frage muss auf Deutsch sein und zum IHK-Stil passen (praxisnah, technisch präzise)
-- Die solution_query muss die Aufgabe korrekt lösen
-- Gib das Ergebnis als reines JSON-Objekt zurück ohne Markdown-Formatierung
+WICHTIG - Antworte NUR mit diesem exakten JSON-Format (keine andere textuelle Erklärung):
+{"theme":"<THEMA>","themeDescription":"<beschreibung>","setup_sql":"<SQL>","question":"<frage>","solution_query":"<lösung>","difficulty":"<easy|medium|hard>"}
 
-Gib NUR das JSON-Objekt zurück, ohne jeglichen umgebenden Text, Markdown-Codeblöcke oder Erklärungen.`,
-    });
+Regeln:
+- theme: Eines der oberen Themen
+- themeDescription: 1-2 Sätze auf Deutsch
+- setup_sql: Gültige PostgreSQL CREATE TABLE + INSERT Statements
+- question: Aufgabe auf Deutsch, IHK-Stil
+- solution_query: Vollständige PostgreSQL SELECT Query
+- difficulty: "easy" ODER "medium" ODER "hard"
+- Keine Markdown-Codeblöcke, keine Erklärung, NUR das JSON`,
+      });
 
-    // Parse the JSON response manually
-    let jsonText = text.trim();
-    // Remove any markdown code blocks if present
-    if (jsonText.startsWith('```')) {
-      jsonText = jsonText.slice(jsonText.indexOf('\n') + 1);
-    }
-    if (jsonText.endsWith('```')) {
-      jsonText = jsonText.slice(0, -3);
-    }
-    jsonText = jsonText.trim();
+      const jsonText = extractJSON(text);
+      console.log('[generateSqlExercise] Raw response:', jsonText.slice(0, 300));
 
-    const parsed = schema.parse(JSON.parse(jsonText));
-    return parsed;
-  } catch (error: unknown) {
-    // Handle known error patterns
-    const message = getErrorMessage(error, 'Unbekannter Fehler');
+      const parsed = schema.parse(JSON.parse(jsonText));
+      return parsed;
+    } catch (error: unknown) {
+      lastError = error;
+      const message = getErrorMessage(error, 'Unbekannter Fehler');
+      console.error(`[generateSqlExercise] Attempt ${attempt} failed:`, message);
 
-    if (message.includes('rate limit') || message.includes('429')) {
-      throw new Error(`rate limit: Bitte warte einen Moment.`);
-    }
-    if (message.includes('401') || message.includes('API key') || message.includes('authentication')) {
-      throw new Error('GROQ_API_KEY ist ungültig oder abgelaufen. Bitte wende dich an den Administrator.');
-    }
-    if (message.includes('timeout') || message.includes('ETIMEDOUT') || message.includes('ECONNRESET')) {
-      throw new Error('Zeitüberschreitung bei der Generierung. Bitte erneut versuchen.');
-    }
+      // If it's a JSON parse error or Zod validation error, retry
+      if (
+        error instanceof SyntaxError ||
+        error instanceof z.ZodError ||
+        message.includes('Unexpected') ||
+        message.includes('undefined') ||
+        message.includes('Invalid')
+      ) {
+        if (attempt < maxRetries) {
+          console.log('[generateSqlExercise] Retrying...');
+          continue;
+        }
+      }
 
-    console.error('generateObject error:', error);
-    throw new Error(`Fehler bei der Generierung: ${message}`);
+      // For other errors, throw immediately
+      if (message.includes('rate limit') || message.includes('429')) {
+        throw new Error(`rate limit: Bitte warte einen Moment.`);
+      }
+      if (message.includes('401') || message.includes('API key') || message.includes('authentication')) {
+        throw new Error('GROQ_API_KEY ist ungültig oder abgelaufen. Bitte wende dich an den Administrator.');
+      }
+      if (message.includes('timeout') || message.includes('ETIMEDOUT') || message.includes('ECONNRESET')) {
+        throw new Error('Zeitüberschreitung bei der Generierung. Bitte erneut versuchen.');
+      }
+
+      throw new Error(`Fehler bei der Generierung: ${message}`);
+    }
   }
+
+  // If we get here, all retries failed
+  const finalMessage = getErrorMessage(lastError, 'Unbekannter Fehler');
+  throw new Error(`Fehler bei der Generierung nach ${maxRetries} Versuchen: ${finalMessage}`);
 }
