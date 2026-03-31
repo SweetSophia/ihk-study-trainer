@@ -1080,7 +1080,7 @@ function buildCommandToDescription(entry: CommandEntry): LinuxQuestion {
 
   return {
     theme: entry.category,
-    questionText: `Was macht der Befehl \`${entry.command}\`?${entry.example ? `\n\nBeispiel: \`${entry.example}\`` : ''}`,
+    questionText: `Was macht der Befehl ${entry.command}?${entry.example ? `\n\nBeispiel: ${entry.example}` : ''}`,
     command: entry.command,
     example: entry.example,
     direction: 'commandToDescription',
@@ -1094,7 +1094,7 @@ function buildCommandToDescription(entry: CommandEntry): LinuxQuestion {
       },
     ],
     solutionSteps: [
-      `Gegeben: Befehl \`${entry.command}\``,
+      `Gegeben: Befehl ${entry.command}`,
       '',
       `Erklärung:`,
       `  ${entry.explanation}`,
