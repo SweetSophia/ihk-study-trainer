@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { 
   Calculator, Image as ImageIcon, Network, ArrowLeftRight,
-  Binary, Hexagon, Shield, Layers, Cable, Server, Globe, Settings
+  Binary, Hexagon, Shield, Layers, Cable, Server, Globe, Settings, Database
 } from 'lucide-react';
 
 const MODULES = [
@@ -19,6 +19,7 @@ const MODULES = [
   { id: 'ports', name: 'Ports', icon: Server, description: 'Port/Protokoll' },
   { id: 'osi', name: 'OSI', icon: Globe, description: 'OSI-Schichten' },
   { id: 'cables', name: 'Kabel', icon: Cable, description: 'Kabelauswahl' },
+  { id: 'sql', name: 'SQL', icon: Database, description: 'Datenbankabfragen' },
 ];
 
 interface ThemeSelectorProps {

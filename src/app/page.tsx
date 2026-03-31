@@ -7,6 +7,7 @@ import StudyCard from './components/StudyCard';
 import AuthModal from './components/AuthModal';
 import ThemeSelector from './components/ThemeSelector';
 import ProgressDashboard from './components/ProgressDashboard';
+import SqlTrainer from './components/SqlTrainer';
 import { Question, User as UserType, AnswerInputConfig } from './types';
 import { 
   generateUniqueUser, 
@@ -509,11 +510,15 @@ export default function Home() {
 
           {/* Main Study Area */}
           <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
-            <StudyCard
-              question={currentQuestion}
-              onCheckAnswer={handleCheckAnswer}
-              onNextQuestion={handleNextQuestion}
-            />
+            {currentModule === 'sql' ? (
+              <SqlTrainer />
+            ) : (
+              <StudyCard
+                question={currentQuestion}
+                onCheckAnswer={handleCheckAnswer}
+                onNextQuestion={handleNextQuestion}
+              />
+            )}
           </div>
         </div>
       </main>
