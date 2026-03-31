@@ -1,6 +1,6 @@
 'use server';
 
-import { generateObject } from 'ai';
+import { generateText } from 'ai';
 import { groq } from '@ai-sdk/groq';
 import { z } from 'zod';
 import { hashExists } from '../lib/auth';
@@ -97,10 +97,16 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
     throw new Error('GROQ_API_KEY ist nicht konfiguriert. Bitte wende dich an den Administrator.');
   }
 
-  // 1. Validate accessHash exists in DB
-  const valid = await hashExists(accessHash);
-  if (!valid) {
-    throw new Error('Unauthorized: Bitte melde dich an.');
+  // 1. Validate accessHash exists in DB (throws on error with descriptive message)
+  try {
+    const valid = await hashExists(accessHash);
+    if (!valid) {
+      throw new Error('Unauthorized: Bitte melde dich an.');
+    }
+  } catch (error: unknown) {
+    // Re-throw descriptive errors from hashExists
+    const message = getErrorMessage(error, 'Fehler bei der Anmeldung');
+    throw new Error(message);
   }
 
   // 2. Check rate limit
@@ -115,9 +121,8 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
   const randomConcept = SQL_CONCEPTS[Math.floor(Math.random() * SQL_CONCEPTS.length)];
 
   try {
-    const { object } = await generateObject({
+    const { text } = await generateText({
       model: groq('llama-3.3-70b-versatile'),
-      schema,
       prompt: `Du bist ein erfahrener Datenbank-Dozent für die deutsche IHK-Prüfung zum Fachinformatiker für Systemintegration.
 Erstelle eine einzelne PostgreSQL-Übungsaufgabe basierend auf folgendem Thema und Konzept.
 
@@ -129,12 +134,24 @@ Anforderungen:
 - Es sollen 2 Tabellen mit je 3-5 Zeilen Dummy-Daten erstellt werden
 - Die Frage muss auf Deutsch sein und zum IHK-Stil passen (praxisnah, technisch präzise)
 - Die solution_query muss die Aufgabe korrekt lösen
-- Alles muss in einem einzigen JSON-Objekt zurückgegeben werden
+- Gib das Ergebnis als reines JSON-Objekt zurück ohne Markdown-Formatierung
 
-Gib NUR das JSON-Objekt zurück, ohne Markdown-Formatierung oder zusätzlichen Text.`,
+Gib NUR das JSON-Objekt zurück, ohne jeglichen umgebenden Text, Markdown-Codeblöcke oder Erklärungen.`,
     });
 
-    return object;
+    // Parse the JSON response manually
+    let jsonText = text.trim();
+    // Remove any markdown code blocks if present
+    if (jsonText.startsWith('```')) {
+      jsonText = jsonText.slice(jsonText.indexOf('\n') + 1);
+    }
+    if (jsonText.endsWith('```')) {
+      jsonText = jsonText.slice(0, -3);
+    }
+    jsonText = jsonText.trim();
+
+    const parsed = schema.parse(JSON.parse(jsonText));
+    return parsed;
   } catch (error: unknown) {
     // Handle known error patterns
     const message = getErrorMessage(error, 'Unbekannter Fehler');

@@ -46,17 +46,20 @@ export function generateAccessHash(): string {
 
 /** Check if a hash already exists in the database */
 export async function hashExists(hash: string): Promise<boolean> {
-  if (!isSupabaseConfigured) return false;
-  try {
-    const { data, error } = await supabase.rpc('check_hash_exists', { p_hash: hash });
-    if (error) {
-      console.error('Error checking hash:', error);
-      return false;
-    }
-    return !!data;
-  } catch {
-    return false;
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase ist nicht konfiguriert. Bitte wende dich an den Administrator.');
   }
+  const { data, error } = await supabase.rpc('check_hash_exists', { p_hash: hash });
+  if (error) {
+    // Distinguish RPC errors from "not found"
+    if (error.message?.includes('does not exist') || error.code === 'PGRST202') {
+      // RPC function not deployed — this is a setup error, not "hash not found"
+      throw new Error(`Supabase RPC 'check_hash_exists' nicht gefunden. Bitte Datenbank neu aufsetzen.`);
+    }
+    console.error('Error checking hash:', error);
+    throw new Error(`Datenbankfehler bei der Anmeldung: ${error.message}`);
+  }
+  return !!data;
 }
 
 /** Create a new user with the given hash.
