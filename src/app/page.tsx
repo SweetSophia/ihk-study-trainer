@@ -504,7 +504,7 @@ export default function Home() {
               <ThemeSelector
                 currentModule={currentModule}
                 onSelectModule={handleSelectModule}
-                isAuthenticated={!!user}
+                isAuthenticated={!!accessHash}
               />
             </div>
           </div>
