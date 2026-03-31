@@ -104,7 +104,7 @@ export default function LinuxTerminal({
         >
           {/* Welcome header */}
           <div className="text-green-600/60 text-xs mb-3">
-            <div>Welcome to IHK-Study-Trainer OS (GNU/Linux 6.8.0-106-generic x86_64)</div>
+            <div>Willkommen bei IHK-Study-Trainer OS (GNU/Linux 6.8.0-106-generic x86_64)</div>
           </div>
 
           {/* Command prompt with input */}

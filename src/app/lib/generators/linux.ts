@@ -948,7 +948,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'at',
     description: 'Plant einen einmaligen Befehl für eine bestimmte Uhrzeit',
     explanation:
-      'at führt Befehle einmalig zu einem bestimmten Zeitpunkt aus. at 02:00 planed einen Befehl für 2 Uhr nachts. atq zeigt geplante Jobs, atrm entfernt sie.',
+      'at führt Befehle einmalig zu einem bestimmten Zeitpunkt aus. at 02:00 plant einen Befehl für 2 Uhr nachts. atq zeigt geplante Jobs, atrm entfernt sie.',
     example: 'echo "backup.sh" | at 02:00',
     category: 'Zeitplanung (Cron)',
     difficulty: 'medium',
@@ -1125,8 +1125,8 @@ function buildDescriptionToCommand(entry: CommandEntry): LinuxQuestion {
     example: entry.example,
     direction: 'descriptionToCommand',
     expectedAnswers: { answer: entry.command },
-    // No answerInputs → uses the LinuxTerminal text input component
-    // The validation in page.tsx handles text comparison (case-insensitive, trimmed)
+    // Nutzt das LinuxTerminal als Texteingabe-Komponente;
+    // die Validierung erfolgt weiterhin über answerInputs/acceptedValues (case-insensitive, getrimmt) in page.tsx.
     answerInputs: [
       {
         valueKey: 'answer',
