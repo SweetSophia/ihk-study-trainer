@@ -25,6 +25,26 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: Split and execute multiple SQL statements
+// ---------------------------------------------------------------------------
+/**
+ * Executes multiple SQL statements from a single SQL string.
+ * Splits by semicolons and executes each statement individually.
+ * PostgreSQL prepared statements don't support multiple commands.
+ */
+async function executeMultiStatement(db: PGlite, sql: string): Promise<void> {
+  // Split by semicolons, filter out empty statements
+  const statements = sql
+    .split(';')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  for (const statement of statements) {
+    await db.query(statement);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 interface SqlTrainerProps {
@@ -81,8 +101,8 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
     const db = new PGlite();
 
     try {
-      // Execute the AI's schema and dummy data
-      await db.query(exercise.setup_sql);
+      // Execute the AI's schema and dummy data (split multi-statement SQL)
+      await executeMultiStatement(db, exercise.setup_sql);
 
       // Get the expected result set using the AI's solution
       let expectedResult;
