@@ -7,6 +7,7 @@ import StudyCard from './components/StudyCard';
 import AuthModal from './components/AuthModal';
 import ThemeSelector from './components/ThemeSelector';
 import ProgressDashboard from './components/ProgressDashboard';
+import SqlTrainer from './components/SqlTrainer';
 import { Question, User as UserType, AnswerInputConfig } from './types';
 import { 
   generateUniqueUser, 
@@ -503,17 +504,38 @@ export default function Home() {
               <ThemeSelector
                 currentModule={currentModule}
                 onSelectModule={handleSelectModule}
+                isAuthenticated={!!user}
               />
             </div>
           </div>
 
           {/* Main Study Area */}
           <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
-            <StudyCard
-              question={currentQuestion}
-              onCheckAnswer={handleCheckAnswer}
-              onNextQuestion={handleNextQuestion}
-            />
+            {currentModule === 'sql' ? (
+              <SqlTrainer
+                accessHash={accessHash}
+                onCorrect={() => {
+                  if (accessHash) {
+                    updateProgress(accessHash, 'sql', true)
+                      .then(() => loadProgress(accessHash))
+                      .catch((err) => console.error('Error updating progress:', err));
+                  }
+                }}
+                onIncorrect={() => {
+                  if (accessHash) {
+                    updateProgress(accessHash, 'sql', false)
+                      .then(() => loadProgress(accessHash))
+                      .catch((err) => console.error('Error updating progress:', err));
+                  }
+                }}
+              />
+            ) : (
+              <StudyCard
+                question={currentQuestion}
+                onCheckAnswer={handleCheckAnswer}
+                onNextQuestion={handleNextQuestion}
+              />
+            )}
           </div>
         </div>
       </main>
