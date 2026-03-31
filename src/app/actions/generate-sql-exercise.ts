@@ -92,35 +92,48 @@ export type SqlExercise = z.infer<typeof schema>;
 // Server Action
 // ---------------------------------------------------------------------------
 export async function generateSqlExercise(accessHash: string): Promise<SqlExercise> {
+  console.log('[generateSqlExercise] Called with hash:', accessHash ? `${accessHash.slice(0, 8)}...` : 'MISSING');
+  console.log('[generateSqlExercise] GROQ_API_KEY set:', !!process.env.GROQ_API_KEY);
+  
   // 0. Check GROQ_API_KEY presence
   if (!process.env.GROQ_API_KEY) {
+    console.error('[generateSqlExercise] GROQ_API_KEY missing!');
     throw new Error('GROQ_API_KEY ist nicht konfiguriert. Bitte wende dich an den Administrator.');
   }
 
   // 1. Validate accessHash exists in DB (throws on error with descriptive message)
+  console.log('[generateSqlExercise] Calling hashExists...');
   try {
     const valid = await hashExists(accessHash);
+    console.log('[generateSqlExercise] hashExists returned:', valid);
     if (!valid) {
       throw new Error('Unauthorized: Bitte melde dich an.');
     }
   } catch (error: unknown) {
     // Re-throw descriptive errors from hashExists
     const message = getErrorMessage(error, 'Fehler bei der Anmeldung');
+    console.error('[generateSqlExercise] hashExists error:', message);
     throw new Error(message);
   }
+  console.log('[generateSqlExercise] hash validated OK');
 
   // 2. Check rate limit
+  console.log('[generateSqlExercise] Checking rate limit...');
   const { allowed, retryAfterMs } = checkRateLimit(accessHash);
   if (!allowed) {
     const retryAfterSec = Math.ceil((retryAfterMs ?? rateLimitWindowMs) / 1000);
+    console.error('[generateSqlExercise] Rate limit exceeded');
     throw new Error(`rate limit: Bitte warte ${retryAfterSec}s.`);
   }
+  console.log('[generateSqlExercise] Rate limit OK');
 
   // 3. Generate exercise
+  console.log('[generateSqlExercise] Generating exercise with Groq...');
   const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
   const randomConcept = SQL_CONCEPTS[Math.floor(Math.random() * SQL_CONCEPTS.length)];
 
   try {
+    console.log('[generateSqlExercise] Calling generateObject with theme:', randomTheme);
     const { object } = await generateObject({
       model: groq('llama-3.3-70b-versatile'),
       schema,
@@ -139,9 +152,11 @@ Anforderungen:
 
 Gib NUR das JSON-Objekt zurück, ohne Markdown-Formatierung oder zusätzlichen Text.`,
     });
+    console.log('[generateSqlExercise] generateObject succeeded');
 
     return object;
   } catch (error: unknown) {
+    console.error('[generateSqlExercise] generateObject failed:', error);
     // Handle known error patterns
     const message = getErrorMessage(error, 'Unbekannter Fehler');
 
