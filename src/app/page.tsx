@@ -45,7 +45,7 @@ import { generateHexQuestion } from './lib/generators/hex';
 import { generateSubnetMaskQuestion } from './lib/generators/subnetMask';
 import { generateAggregationQuestion } from './lib/generators/aggregation';
 import { generatePortQuestion } from './lib/generators/ports';
-import { generateOsiQuestion, OSI_LAYER_NAMES } from './lib/generators/osi';
+import { generateOsiQuestion } from './lib/generators/osi';
 import { generateCableQuestion, CABLE_TYPES, ALL_CABLE_PROS } from './lib/generators/cables';
 import { generateLinuxQuestion } from './lib/generators/linux';
 import { generateCloudQuestion } from './lib/generators/cloud';
@@ -318,23 +318,17 @@ const GENERATORS: Record<string, () => Question> = {
 export default function Home() {
   const [user, setUser] = useState<UserType | null>(null);
   const [accessHash, setAccessHash] = useState<string | null>(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  // Lazy initializers read localStorage once on client mount to avoid synchronous setState in effects
+  const [showAuthModal, setShowAuthModal] = useState(
+    () => typeof window !== 'undefined' && !localStorage.getItem('ihk_access_hash')
+  );
   const [currentModule, setCurrentModule] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [progress, setProgress] = useState<{ module: string; questions_attempted: number; questions_correct: number; streak_days?: number }[]>([]);
   const [streakDays, setStreakDays] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Load user from localStorage on mount
-  useEffect(() => {
-    const storedHash = localStorage.getItem('ihk_access_hash');
-    if (storedHash) {
-      handleLogin(storedHash);
-    } else {
-      setIsLoading(false);
-      setShowAuthModal(true);
-    }
-  }, []);
+  const [isLoading, setIsLoading] = useState(
+    () => typeof window !== 'undefined' && !!localStorage.getItem('ihk_access_hash')
+  );
 
   const loadProgress = useCallback(async (hash: string) => {
     try {
@@ -349,7 +343,7 @@ export default function Home() {
     }
   }, []);
 
-  const handleLogin = async (hash: string): Promise<{ success: boolean; error?: string }> => {
+  const handleLogin = useCallback(async (hash: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const userData = await getUserByHash(hash);
       if (userData) {
@@ -370,7 +364,32 @@ export default function Home() {
       console.error('Login error:', error);
       return { success: false, error: 'Verbindungsfehler. Bitte versuche es erneut.' };
     }
-  };
+  }, [loadProgress]);
+
+  // Verify stored hash on mount; all setState calls happen in async .then()/.catch() callbacks
+  useEffect(() => {
+    const storedHash = localStorage.getItem('ihk_access_hash');
+    if (!storedHash) return;
+    getUserByHash(storedHash)
+      .then((userData) => {
+        if (userData) {
+          setUser(userData);
+          setAccessHash(storedHash);
+          setShowAuthModal(false);
+          setIsLoading(false);
+          loadProgress(storedHash);
+        } else {
+          localStorage.removeItem('ihk_access_hash');
+          setIsLoading(false);
+          setShowAuthModal(true);
+        }
+      })
+      .catch((error) => {
+        console.error('Login error:', error);
+        setIsLoading(false);
+        setShowAuthModal(true);
+      });
+  }, [loadProgress]);
 
   const handleRegister = async (): Promise<string | null> => {
     try {

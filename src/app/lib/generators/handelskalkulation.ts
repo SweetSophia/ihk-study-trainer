@@ -10,13 +10,6 @@ interface KalkulationStep {
   isResult?: boolean;  // Steps that are calculated results (no % input)
 }
 
-interface KalkulationSchema {
-  type: KalkulationType;
-  typeLabel: string;
-  givenKeys: string[];       // Keys provided as given values
-  askKeys: string[];         // Keys the user must calculate
-  steps: KalkulationStep[];
-}
 
 // Forward Kalkulation schema (LEP → BVP)
 const VORWAERTS_SCHEMA: KalkulationStep[] = [
@@ -115,7 +108,6 @@ function generateVorwaerts(): {
 
   // Calculate forward
   const lepNetto = lepBrutto / (1 + ustRate / 100);
-  const ustLief = lepBrutto - lepNetto;
   const rabattBetrag = calcPercent(lepNetto, lieferRabatt);
   const zep = lepNetto - rabattBetrag;
   const skontoBetrag = calcPercent(zep, lieferskonto);
@@ -234,7 +226,6 @@ function generateDifferenz(): {
   const zepMarkt = bepMarkt + skontoBetragMarkt;
   const rabattBetragMarkt = zepMarkt * (lieferRabatt / (100 + lieferRabatt));
   const lepNettoMarkt = zepMarkt + rabattBetragMarkt;
-  const lepBruttoMarkt = lepNettoMarkt * (1 + ustRate / 100);
 
   // The difference: positive = Gewinn, negative = Verlust
   const differenz = round2(bruttovkMarkt - bruttovkBerechnet);
@@ -348,7 +339,6 @@ function generateRueckwaerts(): {
   const zep = bep + skontoBetrag;
   const rabattBetrag = zep * (lieferRabatt / (100 + lieferRabatt));
   const lepNetto = zep + rabattBetrag;
-  const lepBrutto = lepNetto * (1 + ustRate / 100);
 
   const calculated = {
     ust: round2(ustBetrag),

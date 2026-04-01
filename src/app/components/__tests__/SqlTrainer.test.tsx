@@ -5,9 +5,9 @@ import userEvent from '@testing-library/user-event';
 // Mock framer-motion to avoid animation complexity in tests
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    div: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement> & { children?: React.ReactNode }) => <div {...props}>{children}</div>,
   },
-  AnimatePresence: ({ children }: any) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
 
 // Mock lucide-react icons
@@ -29,8 +29,11 @@ vi.mock('../../actions/generate-sql-exercise', () => ({
 // Mock PGlite as a class constructor
 let mockQueryFn = vi.fn();
 vi.mock('@electric-sql/pglite', () => ({
-  PGlite: vi.fn().mockImplementation(function (this: any) {
-    this.query = mockQueryFn;
+  PGlite: vi.fn().mockImplementation(function () {
+    return {
+      query: mockQueryFn,
+      close: vi.fn(),
+    };
   }),
 }));
 
@@ -62,8 +65,11 @@ describe('SqlTrainer', () => {
     // Reset mockQueryFn to a fresh mock
     mockQueryFn = vi.fn();
     // Re-assign to the PGlite mock implementation
-    vi.mocked(PGlite).mockImplementation(function (this: any) {
-      this.query = mockQueryFn;
+    vi.mocked(PGlite).mockImplementation(function () {
+      return {
+        query: mockQueryFn,
+        close: vi.fn(),
+      };
     });
   });
 
@@ -249,7 +255,9 @@ describe('SqlTrainer', () => {
 
       const solutionRows = [{ id: 1, name: 'Router-01', type: 'router' }];
       mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })           // setup_sql
+        .mockResolvedValueOnce({ rows: [] })           // setup: CREATE TABLE
+        .mockResolvedValueOnce({ rows: [] })           // setup: INSERT 1
+        .mockResolvedValueOnce({ rows: [] })           // setup: INSERT 2
         .mockResolvedValueOnce({ rows: solutionRows })  // solution_query
         .mockResolvedValueOnce({ rows: solutionRows }); // user query
 
@@ -275,7 +283,9 @@ describe('SqlTrainer', () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
       mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
         .mockResolvedValueOnce({ rows: [{ id: 1, name: 'Router-01', type: 'router' }] })
         .mockResolvedValueOnce({ rows: [{ id: 2, name: 'Switch-01', type: 'switch' }] });
 
@@ -301,7 +311,9 @@ describe('SqlTrainer', () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
       mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
         .mockResolvedValueOnce({ rows: [{ id: 1 }] })
         .mockRejectedValueOnce(new Error('syntax error at or near "SELEXT"'));
 
@@ -327,7 +339,9 @@ describe('SqlTrainer', () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
       mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
         .mockRejectedValueOnce(new Error('column "nonexistent" does not exist'));
 
       renderSqlTrainer();
@@ -348,7 +362,7 @@ describe('SqlTrainer', () => {
     it('shows generic validation error when PGlite throws on construction', async () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
-      vi.mocked(PGlite).mockImplementationOnce(function (this: any) {
+      vi.mocked(PGlite).mockImplementationOnce(function () {
         throw new Error('PGlite init failed');
       });
 
@@ -371,7 +385,9 @@ describe('SqlTrainer', () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
       mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
         .mockRejectedValueOnce(new Error('solution error'));
 
       const onCorrect = vi.fn();
@@ -403,7 +419,9 @@ describe('SqlTrainer', () => {
       const solutionRow = { id: 1, name: 'Router-01', type: 'router' };
       const userRow = { type: 'router', name: 'Router-01', id: 1 }; // same data, different key order
       mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
         .mockResolvedValueOnce({ rows: [solutionRow] })
         .mockResolvedValueOnce({ rows: [userRow] });
 
@@ -429,9 +447,11 @@ describe('SqlTrainer', () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
       mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [] });
+        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
+        .mockResolvedValueOnce({ rows: [] })  // solution_query
+        .mockResolvedValueOnce({ rows: [] }); // user query
 
       const onCorrect = vi.fn();
       renderSqlTrainer({ onCorrect });
@@ -471,9 +491,11 @@ describe('SqlTrainer', () => {
 
       const rows = [{ id: 1 }];
       mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows })
-        .mockResolvedValueOnce({ rows });
+        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
+        .mockResolvedValueOnce({ rows })      // solution_query
+        .mockResolvedValueOnce({ rows });     // user query
 
       renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
@@ -491,7 +513,9 @@ describe('SqlTrainer', () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
       mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
         .mockResolvedValueOnce({ rows: [{ id: 1 }] })
         .mockResolvedValueOnce({ rows: [{ id: 2 }] });
 
@@ -511,7 +535,9 @@ describe('SqlTrainer', () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
       mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
+        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
         .mockResolvedValueOnce({ rows: [{ id: 1 }] })
         .mockRejectedValueOnce(new Error('relation "unknown_table" does not exist'));
 
