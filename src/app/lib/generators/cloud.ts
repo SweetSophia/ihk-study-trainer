@@ -461,7 +461,7 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
     type: 'multipleChoice',
     topic: 'Modern Architecture',
     difficulty: 'hard',
-    question: 'Ein Unternehmen plant eine Cloud-Migration. Welcher Ansatz ist für den Production-Start einer Webanwendung NICHT empfehlenswert?',
+    question: 'Ein Unternehmen plant eine Cloud-Migration. Welcher Ansatz hat typischerweise den höchsten operativen Aufwand und die steilste Lernkurve für ein Team ohne Kubernetes-Erfahrung?',
     options: [
       'Start mit einer einzelnen EC2-Instanz (Lift & Shift)',
       'Start mit einer vollständigen Container-Architektur auf EKS',
@@ -469,7 +469,7 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
       'Start mit einer Managed Database (RDS)'
     ],
     correctAnswer: 'Start mit einer vollständigen Container-Architektur auf EKS',
-    explanation: 'Für den Start einer neuen Anwendung ist eine vollständige Kubernetes-Architektur oft zu komplex. Ein Lift-and-Shift oder eine einfache Serverless-Architektur ist für den Anfang besser geeignet.',
+    explanation: 'Kubernetes erfordert ein tiefes Verständnis von Orchestrierungskonzepten, YAML-Konfiguration, Networking, Storage und Monitoring. EKS fügt zusätzlich AWS-spezifische Komplexität hinzu (IAM, VPC, Security Groups). Die Lernkurve ist deutlich steiler als bei EC2 (einfache VM-Verwaltung) oder Lambda (abstrakte Ausführung ohne Server-Management). Hinzu kommt der Betriebsaufwand für Cluster-Wartung, Upgrades und Self-Healing-Konfiguration.',
   },
   {
     type: 'multipleChoice',
@@ -525,13 +525,20 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
   },
 ];
 
-// --- Helper Functions ---
+/**
+ * Selects a uniformly distributed integer between the given bounds, inclusive.
+ *
+ * @param min - The lower bound (inclusive)
+ * @param max - The upper bound (inclusive)
+ * @returns A random integer x such that `min <= x <= max`
+ */
 function getRandomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 // --- Main Generator Function ---
 export interface CloudQuestionResult {
+  theme: string;
   questionText: string;
   expectedAnswers: Record<string, string | number | boolean>;
   solutionSteps: string[];
@@ -540,6 +547,22 @@ export interface CloudQuestionResult {
   scenario?: string;
 }
 
+/**
+ * Generate a randomized cloud knowledge question, optionally filtered by difficulty.
+ *
+ * If `difficulty` is provided the function prefers questions with that difficulty but falls back to the full question bank when none match.
+ *
+ * @param difficulty - Optional difficulty filter: 'easy', 'medium', or 'hard'
+ * @returns A `CloudQuestionResult` containing:
+ *  - `theme`: the question topic
+ *  - `questionText`: the question prompt (scenario returned separately via `scenario`)
+ *  - `expectedAnswers`: keyed expected answer values (e.g., `{ answer: ... }`)
+ *  - `solutionSteps`: array of strings summarizing topic, question, correct answer, and explanation
+ *  - `difficulty`: the chosen question's difficulty
+ *  - `answerInputs`: UI input configuration including `valueOptions` and `acceptedValues`
+ *  - `scenario` (optional): associated scenario text
+ * @throws Error if a `multipleChoice` or `matching` question is selected but `options` is not a non-empty array
+ */
 export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): CloudQuestionResult {
   // Filter by difficulty if specified
   let availableQuestions = CLOUD_QUESTIONS;
@@ -555,11 +578,8 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
   // Pick random question
   const q = availableQuestions[getRandomInt(0, availableQuestions.length - 1)];
 
-  // Build question text
-  let questionText = q.question;
-  if (q.scenario) {
-    questionText = `${q.scenario}\n\n${q.question}`;
-  }
+  // Build question text; embed scenario for UI compatibility when present
+  const questionText = q.scenario ? `${q.scenario}\n\n${q.question}` : q.question;
 
   // Build answer inputs based on question type
   let answerInputs: AnswerInputConfig[] = [];
@@ -570,7 +590,7 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
     case 'matching':
       // Validate that q.options exists and has entries before using it
       if (!Array.isArray(q.options) || q.options.length === 0) {
-        throw new Error(`Question "${q.question.slice(0, 40)}...": options must be a non-empty array for ${q.type} questions`);
+        throw new Error(`Frage "${q.question.slice(0, 40)}...": Antwortoptionen müssen für ${q.type}-Fragen als nicht-leeres Array definiert sein.`);
       }
       answerInputs = [{
         valueKey: 'answer',
@@ -603,6 +623,7 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
   ];
 
   return {
+    theme: q.topic,
     questionText,
     expectedAnswers,
     solutionSteps,

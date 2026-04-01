@@ -39,8 +39,10 @@ interface CommandEntry {
   /** Category name (German) */
   category: string;
   difficulty: 'easy' | 'medium' | 'hard';
-  /** Alternative accepted command names (e.g. "vi" for "vim") */
+  /** Alternative accepted command names (e.g. "vi" for "vim") — true synonyms only */
   aliases?: string[];
+  /** Related but non-equivalent tools shown in explanations only (not accepted as correct answers) */
+  alternatives?: string[];
 }
 
 const COMMAND_DATABASE: CommandEntry[] = [
@@ -168,20 +170,21 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'nano',
     description: 'Einfacher terminalbasierter Texteditor',
     explanation:
-      'nano ist ein anfängerfreundlicher Texteditor im Terminal. Befehle werden unten angezeigt (Strg+O speichern, Strg+X beenden).',
+      'nano ist ein anfängerfreundlicher Texteditor im Terminal. Befehle werden unten angezeigt (Strg+O speichern, Strg+X beenden). Weitere einfache Editoren: ed (Zeileneditor), red (reduziertes ed), pico (älterer, ähnlicher Editor).',
     example: 'nano /etc/hosts',
     category: 'Dateibetrachtung und -bearbeitung',
     difficulty: 'easy',
+    alternatives: ['ed', 'red', 'pico'],
   },
   {
     command: 'vim',
     description: 'Mächtiger terminalbasierter Texteditor (Vi Improved)',
     explanation:
-      'vim (Vi IMproved) ist ein leistungsfähiger Texteditor mit Modal-Konzept: Normal-Modus (Navigation), Insert-Modus (Eingabe mit i), Command-Modus (:wq speichern/beenden). Alias: vi.',
+      'vim (Vi IMproved) ist ein leistungsfähiger Texteditor mit Modal-Konzept: Normal-Modus (Navigation), Insert-Modus (Eingabe mit i), Command-Modus (:wq speichern/beenden). Alias: vi. GUI-Varianten: gvim (GTK), gview, evim, rvim, rgvim.',
     example: 'vim /etc/fstab',
     category: 'Dateibetrachtung und -bearbeitung',
     difficulty: 'medium',
-    aliases: ['vi'],
+    aliases: ['vi', 'gvim', 'gview', 'evim', 'rvim', 'rgvim'],
   },
 
   // ── System Information and Resource Monitoring ─────────────────────────
@@ -261,7 +264,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
   },
   {
     command: 'kill',
-    description: 'Sendet ein Signal an einen Prozess (standardmäßig SIGTERM)',
+    description: 'Sendet ein Signal an einen Prozess (standardmäßig SIGTERM, mit -9: SIGKILL)',
     explanation:
       'kill beendet Prozesse anhand ihrer PID. kill PID sendet SIGTERM (höflich), kill -9 PID sendet SIGKILL (erzwungen).',
     example: 'kill -9 12345',
@@ -314,6 +317,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'ip addr show',
     category: 'Netzwerk',
     difficulty: 'medium',
+    aliases: ['ifconfig'],
   },
   {
     command: 'ss',
@@ -328,19 +332,21 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'curl',
     description: 'Überträgt Daten von oder zu einem Server (HTTP, FTP usw.)',
     explanation:
-      'curl (Client URL) ist ein vielseitiges Tool für Datenübertragungen. Es unterstützt HTTP, HTTPS, FTP und viele weitere Protokolle. -o speichert die Ausgabe, -I zeigt nur Header.',
+      'curl (Client URL) ist ein vielseitiges Tool für Datenübertragungen. Ideal für API-Aufrufe und komplexe Übertragungen. Für einfache Downloads ist wget bevorzugt. Unterstützt HTTP, HTTPS, FTP und viele weitere Protokolle. -o speichert die Ausgabe, -I zeigt nur Header.',
     example: 'curl -I https://example.com',
     category: 'Netzwerk',
     difficulty: 'easy',
+    alternatives: ['wget'],
   },
   {
     command: 'wget',
-    description: 'Lädt Dateien aus dem Internet herunter (non-interaktiv)',
+    description: 'Lädt Dateien aus dem Internet herunter (non-interaktiv, bevorzugt für Downloads)',
     explanation:
-      'wget (Web Get) lädt Dateien rekursiv von Webservern herunter. Es unterstützt Fortsetzen abgebrochener Downloads und Spiegeln von Websites.',
+      'wget (Web Get) lädt Dateien von Webservern herunter. Bevorzugt für Downloads wegen Fortsetzung abgebrochener Downloads, rekursivem Spiegeln und einfacher Nutzung. Alternative: curl (für API-Aufrufe und komplexere Übertragungen).',
     example: 'wget https://example.com/file.tar.gz',
     category: 'Netzwerk',
     difficulty: 'easy',
+    alternatives: ['curl'],
   },
   {
     command: 'ssh',
@@ -498,19 +504,21 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'useradd',
     description: 'Erstellt einen neuen Benutzeraccount',
     explanation:
-      'useradd erstellt einen neuen Benutzer. Mit -m wird das Home-Verzeichnis erstellt, -s setzt die Shell, -G fügt zusätzliche Gruppen hinzu.',
+      'useradd erstellt einen neuen Benutzer. Mit -m wird das Home-Verzeichnis erstellt, -s setzt die Shell, -G fügt zusätzliche Gruppen hinzu. Debian/Ubuntu-Alternative: adduser.',
     example: 'useradd -m -s /bin/bash neueruser',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
+    aliases: ['adduser'],
   },
   {
     command: 'userdel',
     description: 'Löscht einen Benutzeraccount',
     explanation:
-      'userdel entfernt einen Benutzer. Mit -r wird auch das Home-Verzeichnis gelöscht.',
+      'userdel entfernt einen Benutzer. Mit -r wird auch das Home-Verzeichnis gelöscht. Debian/Ubuntu-Alternative: deluser.',
     example: 'userdel -r alteruser',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
+    aliases: ['deluser'],
   },
   {
     command: 'usermod',
@@ -525,19 +533,21 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'groupadd',
     description: 'Erstellt eine neue Benutzergruppe',
     explanation:
-      'groupadd erstellt eine neue Gruppe im System.',
+      'groupadd erstellt eine neue Gruppe im System. Debian/Ubuntu-Alternative: addgroup.',
     example: 'groupadd entwickler',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
+    aliases: ['addgroup'],
   },
   {
     command: 'groupdel',
     description: 'Löscht eine Benutzergruppe',
     explanation:
-      'groupdel entfernt eine bestehende Gruppe aus dem System.',
+      'groupdel entfernt eine bestehende Gruppe aus dem System. Debian/Ubuntu-Alternative: delgroup.',
     example: 'groupdel altegruppe',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
+    aliases: ['delgroup'],
   },
   {
     command: 'id',
@@ -657,10 +667,11 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'fdisk',
     description: 'Verwaltet Festplattenpartitionen (anzeigen, erstellen, löschen)',
     explanation:
-      'fdisk ist ein Tool zur Partitionierung von Festplatten. Mit -l werden Partitionen angezeigt, ohne Argumente startet der interaktive Modus.',
+      'fdisk ist ein Tool zur Partitionierung von Festplatten. Mit -l werden Partitionen angezeigt, ohne Argumente startet der interaktive Modus. Alternativen: gdisk (GPT), cfdisk (Curses-basiert), sfdisk (Skript-basiert), parted (moderner).',
     example: 'fdisk -l',
     category: 'Festplatte und Dateisystem',
     difficulty: 'hard',
+    alternatives: ['gdisk', 'cfdisk', 'sfdisk', 'parted'],
   },
   {
     command: 'mkfs',
@@ -789,19 +800,21 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'traceroute',
     description: 'Verfolgt den Pfad von Netzwerkpaketen zum Zielhost',
     explanation:
-      'traceroute zeigt alle Router (Hops), die ein Paket auf dem Weg zum Ziel durchläuft, einschließlich der Latenzzeiten.',
+      'traceroute zeigt alle Router (Hops), die ein Paket auf dem Weg zum Ziel durchläuft, einschließlich der Latenzzeiten. Alternative: mtr (kombiniert traceroute und ping in Echtzeit).',
     example: 'traceroute google.de',
     category: 'Netzwerk (erweitert)',
     difficulty: 'medium',
+    alternatives: ['mtr'],
   },
   {
     command: 'nslookup',
     description: 'Führt DNS-Abfragen durch (Name → IP oder IP → Name)',
     explanation:
-      'nslookup (Name Server Lookup) fragt DNS-Server ab, um IP-Adressen zu Hostnamen aufzulösen oder umgekehrt.',
+      'nslookup (Name Server Lookup) fragt DNS-Server ab, um IP-Adressen zu Hostnamen aufzulösen oder umgekehrt. Alternative: dig (detailliertere Ausgabe, mehr Record-Typen).',
     example: 'nslookup google.de',
     category: 'Netzwerk (erweitert)',
     difficulty: 'easy',
+    alternatives: ['dig'],
   },
   {
     command: 'dig',
@@ -811,15 +824,17 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'dig google.de MX',
     category: 'Netzwerk (erweitert)',
     difficulty: 'medium',
+    alternatives: ['nslookup'],
   },
   {
     command: 'iptables',
     description: 'Konfiguriert die Linux-Firewall (Paketfilter-Regeln)',
     explanation:
-      'iptables verwaltet die Netfilter-Firewall-Regeln im Linux-Kernel. Es kann Pakete akzeptieren, ablehnen, umleiten oder protokollieren. Wird zunehmend durch nftables ersetzt.',
+      'iptables verwaltet die Netfilter-Firewall-Regeln im Linux-Kernel. Es kann Pakete akzeptieren, ablehnen, umleiten oder protokollieren. Wird zunehmend durch nftables ersetzt. Alternative (benutzerfreundlicher): ufw (Uncomplicated Firewall).',
     example: 'iptables -L -n -v',
     category: 'Netzwerk (erweitert)',
     difficulty: 'hard',
+    alternatives: ['ufw'],
   },
   {
     command: 'tracepath',
@@ -957,7 +972,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
   // ── Output Redirection ─────────────────────────────────────────────────
   {
     command: '|',
-    description: 'Leitet die Ausgabe eines Befehls als Eingabe an den nächsten weiter (Pipe)',
+    description: 'Leitet die Standardausgabe eines Befehls als Standardeingabe an den nächsten weiter (Pipe)',
     explanation:
       'Der Pipe-Operator | verbindet zwei Befehle: die Standardausgabe des ersten Befehls wird zur Standardeingabe des zweiten. Beispiel: ps aux | grep nginx.',
     example: 'ps aux | grep nginx',
@@ -966,7 +981,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
   },
   {
     command: '>',
-    description: 'Leitet die Ausgabe in eine Datei um (überschreibt vorhandene Datei)',
+    description: 'Leitet die Standardausgabe in eine Datei um (überschreibt vorhandene Datei)',
     explanation:
       'Der Operator > schreibt die Standardausgabe in eine Datei und überschreibt dabei den vorhandenen Inhalt. echo "text" > datei.txt.',
     example: 'echo "Hallo" > datei.txt',
@@ -975,7 +990,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
   },
   {
     command: '>>',
-    description: 'Hängt die Ausgabe an eine Datei an (ohne zu überschreiben)',
+    description: 'Hängt die Standardausgabe an eine Datei an (ohne zu überschreiben)',
     explanation:
       'Der Operator >> hängt die Standardausgabe ans Ende einer Datei an, ohne den bestehenden Inhalt zu löschen.',
     example: 'echo "Neue Zeile" >> datei.txt',
@@ -984,7 +999,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
   },
   {
     command: '<',
-    description: 'Liest die Eingabe für einen Befehl aus einer Datei',
+    description: 'Übergibt Inhalt von Datei an Standardeingabe von Befehl',
     explanation:
       'Der Operator < leitet den Inhalt einer Datei als Standardeingabe an einen Befehl weiter. sort < unsortiert.txt.',
     example: 'sort < unsortiert.txt',
@@ -1145,6 +1160,7 @@ function buildDescriptionToCommand(entry: CommandEntry): LinuxQuestion {
       '',
       'Ergebnis:',
       `  Befehl: ${entry.command}${entry.aliases?.length ? ` (auch: ${entry.aliases.join(', ')})` : ''}`,
+      ...(entry.alternatives?.length ? [`  Verwandte Tools: ${entry.alternatives.join(', ')}`] : []),
     ],
     difficulty: entry.difficulty,
   };

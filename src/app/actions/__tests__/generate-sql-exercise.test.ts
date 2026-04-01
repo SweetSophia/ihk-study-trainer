@@ -22,8 +22,8 @@ import { generateSqlExercise, SqlExercise } from '../generate-sql-exercise';
 const mockGenerateText = vi.mocked(generateText);
 const mockGroq = vi.mocked(groq);
 
-// Incrementing counter — never reset between tests so every call gets a unique hash
-// and avoids hitting the in-memory rate-limit (5 calls/min per hash).
+// Deterministic test counter - avoids Date.now()/Math.random() in test hashes
+// Do NOT reset between tests; each test gets a unique hash to avoid rate limiting
 let testCounter = 0;
 const nextHash = () => `test-hash-${testCounter++}`;
 
@@ -78,16 +78,16 @@ describe('generateSqlExercise', () => {
     expect(callArgs.prompt).toContain('SQL-KONZEPT:');
   });
 
-  it('throws "rate limit" error when generateText rejects with a rate limit message', async () => {
-    mockGenerateText.mockRejectedValueOnce(new Error('rate limit exceeded'));
+  it('throws when generateText rejects', async () => {
+    mockGenerateText.mockRejectedValueOnce(new Error('API rate limit exceeded'));
 
-    await expect(generateSqlExercise(nextHash())).rejects.toThrow('rate limit:');
+    await expect(generateSqlExercise(nextHash())).rejects.toThrow('rate limit: Bitte warte einen Moment.');
   });
 
-  it('throws "Fehler bei der Generierung" for generic generateText errors', async () => {
+  it('throws when generateText rejects with network error', async () => {
     mockGenerateText.mockRejectedValueOnce(new Error('Network error'));
 
-    await expect(generateSqlExercise(nextHash())).rejects.toThrow('Fehler bei der Generierung:');
+    await expect(generateSqlExercise(nextHash())).rejects.toThrow('Fehler bei der Generierung: Network error');
   });
 
   it('selects a theme from the THEMES list', async () => {
@@ -129,7 +129,7 @@ describe('generateSqlExercise', () => {
     spy.mockRestore();
   });
 
-  it('returns the exact object parsed from the generateText response', async () => {
+  it('returns the exact object from generateText response', async () => {
     const customExercise: SqlExercise = {
       theme: 'IT-Helpdesk Ticket System',
       themeDescription: 'Verwaltung von Support-Tickets',

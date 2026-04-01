@@ -50,7 +50,12 @@ import { generateCableQuestion, CABLE_TYPES, ALL_CABLE_PROS } from './lib/genera
 import { generateLinuxQuestion } from './lib/generators/linux';
 import { generateCloudQuestion } from './lib/generators/cloud';
 
-/** Parse a numeric string, treating comma as decimal separator (German locale). */
+/**
+ * Parse a numeric string where a comma is treated as the decimal separator.
+ *
+ * @param raw - The numeric string to parse; may use `,` as the decimal separator
+ * @returns The numeric value represented by `raw`, or `NaN` if it cannot be parsed
+ */
 function parseLocaleFloat(raw: string): number {
   return parseFloat(raw.replace(',', '.'));
 }
@@ -285,7 +290,7 @@ const GENERATORS: Record<string, () => Question> = {
     const q = generateCloudQuestion();
     return {
       id: `cloud-${Date.now()}`,
-      theme: 'Cloud Computing',
+      theme: q.theme,
       module: 'cloud',
       questionText: q.questionText,
       expectedAnswers: q.expectedAnswers,
