@@ -273,6 +273,7 @@ function generateDifferenz(): {
 
   const calculated = {
     ...forwardSteps,
+    ...backwardSteps,
     differenz: differenz,
     bruttovkMarkt: round2(bruttovkMarkt),
   };
@@ -318,12 +319,12 @@ function generateRueckwaerts(): {
   const ustBetrag = calcPercent(bruttovk / (1 + ustRate / 100), ustRate);
   const nettovk = bruttovk - ustBetrag;
   
-  // Reverse Kundenrabatt: nettovk = zvp - rabatt, so zvp = nettovk / (1 - rabatt/100)
-  const zvp = nettovk / (1 - kundenRabatt / 100);
+  // Reverse Kundenrabatt: nettovk = zvp - rabatt, so zvp = nettovk * (1 - rabatt/100)
+  const zvp = nettovk * (1 - kundenRabatt / 100);
   const kundenRabattBetrag = zvp - nettovk;
   
-  // Reverse Kundenskonto: zvp = bvp + skonto, so bvp = zvp / (1 - skonto/100)
-  const bvp = zvp / (1 - kundenSkonto / 100);
+  // Reverse Kundenskonto: bvp = zvp - skonto, so bvp = zvp * (1 - skonto/100)
+  const bvp = zvp * (1 - kundenSkonto / 100);
   const kundenSkontoBetrag = zvp - bvp;
   
   // Reverse Gewinn: bvp = selbstkosten + gewinn, but gewinn = selbstkosten * %
