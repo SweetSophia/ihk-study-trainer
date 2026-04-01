@@ -19,7 +19,11 @@ const TIME_TO_SECONDS: Record<string, number> = {
 /**
  * Parse a numeric string where a comma is treated as the decimal separator.
  */
-export function parseLocaleFloat(raw: string): number {
+export function parseLocaleFloat(raw?: string | null): number {
+  if (raw == null || raw.trim() === '') {
+    return Number.NaN;
+  }
+
   return parseFloat(raw.replace(',', '.'));
 }
 
@@ -48,48 +52,74 @@ export function validateStructuredAnswer(
   expected: Record<string, string | number | boolean>,
   answers: Record<string, string>
 ): boolean {
-  const allUnitOptions = inputs.flatMap((cfg) => cfg.unitOptions ?? []);
-  const convMap = detectConversionMap(allUnitOptions);
-
-  if (convMap) {
-    let expectedTotal = 0;
-    for (const cfg of inputs) {
-      const val = Number(expected[cfg.valueKey]);
-      const unit = String(expected[cfg.unitKey ?? '']).toLowerCase();
-      const factor = convMap[unit];
-      if (factor === undefined) return false;
-      expectedTotal += val * factor;
-    }
-
-    let userTotal = 0;
-    for (const cfg of inputs) {
-      const val = parseLocaleFloat(answers[cfg.valueKey] || '');
-      const unit = (answers[cfg.unitKey ?? ''] || '').toLowerCase();
-      if (isNaN(val) || convMap[unit] === undefined) return false;
-      userTotal += val * convMap[unit];
-    }
-
-    if (expectedTotal === 0) return userTotal === 0;
-    const tolerance = Math.abs(expectedTotal) * 0.05;
-    return Math.abs(userTotal - expectedTotal) <= tolerance;
-  }
-
-  const configByKey = new Map(inputs.map((cfg) => [cfg.valueKey, cfg]));
   const acceptedFieldAnswers: string[] = [];
+  const processedKeys = new Set<string>();
 
-  for (const [key, exp] of Object.entries(expected)) {
-    const cfg = configByKey.get(key);
+  for (const cfg of inputs) {
+    processedKeys.add(cfg.valueKey);
+    if (cfg.unitKey) {
+      processedKeys.add(cfg.unitKey);
+    }
 
-    if (cfg?.acceptedValues) {
-      const userAnswer = (answers[key] ?? '').trim().replace(/\s+/g, ' ');
+    if (cfg.acceptedValues) {
+      const userAnswer = (answers[cfg.valueKey] ?? '').trim().replace(/\s+/g, ' ');
       if (!userAnswer) return false;
+
       const userNorm = userAnswer.toLowerCase();
       if (!cfg.acceptedValues.some((v) => v.toLowerCase().replace(/\s+/g, ' ') === userNorm)) {
         return false;
       }
+
       if (cfg.acceptedValues.length > 1) {
         acceptedFieldAnswers.push(userNorm);
       }
+      continue;
+    }
+
+    const userAnswer = answers[cfg.valueKey]?.trim().toLowerCase();
+    const expectedStr = String(expected[cfg.valueKey]).toLowerCase();
+    const userNum = parseLocaleFloat(userAnswer);
+    const expectedNum = parseLocaleFloat(expectedStr);
+    const convMap = detectConversionMap(cfg.unitOptions ?? []);
+
+    if (convMap && cfg.unitKey) {
+      const expectedUnit = String(expected[cfg.unitKey] ?? '').toLowerCase();
+      const userUnit = (answers[cfg.unitKey] ?? '').toLowerCase();
+      const expectedFactor = convMap[expectedUnit];
+      const userFactor = convMap[userUnit];
+
+      if (
+        isNaN(userNum) ||
+        isNaN(expectedNum) ||
+        expectedFactor === undefined ||
+        userFactor === undefined
+      ) {
+        return false;
+      }
+
+      const expectedBase = expectedNum * expectedFactor;
+      const userBase = userNum * userFactor;
+
+      if (expectedBase === 0) {
+        if (userBase !== 0) return false;
+      } else {
+        const tolerance = Math.abs(expectedBase) * 0.05;
+        if (Math.abs(userBase - expectedBase) > tolerance) return false;
+      }
+
+      continue;
+    }
+
+    if (!isNaN(userNum) && !isNaN(expectedNum)) {
+      const tolerance = Math.abs(expectedNum) * 0.05;
+      if (Math.abs(userNum - expectedNum) > tolerance) return false;
+    } else if (userAnswer !== expectedStr) {
+      return false;
+    }
+  }
+
+  for (const [key, exp] of Object.entries(expected)) {
+    if (processedKeys.has(key)) {
       continue;
     }
 

@@ -44,4 +44,38 @@ describe('answer validation helpers', () => {
       )
     ).toBe(true);
   });
+
+
+  it('returns false instead of throwing when a numeric field is missing', () => {
+    expect(
+      validateStructuredAnswer(
+        [{ valueKey: 'result' }],
+        { result: 42 },
+        {}
+      )
+    ).toBe(false);
+  });
+
+  it('validates structured conversion answers per field so errors cannot cancel out', () => {
+    expect(
+      validateStructuredAnswer(
+        [
+          { valueKey: 'download', unitKey: 'downloadUnit', unitOptions: ['MiB', 'GiB'] },
+          { valueKey: 'duration', unitKey: 'durationUnit', unitOptions: ['Sekunden', 'Minuten'] },
+        ],
+        {
+          download: 1024,
+          downloadUnit: 'mib',
+          duration: 120,
+          durationUnit: 'sekunden',
+        },
+        {
+          download: '0.5',
+          downloadUnit: 'gib',
+          duration: '11.4667',
+          durationUnit: 'minuten',
+        }
+      )
+    ).toBe(false);
+  });
 });

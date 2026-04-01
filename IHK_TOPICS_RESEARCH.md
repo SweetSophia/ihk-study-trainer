@@ -17,7 +17,7 @@ Uses percentage-based calculations with simple operators (+, -, *, /).
 **Purpose:** Calculate selling price from supplier price
 **Direction:** Listeneinkaufspreis (LEP) → Bruttoverkaufspreis (BVP)
 **Schema:**
-```
+```text
 LEP brutto
   - Umsatzsteuer (19%)
   = LEP netto
@@ -55,7 +55,7 @@ LEP brutto
 **Use case:** When competitor's price is known, calculate max allowable cost
 
 **Schema (reverse):**
-```
+```text
 BVP
   - Umsatzsteuer
   = Nettoverkaufspreis
@@ -89,7 +89,7 @@ BVP
 #### 4. Handelskalkulation Combined
 Mix of all three types, random selection of which intermediate values to hide
 
-### Question Types for Kalschulation
+### Question Types for Kalkulation
 1. **fillBlank:** Complete missing step(s) in schema (most common)
 2. **multipleChoice:** Identify correct intermediate value / formula
 3. **matching:** Match terms to definitions (LEP, ZEP, BEP, BP, etc.)
@@ -106,6 +106,7 @@ Mix of all three types, random selection of which intermediate values to hide
 ## 🔜 NEXT PRIORITY TOPICS (for later implementation)
 
 ### Business Math
+
 | Topic | Complexity | AI Needed | Notes |
 |-------|-----------|-----------|-------|
 | Zinsrechnung (Interest) | Low | No | Principal, rate, time; Simple & compound |
@@ -114,6 +115,7 @@ Mix of all three types, random selection of which intermediate values to hide
 | Gewinn-Verlust-Rechnung | Low | No | Simple profit/loss |
 
 ### IT Topics (FISI/FIAE)
+
 | Topic | Complexity | AI Needed | Notes |
 |-------|-----------|-----------|-------|
 | Subnetting | Medium | No | IPv4 CIDR, network/host bits |
@@ -136,4 +138,4 @@ Generator location: `src/app/lib/generators/math.ts` (or create new `handelskalk
 ## ✅ Validation Approach
 - All calculations use simple arithmetic - easy to validate server-side
 - Round to 2 decimal places (standard for €)
-- No floating point issues if using integers (cents) internally
+- No floating-point issues if using integers (cents) internally

@@ -53,6 +53,7 @@ describe('handelskalkulation generator', () => {
     expectMoneyClose(backwardSteps.bep + backwardSteps.skonto, backwardSteps.zep);
     expectMoneyClose(backwardSteps.zep + backwardSteps.rabatt, backwardSteps.lep);
     expectMoneyClose(calculated.differenz as number, given.bruttovkMarkt - forwardSteps.bruttovk);
+    expect(calculated.differenz).not.toBe(0);
   });
 
   it('builds differenz questions with structured prefixed answer inputs', () => {

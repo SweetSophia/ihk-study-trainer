@@ -10,8 +10,9 @@
 
     function updateUseElements() {
         document.querySelectorAll("use").forEach(el => {
-            if (el.getAttribute("href").includes("#icon-")) {
-                el.setAttribute("href", el.getAttribute("href").replace(/.*#/, "#"));
+            const href = el.getAttribute("href");
+            if (href && href.includes("#icon-")) {
+                el.setAttribute("href", href.replace(/.*#/, "#"));
             }
         });
     }

@@ -526,13 +526,6 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
   },
 ];
 
-/**
- * Selects a uniformly distributed integer between the given bounds, inclusive.
- *
- * @param min - The lower bound (inclusive)
- * @param max - The upper bound (inclusive)
- * @returns A random integer x such that `min <= x <= max`
- */
 const CLOUD_QUESTIONS_BY_DIFFICULTY: Record<CloudDifficulty, CloudQuestion[]> = {
   easy: CLOUD_QUESTIONS.filter((question) => question.difficulty === 'easy'),
   medium: CLOUD_QUESTIONS.filter((question) => question.difficulty === 'medium'),
@@ -558,6 +551,13 @@ export function resolveCloudQuestionsForDifficulty(
   return Array.isArray(bucket) && bucket.length > 0 ? bucket : CLOUD_QUESTIONS;
 }
 
+/**
+ * Selects a uniformly distributed integer between the given bounds, inclusive.
+ *
+ * @param min - The lower bound (inclusive)
+ * @param max - The upper bound (inclusive)
+ * @returns A random integer x such that `min <= x <= max`
+ */
 function getRandomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }

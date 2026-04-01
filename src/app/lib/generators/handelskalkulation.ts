@@ -322,17 +322,21 @@ export function generateDifferenzCalculation(): GeneratedDifferenz {
     };
   };
 
-  let bruttovkMarkt = round2(ustForwardStep.total);
-  let backwardMarket = buildBackwardFromMarket(bruttovkMarkt);
+  const forwardBruttovk = round2(ustForwardStep.total);
+  let bruttovkMarkt = 0;
+  let backwardMarket: ReturnType<typeof buildBackwardFromMarket> = null;
 
   for (let attempt = 0; attempt < 25 && !backwardMarket; attempt += 1) {
     const variance = 0.9 + Math.random() * 0.35;
     bruttovkMarkt = round2(ustForwardStep.total * variance);
+    if (bruttovkMarkt === forwardBruttovk) {
+      continue;
+    }
     backwardMarket = buildBackwardFromMarket(bruttovkMarkt);
   }
 
   if (!backwardMarket) {
-    bruttovkMarkt = round2(ustForwardStep.total);
+    bruttovkMarkt = round2(forwardBruttovk * 1.05);
     backwardMarket = buildBackwardFromMarket(bruttovkMarkt);
   }
 
@@ -546,9 +550,9 @@ function buildQuestion(
     solutionSteps.push('=== ERGEBNIS ===');
     solutionSteps.push('Differenz = Markt-Brutto-VK − berechneter Brutto-VK');
     solutionSteps.push(`Differenz = ${formatEuro(given.bruttovkMarkt)} − ${formatEuro(forwardSteps.bruttovk)}`);
-    solutionSteps.push(`Differenz = ${formatEuro(Math.abs(differenz))}`);
+    solutionSteps.push(`Differenz = ${formatEuro(differenz)}`);
     solutionSteps.push('');
-    solutionSteps.push(`${differenz >= 0 ? '✅' : '❌'} ${differenzLabel}: ${formatEuro(Math.abs(differenz))}`);
+    solutionSteps.push(`${differenz >= 0 ? '✅' : '❌'} ${differenzLabel}: ${formatEuro(differenz)}`);
     solutionSteps.push(
       differenz >= 0
         ? 'Der Marktpreis liegt mindestens auf dem berechneten Niveau.'

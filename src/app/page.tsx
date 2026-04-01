@@ -192,17 +192,12 @@ const GENERATORS: Record<string, () => Question> = {
 export default function Home() {
   const [user, setUser] = useState<UserType | null>(null);
   const [accessHash, setAccessHash] = useState<string | null>(null);
-  // Lazy initializers read localStorage once on client mount to avoid synchronous setState in effects
-  const [showAuthModal, setShowAuthModal] = useState(
-    () => typeof window !== 'undefined' && !localStorage.getItem('ihk_access_hash')
-  );
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentModule, setCurrentModule] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [progress, setProgress] = useState<{ module: string; questions_attempted: number; questions_correct: number; streak_days?: number }[]>([]);
   const [streakDays, setStreakDays] = useState(0);
-  const [isLoading, setIsLoading] = useState(
-    () => typeof window !== 'undefined' && !!localStorage.getItem('ihk_access_hash')
-  );
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadProgress = useCallback(async (hash: string) => {
     try {
@@ -240,12 +235,18 @@ export default function Home() {
     }
   }, [loadProgress]);
 
-  // Verify stored hash on mount; all setState calls happen in async .then()/.catch() callbacks
   useEffect(() => {
-    const storedHash = localStorage.getItem('ihk_access_hash');
-    if (!storedHash) return;
-    getUserByHash(storedHash)
-      .then((userData) => {
+    const verifyStoredHash = async () => {
+      const storedHash = localStorage.getItem('ihk_access_hash');
+
+      if (!storedHash) {
+        setShowAuthModal(true);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const userData = await getUserByHash(storedHash);
         if (userData) {
           setUser(userData);
           setAccessHash(storedHash);
@@ -257,12 +258,14 @@ export default function Home() {
           setIsLoading(false);
           setShowAuthModal(true);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Login error:', error);
         setIsLoading(false);
         setShowAuthModal(true);
-      });
+      }
+    };
+
+    verifyStoredHash();
   }, [loadProgress]);
 
   const handleRegister = async (): Promise<string | null> => {

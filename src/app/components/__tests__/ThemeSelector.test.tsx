@@ -1,3 +1,4 @@
+import type { ButtonHTMLAttributes } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -5,7 +6,7 @@ import userEvent from '@testing-library/user-event';
 // Mock framer-motion to avoid animation complexity in tests
 vi.mock('framer-motion', () => ({
   motion: {
-    button: ({ children, onClick, className }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    button: ({ children, onClick, className }: ButtonHTMLAttributes<HTMLButtonElement>) => (
       <button onClick={onClick} className={className}>{children}</button>
     ),
   },
