@@ -532,6 +532,7 @@ function getRandomInt(min: number, max: number): number {
 
 // --- Main Generator Function ---
 export interface CloudQuestionResult {
+  theme: string;
   questionText: string;
   expectedAnswers: Record<string, string | number | boolean>;
   solutionSteps: string[];
@@ -555,11 +556,8 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
   // Pick random question
   const q = availableQuestions[getRandomInt(0, availableQuestions.length - 1)];
 
-  // Build question text
-  let questionText = q.question;
-  if (q.scenario) {
-    questionText = `${q.scenario}\n\n${q.question}`;
-  }
+  // Build question text (scenario is NOT embedded - it's returned separately)
+  const questionText = q.question;
 
   // Build answer inputs based on question type
   let answerInputs: AnswerInputConfig[] = [];
@@ -603,6 +601,7 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
   ];
 
   return {
+    theme: q.topic,
     questionText,
     expectedAnswers,
     solutionSteps,
