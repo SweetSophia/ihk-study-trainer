@@ -213,19 +213,24 @@ function generateDifferenz(): {
   // Calculate backward from market BVP
   const ustBetragMarkt = calcPercent(bruttovkMarkt / (1 + ustRate / 100), ustRate);
   const nettovkMarkt = bruttovkMarkt - ustBetragMarkt;
-  const kundenRabattBetragMarkt = nettovkMarkt * (kundenRabatt / (100 + kundenRabatt));
-  const zvpMarkt = nettovkMarkt - kundenRabattBetragMarkt;
-  const kundenSkontoBetragMarkt = zvpMarkt * (kundenSkonto / (100 + kundenSkonto));
-  const bvpMarkt = zvpMarkt - kundenSkontoBetragMarkt;
+  // Reverse Kundenrabatt: rabatt is % of nettovk (higher price)
+  const zvpMarkt = nettovkMarkt * (1 - kundenRabatt / 100);
+  const kundenRabattBetragMarkt = nettovkMarkt - zvpMarkt;
+  // Reverse Kundenskonto: skonto is % of zvp (higher price)
+  const bvpMarkt = zvpMarkt * (1 - kundenSkonto / 100);
+  const kundenSkontoBetragMarkt = zvpMarkt - bvpMarkt;
+  // Reverse Gewinnzuschlag and Handlungskosten: surcharges on lower price → (rate / (100 + rate))
   const gewinnBetragMarkt = bvpMarkt * (gewinnZuschlag / (100 + gewinnZuschlag));
   const selbstkostenMarkt = bvpMarkt - gewinnBetragMarkt;
   const handlungBetragMarkt = selbstkostenMarkt * (handlungsKosten / (100 + handlungsKosten));
   const bpMarkt = selbstkostenMarkt - handlungBetragMarkt;
   const bepMarkt = bpMarkt - bezugskosten;
-  const skontoBetragMarkt = bepMarkt * (lieferskonto / (100 + lieferskonto));
-  const zepMarkt = bepMarkt + skontoBetragMarkt;
-  const rabattBetragMarkt = zepMarkt * (lieferRabatt / (100 + lieferRabatt));
-  const lepNettoMarkt = zepMarkt + rabattBetragMarkt;
+  // Reverse Lieferskonto: skonto is % of zep (higher price), bep = zep * (1 - skonto/100)
+  const zepMarkt = bepMarkt / (1 - lieferskonto / 100);
+  const skontoBetragMarkt = zepMarkt - bepMarkt;
+  // Reverse Lieferantenrabatt: rabatt is % of lep (higher price), zep = lep * (1 - rabatt/100)
+  const lepNettoMarkt = zepMarkt / (1 - lieferRabatt / 100);
+  const rabattBetragMarkt = lepNettoMarkt - zepMarkt;
 
   // The difference: positive = Gewinn, negative = Verlust
   const differenz = round2(bruttovkMarkt - bruttovkBerechnet);
@@ -318,28 +323,30 @@ function generateRueckwaerts(): {
   // Calculate backward
   const ustBetrag = calcPercent(bruttovk / (1 + ustRate / 100), ustRate);
   const nettovk = bruttovk - ustBetrag;
-  
-  // Reverse Kundenrabatt: nettovk = zvp - rabatt, so zvp = nettovk * (1 - rabatt/100)
+
+  // Reverse Kundenrabatt: rabatt is % of nettovk (higher price), zvp = nettovk * (1 - rabatt/100)
   const zvp = nettovk * (1 - kundenRabatt / 100);
-  const kundenRabattBetrag = zvp - nettovk;
-  
-  // Reverse Kundenskonto: bvp = zvp - skonto, so bvp = zvp * (1 - skonto/100)
+  const kundenRabattBetrag = nettovk - zvp;
+
+  // Reverse Kundenskonto: skonto is % of zvp (higher price), bvp = zvp * (1 - skonto/100)
   const bvp = zvp * (1 - kundenSkonto / 100);
   const kundenSkontoBetrag = zvp - bvp;
-  
-  // Reverse Gewinn: bvp = selbstkosten + gewinn, but gewinn = selbstkosten * %
+
+  // Reverse Gewinnzuschlag: surcharge on selbstkosten → reverse with (rate / (100 + rate))
   const gewinnBetrag = bvp * (gewinnZuschlag / (100 + gewinnZuschlag));
   const selbstkosten = bvp - gewinnBetrag;
-  
-  // Reverse Handlungskosten
+
+  // Reverse Handlungskosten: surcharge on bp → reverse with (rate / (100 + rate))
   const handlungBetrag = selbstkosten * (handlungsKosten / (100 + handlungsKosten));
   const bp = selbstkosten - handlungBetrag;
-  
+
   const bep = bp - bezugskosten;
-  const skontoBetrag = bep * (lieferskonto / (100 + lieferskonto));
-  const zep = bep + skontoBetrag;
-  const rabattBetrag = zep * (lieferRabatt / (100 + lieferRabatt));
-  const lepNetto = zep + rabattBetrag;
+  // Reverse Lieferskonto: skonto is % of zep (higher price), bep = zep * (1 - skonto/100)
+  const zep = bep / (1 - lieferskonto / 100);
+  const skontoBetrag = zep - bep;
+  // Reverse Lieferantenrabatt: rabatt is % of lep (higher price), zep = lep * (1 - rabatt/100)
+  const lepNetto = zep / (1 - lieferRabatt / 100);
+  const rabattBetrag = lepNetto - zep;
 
   const calculated = {
     ust: round2(ustBetrag),
@@ -464,10 +471,10 @@ function buildQuestion(
     solutionSteps.push(`Selbstkosten = ${formatEuro(forwardSteps.bp)} + ${formatEuro(forwardSteps.handlungskosten)} = ${formatEuro(forwardSteps.selbstkosten)}`);
     solutionSteps.push(`Gewinn = ${formatEuro(forwardSteps.selbstkosten)} × ${given.gewinnZuschlag}% = ${formatEuro(forwardSteps.gewinn)}`);
     solutionSteps.push(`BVP (berechnet) = ${formatEuro(forwardSteps.selbstkosten)} + ${formatEuro(forwardSteps.gewinn)} = ${formatEuro(forwardSteps.bvp)}`);
-    solutionSteps.push(`Kundenskonto = ${formatEuro(forwardSteps.bvp)} × ${given.kundenSkonto}% / 1,${given.kundenSkonto} = ${formatEuro(forwardSteps.kundenskonto)}`);
-    solutionSteps.push(`ZVP = ${formatEuro(forwardSteps.bvp)} + ${formatEuro(forwardSteps.kundenskonto)} = ${formatEuro(forwardSteps.zvp)}`);
-    solutionSteps.push(`Kundenrabatt = ${formatEuro(forwardSteps.zvp)} × ${given.kundenRabatt}% / 1,${given.kundenRabatt} = ${formatEuro(forwardSteps.kundenrabatt)}`);
-    solutionSteps.push(`Netto-VK = ${formatEuro(forwardSteps.zvp)} + ${formatEuro(forwardSteps.kundenrabatt)} = ${formatEuro(forwardSteps.nettovk)}`);
+    solutionSteps.push(`Kundenskonto = BVP × ${given.kundenSkonto}% / (100% − ${given.kundenSkonto}%) = ${formatEuro(forwardSteps.kundenskonto)}`);
+    solutionSteps.push(`ZVP = BVP + Kundenskonto = ${formatEuro(forwardSteps.bvp)} + ${formatEuro(forwardSteps.kundenskonto)} = ${formatEuro(forwardSteps.zvp)}`);
+    solutionSteps.push(`Kundenrabatt = ZVP × ${given.kundenRabatt}% / (100% − ${given.kundenRabatt}%) = ${formatEuro(forwardSteps.kundenrabatt)}`);
+    solutionSteps.push(`Netto-VK = ZVP + Kundenrabatt = ${formatEuro(forwardSteps.zvp)} + ${formatEuro(forwardSteps.kundenrabatt)} = ${formatEuro(forwardSteps.nettovk)}`);
     solutionSteps.push(`USt = ${formatEuro(forwardSteps.nettovk)} × 19% = ${formatEuro(forwardSteps.ust)}`);
     solutionSteps.push(`Brutto-VK (berechnet) = ${formatEuro(forwardSteps.nettovk)} + ${formatEuro(forwardSteps.ust)} = ${formatEuro(forwardSteps.bruttovk)}`);
     solutionSteps.push('');
@@ -478,19 +485,19 @@ function buildQuestion(
     solutionSteps.push('');
     solutionSteps.push(`USt = ${formatEuro(backwardSteps.ust)}`);
     solutionSteps.push(`Netto-VK = ${formatEuro(given.bruttovkMarkt)} − ${formatEuro(backwardSteps.ust)} = ${formatEuro(backwardSteps.nettovk)}`);
-    solutionSteps.push(`Kundenrabatt = ${formatEuro(backwardSteps.nettovk)} × ${given.kundenRabatt}% / 1,${given.kundenRabatt} = ${formatEuro(backwardSteps.kundenrabatt)}`);
-    solutionSteps.push(`ZVP = ${formatEuro(backwardSteps.nettovk)} − ${formatEuro(backwardSteps.kundenrabatt)} = ${formatEuro(backwardSteps.zvp)}`);
-    solutionSteps.push(`Kundenskonto = ${formatEuro(backwardSteps.zvp)} × ${given.kundenSkonto}% / 1,${given.kundenSkonto} = ${formatEuro(backwardSteps.kundenskonto)}`);
-    solutionSteps.push(`BVP = ${formatEuro(backwardSteps.zvp)} − ${formatEuro(backwardSteps.kundenskonto)} = ${formatEuro(backwardSteps.bvp)}`);
-    solutionSteps.push(`Gewinn = ${formatEuro(backwardSteps.bvp)} × ${given.gewinnZuschlag}% / 1,${given.gewinnZuschlag} = ${formatEuro(backwardSteps.gewinn)}`);
+    solutionSteps.push(`Kundenrabatt = Netto-VK × ${given.kundenRabatt}% = ${formatEuro(backwardSteps.nettovk)} × ${given.kundenRabatt}/100 = ${formatEuro(backwardSteps.kundenrabatt)}`);
+    solutionSteps.push(`ZVP = Netto-VK − Kundenrabatt = ${formatEuro(backwardSteps.nettovk)} − ${formatEuro(backwardSteps.kundenrabatt)} = ${formatEuro(backwardSteps.zvp)}`);
+    solutionSteps.push(`Kundenskonto = ZVP × ${given.kundenSkonto}% = ${formatEuro(backwardSteps.zvp)} × ${given.kundenSkonto}/100 = ${formatEuro(backwardSteps.kundenskonto)}`);
+    solutionSteps.push(`BVP = ZVP − Kundenskonto = ${formatEuro(backwardSteps.zvp)} − ${formatEuro(backwardSteps.kundenskonto)} = ${formatEuro(backwardSteps.bvp)}`);
+    solutionSteps.push(`Gewinn = ${formatEuro(backwardSteps.bvp)} × ${given.gewinnZuschlag}% / (100% + ${given.gewinnZuschlag}%) = ${formatEuro(backwardSteps.gewinn)}`);
     solutionSteps.push(`Selbstkosten = ${formatEuro(backwardSteps.bvp)} − ${formatEuro(backwardSteps.gewinn)} = ${formatEuro(backwardSteps.selbstkosten)}`);
-    solutionSteps.push(`Handlungskosten = ${formatEuro(backwardSteps.selbstkosten)} × ${given.handlungsKosten}% / 1,${given.handlungsKosten} = ${formatEuro(backwardSteps.handlungskosten)}`);
+    solutionSteps.push(`Handlungskosten = ${formatEuro(backwardSteps.selbstkosten)} × ${given.handlungsKosten}% / (100% + ${given.handlungsKosten}%) = ${formatEuro(backwardSteps.handlungskosten)}`);
     solutionSteps.push(`BP = ${formatEuro(backwardSteps.selbstkosten)} − ${formatEuro(backwardSteps.handlungskosten)} = ${formatEuro(backwardSteps.bp)}`);
     solutionSteps.push(`BEP = ${formatEuro(backwardSteps.bp)} − ${formatEuro(backwardSteps.bezugskosten)} = ${formatEuro(backwardSteps.bep)}`);
-    solutionSteps.push(`Skonto = ${formatEuro(backwardSteps.bep)} × ${given.lieferskonto}% / 1,${given.lieferskonto} = ${formatEuro(backwardSteps.skonto)}`);
-    solutionSteps.push(`ZEP = ${formatEuro(backwardSteps.bep)} + ${formatEuro(backwardSteps.skonto)} = ${formatEuro(backwardSteps.zep)}`);
-    solutionSteps.push(`Rabatt = ${formatEuro(backwardSteps.zep)} × ${given.lieferRabatt}% / 1,${given.lieferRabatt} = ${formatEuro(backwardSteps.rabatt)}`);
-    solutionSteps.push(`LEP netto = ${formatEuro(backwardSteps.zep)} + ${formatEuro(backwardSteps.rabatt)} = ${formatEuro(backwardSteps.lep)}`);
+    solutionSteps.push(`Skonto = BEP × ${given.lieferskonto}% / (100% − ${given.lieferskonto}%) = ${formatEuro(backwardSteps.skonto)}`);
+    solutionSteps.push(`ZEP = BEP + Skonto = ${formatEuro(backwardSteps.bep)} + ${formatEuro(backwardSteps.skonto)} = ${formatEuro(backwardSteps.zep)}`);
+    solutionSteps.push(`Rabatt = ZEP × ${given.lieferRabatt}% / (100% − ${given.lieferRabatt}%) = ${formatEuro(backwardSteps.rabatt)}`);
+    solutionSteps.push(`LEP netto = ZEP + Rabatt = ${formatEuro(backwardSteps.zep)} + ${formatEuro(backwardSteps.rabatt)} = ${formatEuro(backwardSteps.lep)}`);
     solutionSteps.push(`LEP brutto = ${formatEuro(backwardSteps.lep)} × 1,19 = ${formatEuro(backwardSteps.lep * 1.19)}`);
     solutionSteps.push('');
 
@@ -521,10 +528,10 @@ function buildQuestion(
     solutionSteps.push(`Selbstkosten = ${formatEuro(calculated.bp)} + ${formatEuro(calculated.handlungskosten)} = ${formatEuro(calculated.selbstkosten)}`);
     solutionSteps.push(`Gewinn = ${formatEuro(calculated.selbstkosten)} × ${given.gewinnZuschlag}% = ${formatEuro(calculated.gewinn)}`);
     solutionSteps.push(`BVP = ${formatEuro(calculated.selbstkosten)} + ${formatEuro(calculated.gewinn)} = ${formatEuro(calculated.bvp)}`);
-    solutionSteps.push(`Kundenskonto = ${formatEuro(calculated.bvp)} × ${given.kundenSkonto}% / 1,${given.kundenSkonto} = ${formatEuro(calculated.kundenskonto)}`);
-    solutionSteps.push(`ZVP = ${formatEuro(calculated.bvp)} + ${formatEuro(calculated.kundenskonto)} = ${formatEuro(calculated.zvp)}`);
-    solutionSteps.push(`Kundenrabatt = ${formatEuro(calculated.zvp)} × ${given.kundenRabatt}% / 1,${given.kundenRabatt} = ${formatEuro(calculated.kundenrabatt)}`);
-    solutionSteps.push(`Netto-VK = ${formatEuro(calculated.zvp)} + ${formatEuro(calculated.kundenrabatt)} = ${formatEuro(calculated.nettovk)}`);
+    solutionSteps.push(`Kundenskonto = BVP × ${given.kundenSkonto}% / (100% − ${given.kundenSkonto}%) = ${formatEuro(calculated.kundenskonto)}`);
+    solutionSteps.push(`ZVP = BVP + Kundenskonto = ${formatEuro(calculated.bvp)} + ${formatEuro(calculated.kundenskonto)} = ${formatEuro(calculated.zvp)}`);
+    solutionSteps.push(`Kundenrabatt = ZVP × ${given.kundenRabatt}% / (100% − ${given.kundenRabatt}%) = ${formatEuro(calculated.kundenrabatt)}`);
+    solutionSteps.push(`Netto-VK = ZVP + Kundenrabatt = ${formatEuro(calculated.zvp)} + ${formatEuro(calculated.kundenrabatt)} = ${formatEuro(calculated.nettovk)}`);
     solutionSteps.push(`USt = ${formatEuro(calculated.nettovk)} × 19% = ${formatEuro(calculated.ust)}`);
     solutionSteps.push(`Brutto-VK = ${formatEuro(calculated.nettovk)} + ${formatEuro(calculated.ust)} = ${formatEuro(calculated.bruttovk)}`);
   } else {
@@ -532,19 +539,19 @@ function buildQuestion(
     solutionSteps.push('');
     solutionSteps.push(`USt = ${formatEuro(calculated.ust)}`);
     solutionSteps.push(`Netto-VK = ${formatEuro(given.bruttovk)} − ${formatEuro(calculated.ust)} = ${formatEuro(calculated.nettovk)}`);
-    solutionSteps.push(`Kundenrabatt = ${formatEuro(calculated.nettovk)} × ${given.kundenRabatt}% / 1,${given.kundenRabatt} = ${formatEuro(calculated.kundenrabatt)}`);
-    solutionSteps.push(`ZVP = ${formatEuro(calculated.nettovk)} − ${formatEuro(calculated.kundenrabatt)} = ${formatEuro(calculated.zvp)}`);
-    solutionSteps.push(`Kundenskonto = ${formatEuro(calculated.zvp)} × ${given.kundenSkonto}% / 1,${given.kundenSkonto} = ${formatEuro(calculated.kundenskonto)}`);
-    solutionSteps.push(`BVP = ${formatEuro(calculated.zvp)} − ${formatEuro(calculated.kundenskonto)} = ${formatEuro(calculated.bvp)}`);
-    solutionSteps.push(`Gewinn = ${formatEuro(calculated.bvp)} × ${given.gewinnZuschlag}% / 1,${given.gewinnZuschlag} = ${formatEuro(calculated.gewinn)}`);
+    solutionSteps.push(`Kundenrabatt = Netto-VK × ${given.kundenRabatt}% = ${formatEuro(calculated.nettovk)} × ${given.kundenRabatt}/100 = ${formatEuro(calculated.kundenrabatt)}`);
+    solutionSteps.push(`ZVP = Netto-VK − Kundenrabatt = ${formatEuro(calculated.nettovk)} − ${formatEuro(calculated.kundenrabatt)} = ${formatEuro(calculated.zvp)}`);
+    solutionSteps.push(`Kundenskonto = ZVP × ${given.kundenSkonto}% = ${formatEuro(calculated.zvp)} × ${given.kundenSkonto}/100 = ${formatEuro(calculated.kundenskonto)}`);
+    solutionSteps.push(`BVP = ZVP − Kundenskonto = ${formatEuro(calculated.zvp)} − ${formatEuro(calculated.kundenskonto)} = ${formatEuro(calculated.bvp)}`);
+    solutionSteps.push(`Gewinn = ${formatEuro(calculated.bvp)} × ${given.gewinnZuschlag}% / (100% + ${given.gewinnZuschlag}%) = ${formatEuro(calculated.gewinn)}`);
     solutionSteps.push(`Selbstkosten = ${formatEuro(calculated.bvp)} − ${formatEuro(calculated.gewinn)} = ${formatEuro(calculated.selbstkosten)}`);
-    solutionSteps.push(`Handlungskosten = ${formatEuro(calculated.selbstkosten)} × ${given.handlungsKosten}% / 1,${given.handlungsKosten} = ${formatEuro(calculated.handlungskosten)}`);
+    solutionSteps.push(`Handlungskosten = ${formatEuro(calculated.selbstkosten)} × ${given.handlungsKosten}% / (100% + ${given.handlungsKosten}%) = ${formatEuro(calculated.handlungskosten)}`);
     solutionSteps.push(`BP = ${formatEuro(calculated.selbstkosten)} − ${formatEuro(calculated.handlungskosten)} = ${formatEuro(calculated.bp)}`);
     solutionSteps.push(`BEP = ${formatEuro(calculated.bp)} − ${formatEuro(calculated.bezugskosten)} = ${formatEuro(calculated.bep)}`);
-    solutionSteps.push(`Skonto = ${formatEuro(calculated.bep)} × ${given.lieferskonto}% / 1,${given.lieferskonto} = ${formatEuro(calculated.skonto)}`);
-    solutionSteps.push(`ZEP = ${formatEuro(calculated.bep)} + ${formatEuro(calculated.skonto)} = ${formatEuro(calculated.zep)}`);
-    solutionSteps.push(`Rabatt = ${formatEuro(calculated.zep)} × ${given.lieferRabatt}% / 1,${given.lieferRabatt} = ${formatEuro(calculated.rabatt)}`);
-    solutionSteps.push(`LEP netto = ${formatEuro(calculated.zep)} + ${formatEuro(calculated.rabatt)} = ${formatEuro(calculated.lep)}`);
+    solutionSteps.push(`Skonto = BEP × ${given.lieferskonto}% / (100% − ${given.lieferskonto}%) = ${formatEuro(calculated.skonto)}`);
+    solutionSteps.push(`ZEP = BEP + Skonto = ${formatEuro(calculated.bep)} + ${formatEuro(calculated.skonto)} = ${formatEuro(calculated.zep)}`);
+    solutionSteps.push(`Rabatt = ZEP × ${given.lieferRabatt}% / (100% − ${given.lieferRabatt}%) = ${formatEuro(calculated.rabatt)}`);
+    solutionSteps.push(`LEP netto = ZEP + Rabatt = ${formatEuro(calculated.zep)} + ${formatEuro(calculated.rabatt)} = ${formatEuro(calculated.lep)}`);
     solutionSteps.push(`LEP brutto = ${formatEuro(calculated.lep)} × 1,19 = ${formatEuro(calculated.lep * (100 + 19) / 100)}`);
   }
 
