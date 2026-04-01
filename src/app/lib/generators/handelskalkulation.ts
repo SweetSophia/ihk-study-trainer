@@ -168,6 +168,137 @@ function generateVorwaerts(): {
 }
 
 /**
+ * Differenzkalkulation - Both directions
+ * Given: LEP brutto, market BVP, percentages
+ * Calculate: Forward to get "should be BVP", then the difference
+ * The "Differenz" shows if market price covers costs + desired profit
+ */
+function generateDifferenz(): {
+  given: Record<string, number>;
+  calculated: Record<string, number>;
+  forwardSteps: Record<string, number>;
+  backwardSteps: Record<string, number>;
+  schema: KalkulationStep[];
+} {
+  // Given values - start with LEP and a market BVP that may result in profit or loss
+  const lepBrutto = randomAmount(100, 1500);
+  const ustRate = 19;
+  const lieferRabatt = randomPercent(5, 20);
+  const lieferskonto = randomPercent(1, 4);
+  const bezugskosten = randomAmount(5, 80);
+  const handlungsKosten = randomPercent(25, 60);
+  const gewinnZuschlag = randomPercent(8, 25);
+  const kundenSkonto = randomPercent(2, 5);
+  const kundenRabatt = randomPercent(5, 20);
+
+  // Calculate forward (LEP → BVP)
+  const lepNetto = lepBrutto / (1 + ustRate / 100);
+  const rabattBetrag = calcPercent(lepNetto, lieferRabatt);
+  const zep = lepNetto - rabattBetrag;
+  const skontoBetrag = calcPercent(zep, lieferskonto);
+  const bep = zep - skontoBetrag;
+  const bp = bep + bezugskosten;
+  const handlungBetrag = calcPercent(bp, handlungsKosten);
+  const selbstkosten = bp + handlungBetrag;
+  const gewinnBetrag = calcPercent(selbstkosten, gewinnZuschlag);
+  const bvpBerechnet = selbstkosten + gewinnBetrag; // This is the "should be" BVP
+  const kundenSkontoBetrag = reversePercent(bvpBerechnet, kundenSkonto) * (kundenSkonto / 100);
+  const zvp = bvpBerechnet + kundenSkontoBetrag;
+  const kundenRabattBetrag = reversePercent(zvp, kundenRabatt) * (kundenRabatt / 100);
+  const nettovk = zvp + kundenRabattBetrag;
+  const ustBetrag = calcPercent(nettovk, ustRate);
+  const bruttovkBerechnet = nettovk + ustBetrag;
+
+  // Now generate a market BVP that's within ±30% of calculated BVP
+  // This ensures we sometimes have profit, sometimes loss
+  const variance = 1 + (Math.random() * 0.6 - 0.3); // 0.7 to 1.3
+  const bruttovkMarkt = round2(bruttovkBerechnet * variance);
+
+  // Calculate backward from market BVP
+  const ustBetragMarkt = calcPercent(bruttovkMarkt / (1 + ustRate / 100), ustRate);
+  const nettovkMarkt = bruttovkMarkt - ustBetragMarkt;
+  const kundenRabattBetragMarkt = nettovkMarkt * (kundenRabatt / (100 + kundenRabatt));
+  const zvpMarkt = nettovkMarkt - kundenRabattBetragMarkt;
+  const kundenSkontoBetragMarkt = zvpMarkt * (kundenSkonto / (100 + kundenSkonto));
+  const bvpMarkt = zvpMarkt - kundenSkontoBetragMarkt;
+  const gewinnBetragMarkt = bvpMarkt * (gewinnZuschlag / (100 + gewinnZuschlag));
+  const selbstkostenMarkt = bvpMarkt - gewinnBetragMarkt;
+  const handlungBetragMarkt = selbstkostenMarkt * (handlungsKosten / (100 + handlungsKosten));
+  const bpMarkt = selbstkostenMarkt - handlungBetragMarkt;
+  const bepMarkt = bpMarkt - bezugskosten;
+  const skontoBetragMarkt = bepMarkt * (lieferskonto / (100 + lieferskonto));
+  const zepMarkt = bepMarkt + skontoBetragMarkt;
+  const rabattBetragMarkt = zepMarkt * (lieferRabatt / (100 + lieferRabatt));
+  const lepNettoMarkt = zepMarkt + rabattBetragMarkt;
+  const lepBruttoMarkt = lepNettoMarkt * (1 + ustRate / 100);
+
+  // The difference: positive = Gewinn, negative = Verlust
+  const differenz = round2(bruttovkMarkt - bruttovkBerechnet);
+
+  // All intermediate forward steps
+  const forwardSteps: Record<string, number> = {
+    lep: round2(lepNetto),
+    rabatt: round2(rabattBetrag),
+    zep: round2(zep),
+    skonto: round2(skontoBetrag),
+    bep: round2(bep),
+    bezugskosten: round2(bezugskosten),
+    bp: round2(bp),
+    handlungskosten: round2(handlungBetrag),
+    selbstkosten: round2(selbstkosten),
+    gewinn: round2(gewinnBetrag),
+    bvp: round2(bvpBerechnet),
+    kundenskonto: round2(kundenSkontoBetrag),
+    zvp: round2(zvp),
+    kundenrabatt: round2(kundenRabattBetrag),
+    nettovk: round2(nettovk),
+    ust: round2(ustBetrag),
+    bruttovk: round2(bruttovkBerechnet),
+  };
+
+  // All intermediate backward steps from market price
+  const backwardSteps: Record<string, number> = {
+    ust: round2(ustBetragMarkt),
+    nettovk: round2(nettovkMarkt),
+    kundenrabatt: round2(kundenRabattBetragMarkt),
+    zvp: round2(zvpMarkt),
+    kundenskonto: round2(kundenSkontoBetragMarkt),
+    bvp: round2(bvpMarkt),
+    gewinn: round2(gewinnBetragMarkt),
+    selbstkosten: round2(selbstkostenMarkt),
+    handlungskosten: round2(handlungBetragMarkt),
+    bp: round2(bpMarkt),
+    bezugskosten: round2(bezugskosten),
+    bep: round2(bepMarkt),
+    skonto: round2(skontoBetragMarkt),
+    zep: round2(zepMarkt),
+    rabatt: round2(rabattBetragMarkt),
+    lep: round2(lepNettoMarkt),
+  };
+
+  const calculated = {
+    ...forwardSteps,
+    differenz: differenz,
+    bruttovkMarkt: round2(bruttovkMarkt),
+  };
+
+  const given: Record<string, number> = {
+    lepBrutto: round2(lepBrutto),
+    ustRate,
+    lieferRabatt,
+    lieferskonto,
+    bezugskosten,
+    handlungsKosten,
+    gewinnZuschlag,
+    kundenSkonto,
+    kundenRabatt,
+    bruttovkMarkt: round2(bruttovkMarkt),
+  };
+
+  return { given, calculated, forwardSteps, backwardSteps, schema: VORWAERTS_SCHEMA };
+}
+
+/**
  * Rückwärtskalkulation - Backward calculation
  * Given: BVP (market price), percentages
  * Calculate: Maximum allowable LEP
@@ -256,7 +387,9 @@ function buildQuestion(
   type: KalkulationType,
   given: Record<string, number>,
   calculated: Record<string, number>,
-  schema: KalkulationStep[]
+  schema: KalkulationStep[],
+  forwardSteps?: Record<string, number>,
+  backwardSteps?: Record<string, number>
 ): Question {
   const typeLabel = type === 'vorwaerts' ? 'Vorwärtskalkulation' :
                     type === 'rueckwaerts' ? 'Rückwärtskalkulation' : 'Differenzkalkulation';
@@ -264,8 +397,23 @@ function buildQuestion(
   // Build question text with given values
   let frage = `Berechne die ${typeLabel}!\n\n`;
   frage += `Gegebene Werte:\n`;
-  
-  if (type === 'vorwaerts') {
+
+  if (type === 'differenz') {
+    frage += `• Listeneinkaufspreis (brutto): ${formatEuro(given.lepBrutto)}\n`;
+    frage += `• Marktpreis (Brutto-VK): ${formatEuro(given.bruttovkMarkt)}\n`;
+    frage += `• Lieferantenrabatt: ${given.lieferRabatt}%\n`;
+    frage += `• Lieferskonto: ${given.lieferskonto}%\n`;
+    frage += `• Bezugskosten: ${formatEuro(given.bezugskosten)}\n`;
+    frage += `• Handlungskosten: ${given.handlungsKosten}%\n`;
+    frage += `• Gewinnzuschlag: ${given.gewinnZuschlag}%\n`;
+    frage += `• Kundenskonto: ${given.kundenSkonto}%\n`;
+    frage += `• Kundenrabatt: ${given.kundenRabatt}%\n`;
+    frage += `• Umsatzsteuer: ${given.ustRate}%\n`;
+    frage += `\nAufgaben:\n`;
+    frage += `1. Berechne die Vorwärtskalkulation (LEP → BVP)\n`;
+    frage += `2. Berechne die Rückwärtskalkulation (Markt-VK → LEP)\n`;
+    frage += `3. Ermittle die Differenz (Markt-VK − Berechneter BVP)\n`;
+  } else if (type === 'vorwaerts') {
     frage += `• Listeneinkaufspreis (brutto): ${formatEuro(given.lepBrutto)}\n`;
     frage += `• Lieferantenrabatt: ${given.lieferRabatt}%\n`;
     frage += `• Lieferskonto: ${given.lieferskonto}%\n`;
@@ -287,7 +435,9 @@ function buildQuestion(
     frage += `• Umsatzsteuer: ${given.ustRate}%\n`;
   }
 
-  frage += `\nBerechne alle Zwischen- und Endergebnisse!`;
+  if (type !== 'differenz') {
+    frage += `\nBerechne alle Zwischen- und Endergebnisse!`;
+  }
 
   // Build expected answers (only the calculated values, not the given ones)
   const expectedAnswers: Record<string, string | number> = {};
@@ -299,8 +449,67 @@ function buildQuestion(
   const solutionSteps: string[] = [];
   solutionSteps.push(`${typeLabel}`);
   solutionSteps.push('');
-  
-  if (type === 'vorwaerts') {
+
+  if (type === 'differenz' && forwardSteps && backwardSteps) {
+    // Forward calculation steps
+    solutionSteps.push(`=== VORWÄRTSKALKULATION (LEP → BVP) ===`);
+    solutionSteps.push(`Gegeben: LEP brutto = ${formatEuro(given.lepBrutto)}`);
+    solutionSteps.push('');
+    solutionSteps.push(`LEP netto = ${formatEuro(given.lepBrutto)} / 1,19 = ${formatEuro(forwardSteps.lep)}`);
+    solutionSteps.push(`Rabatt = ${formatEuro(forwardSteps.lep)} × ${given.lieferRabatt}% = ${formatEuro(forwardSteps.rabatt)}`);
+    solutionSteps.push(`ZEP = ${formatEuro(forwardSteps.lep)} − ${formatEuro(forwardSteps.rabatt)} = ${formatEuro(forwardSteps.zep)}`);
+    solutionSteps.push(`Skonto = ${formatEuro(forwardSteps.zep)} × ${given.lieferskonto}% = ${formatEuro(forwardSteps.skonto)}`);
+    solutionSteps.push(`BEP = ${formatEuro(forwardSteps.zep)} − ${formatEuro(forwardSteps.skonto)} = ${formatEuro(forwardSteps.bep)}`);
+    solutionSteps.push(`BP = ${formatEuro(forwardSteps.bep)} + ${formatEuro(forwardSteps.bezugskosten)} = ${formatEuro(forwardSteps.bp)}`);
+    solutionSteps.push(`Handlungskosten = ${formatEuro(forwardSteps.bp)} × ${given.handlungsKosten}% = ${formatEuro(forwardSteps.handlungskosten)}`);
+    solutionSteps.push(`Selbstkosten = ${formatEuro(forwardSteps.bp)} + ${formatEuro(forwardSteps.handlungskosten)} = ${formatEuro(forwardSteps.selbstkosten)}`);
+    solutionSteps.push(`Gewinn = ${formatEuro(forwardSteps.selbstkosten)} × ${given.gewinnZuschlag}% = ${formatEuro(forwardSteps.gewinn)}`);
+    solutionSteps.push(`BVP (berechnet) = ${formatEuro(forwardSteps.selbstkosten)} + ${formatEuro(forwardSteps.gewinn)} = ${formatEuro(forwardSteps.bvp)}`);
+    solutionSteps.push(`Kundenskonto = ${formatEuro(forwardSteps.bvp)} × ${given.kundenSkonto}% / 1,${given.kundenSkonto} = ${formatEuro(forwardSteps.kundenskonto)}`);
+    solutionSteps.push(`ZVP = ${formatEuro(forwardSteps.bvp)} + ${formatEuro(forwardSteps.kundenskonto)} = ${formatEuro(forwardSteps.zvp)}`);
+    solutionSteps.push(`Kundenrabatt = ${formatEuro(forwardSteps.zvp)} × ${given.kundenRabatt}% / 1,${given.kundenRabatt} = ${formatEuro(forwardSteps.kundenrabatt)}`);
+    solutionSteps.push(`Netto-VK = ${formatEuro(forwardSteps.zvp)} + ${formatEuro(forwardSteps.kundenrabatt)} = ${formatEuro(forwardSteps.nettovk)}`);
+    solutionSteps.push(`USt = ${formatEuro(forwardSteps.nettovk)} × 19% = ${formatEuro(forwardSteps.ust)}`);
+    solutionSteps.push(`Brutto-VK (berechnet) = ${formatEuro(forwardSteps.nettovk)} + ${formatEuro(forwardSteps.ust)} = ${formatEuro(forwardSteps.bruttovk)}`);
+    solutionSteps.push('');
+
+    // Backward calculation steps
+    solutionSteps.push(`=== RÜCKWÄRTSKALKULATION (Markt-VK → LEP) ===`);
+    solutionSteps.push(`Gegeben: Marktpreis = ${formatEuro(given.bruttovkMarkt)}`);
+    solutionSteps.push('');
+    solutionSteps.push(`USt = ${formatEuro(backwardSteps.ust)}`);
+    solutionSteps.push(`Netto-VK = ${formatEuro(given.bruttovkMarkt)} − ${formatEuro(backwardSteps.ust)} = ${formatEuro(backwardSteps.nettovk)}`);
+    solutionSteps.push(`Kundenrabatt = ${formatEuro(backwardSteps.nettovk)} × ${given.kundenRabatt}% / 1,${given.kundenRabatt} = ${formatEuro(backwardSteps.kundenrabatt)}`);
+    solutionSteps.push(`ZVP = ${formatEuro(backwardSteps.nettovk)} − ${formatEuro(backwardSteps.kundenrabatt)} = ${formatEuro(backwardSteps.zvp)}`);
+    solutionSteps.push(`Kundenskonto = ${formatEuro(backwardSteps.zvp)} × ${given.kundenSkonto}% / 1,${given.kundenSkonto} = ${formatEuro(backwardSteps.kundenskonto)}`);
+    solutionSteps.push(`BVP = ${formatEuro(backwardSteps.zvp)} − ${formatEuro(backwardSteps.kundenskonto)} = ${formatEuro(backwardSteps.bvp)}`);
+    solutionSteps.push(`Gewinn = ${formatEuro(backwardSteps.bvp)} × ${given.gewinnZuschlag}% / 1,${given.gewinnZuschlag} = ${formatEuro(backwardSteps.gewinn)}`);
+    solutionSteps.push(`Selbstkosten = ${formatEuro(backwardSteps.bvp)} − ${formatEuro(backwardSteps.gewinn)} = ${formatEuro(backwardSteps.selbstkosten)}`);
+    solutionSteps.push(`Handlungskosten = ${formatEuro(backwardSteps.selbstkosten)} × ${given.handlungsKosten}% / 1,${given.handlungsKosten} = ${formatEuro(backwardSteps.handlungskosten)}`);
+    solutionSteps.push(`BP = ${formatEuro(backwardSteps.selbstkosten)} − ${formatEuro(backwardSteps.handlungskosten)} = ${formatEuro(backwardSteps.bp)}`);
+    solutionSteps.push(`BEP = ${formatEuro(backwardSteps.bp)} − ${formatEuro(backwardSteps.bezugskosten)} = ${formatEuro(backwardSteps.bep)}`);
+    solutionSteps.push(`Skonto = ${formatEuro(backwardSteps.bep)} × ${given.lieferskonto}% / 1,${given.lieferskonto} = ${formatEuro(backwardSteps.skonto)}`);
+    solutionSteps.push(`ZEP = ${formatEuro(backwardSteps.bep)} + ${formatEuro(backwardSteps.skonto)} = ${formatEuro(backwardSteps.zep)}`);
+    solutionSteps.push(`Rabatt = ${formatEuro(backwardSteps.zep)} × ${given.lieferRabatt}% / 1,${given.lieferRabatt} = ${formatEuro(backwardSteps.rabatt)}`);
+    solutionSteps.push(`LEP netto = ${formatEuro(backwardSteps.zep)} + ${formatEuro(backwardSteps.rabatt)} = ${formatEuro(backwardSteps.lep)}`);
+    solutionSteps.push(`LEP brutto = ${formatEuro(backwardSteps.lep)} × 1,19 = ${formatEuro(backwardSteps.lep * 1.19)}`);
+    solutionSteps.push('');
+
+    // Differenz result
+    const differenz = calculated.differenz as number;
+    const differenzLabel = differenz >= 0 ? 'Gewinn' : 'Verlust';
+    solutionSteps.push(`=== ERGEBNIS ===`);
+    solutionSteps.push(`Differenz = Markt-VK − Berechneter BVP`);
+    solutionSteps.push(`Differenz = ${formatEuro(given.bruttovkMarkt)} − ${formatEuro(forwardSteps.bruttovk)}`);
+    solutionSteps.push(`Differenz = ${formatEuro(Math.abs(differenz))}`);
+    solutionSteps.push('');
+    solutionSteps.push(`${differenz >= 0 ? '✅' : '❌'} ${differenzLabel}: ${formatEuro(Math.abs(differenz))}`);
+    if (differenz >= 0) {
+      solutionSteps.push(`Der Marktpreis deckt Kosten und Gewinn!`);
+    } else {
+      solutionSteps.push(`Der Marktpreis deckt NICHT die Kosten!`);
+    }
+  } else if (type === 'vorwaerts') {
     solutionSteps.push(`Gegeben: LEP brutto = ${formatEuro(given.lepBrutto)}, Rabatt = ${given.lieferRabatt}%, Skonto = ${given.lieferskonto}%`);
     solutionSteps.push('');
     solutionSteps.push(`LEP netto = LEP brutto / 1,19 = ${formatEuro(calculated.lep)}`);
@@ -341,7 +550,7 @@ function buildQuestion(
   }
 
   // Determine difficulty based on type
-  const difficulty: 'easy' | 'medium' | 'hard' = 
+  const difficulty: 'easy' | 'medium' | 'hard' =
     type === 'vorwaerts' ? 'medium' :
     type === 'rueckwaerts' ? 'hard' : 'hard';
 
@@ -358,18 +567,22 @@ function buildQuestion(
 
 /**
  * Generate a Handelskalkulation question
- * Randomly picks between Vorwärts and Rückwärts kalkulation
+ * Randomly picks between Vorwärts, Rückwärts and Differenz kalkulation
  */
 export function generateHandelskalkulationQuestion(): Question {
-  // 50/50 chance between forward and backward
-  const type = Math.random() < 0.5 ? 'vorwaerts' : 'rueckwaerts';
+  // Equal 1/3 chance for each type
+  const rand = Math.random();
+  const type: KalkulationType = rand < 0.333 ? 'vorwaerts' : rand < 0.666 ? 'rueckwaerts' : 'differenz';
 
   if (type === 'vorwaerts') {
     const { given, calculated, schema } = generateVorwaerts();
     return buildQuestion(type, given, calculated, schema);
-  } else {
+  } else if (type === 'rueckwaerts') {
     const { given, calculated, schema } = generateRueckwaerts();
     return buildQuestion(type, given, calculated, schema);
+  } else {
+    const { given, calculated, forwardSteps, backwardSteps, schema } = generateDifferenz();
+    return buildQuestion(type, given, calculated, schema, forwardSteps, backwardSteps);
   }
 }
 
