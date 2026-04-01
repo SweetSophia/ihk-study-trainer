@@ -125,10 +125,12 @@ function generateVorwaerts(): {
   const selbstkosten = bp + handlungBetrag;
   const gewinnBetrag = calcPercent(selbstkosten, gewinnZuschlag);
   const bvp = selbstkosten + gewinnBetrag;
-  const kundenSkontoBetrag = reversePercent(bvp, kundenSkonto) * (kundenSkonto / 100);
-  const zvp = bvp + kundenSkontoBetrag;
-  const kundenRabattBetrag = reversePercent(zvp, kundenRabatt) * (kundenRabatt / 100);
-  const nettovk = zvp + kundenRabattBetrag;
+  // Kundenskonto: reverse from BVP to ZVP, then get skonto amount
+  const zvp = bvp / (1 - kundenSkonto / 100);
+  const kundenSkontoBetrag = zvp - bvp;
+  // Kundenrabatt: reverse from ZVP to Netto-VK
+  const nettovk = zvp / (1 - kundenRabatt / 100);
+  const kundenRabattBetrag = nettovk - zvp;
   const ustBetrag = calcPercent(nettovk, ustRate);
   const bruttovk = nettovk + ustBetrag;
 
@@ -202,10 +204,12 @@ function generateDifferenz(): {
   const selbstkosten = bp + handlungBetrag;
   const gewinnBetrag = calcPercent(selbstkosten, gewinnZuschlag);
   const bvpBerechnet = selbstkosten + gewinnBetrag; // This is the "should be" BVP
-  const kundenSkontoBetrag = reversePercent(bvpBerechnet, kundenSkonto) * (kundenSkonto / 100);
-  const zvp = bvpBerechnet + kundenSkontoBetrag;
-  const kundenRabattBetrag = reversePercent(zvp, kundenRabatt) * (kundenRabatt / 100);
-  const nettovk = zvp + kundenRabattBetrag;
+  // Kundenskonto: reverse from BVP to ZVP, then get skonto amount
+  const zvp = bvpBerechnet / (1 - kundenSkonto / 100);
+  const kundenSkontoBetrag = zvp - bvpBerechnet;
+  // Kundenrabatt: reverse from ZVP to Netto-VK
+  const nettovk = zvp / (1 - kundenRabatt / 100);
+  const kundenRabattBetrag = nettovk - zvp;
   const ustBetrag = calcPercent(nettovk, ustRate);
   const bruttovkBerechnet = nettovk + ustBetrag;
 
@@ -323,13 +327,13 @@ function generateRueckwaerts(): {
   const ustBetrag = calcPercent(bruttovk / (1 + ustRate / 100), ustRate);
   const nettovk = bruttovk - ustBetrag;
   
-  // Reverse Kundenrabatt: nettovk = zvp + rabatt, but zvp = nettovk / (1 + rabatt/100)
-  const kundenRabattBetrag = nettovk * (kundenRabatt / (100 + kundenRabatt));
-  const zvp = nettovk - kundenRabattBetrag;
+  // Reverse Kundenrabatt: nettovk = zvp - rabatt, so zvp = nettovk / (1 - rabatt/100)
+  const zvp = nettovk / (1 - kundenRabatt / 100);
+  const kundenRabattBetrag = zvp - nettovk;
   
-  // Reverse Kundenskonto: zvp = bvp + skonto, but bvp = zvp / (1 + skonto/100)
-  const kundenSkontoBetrag = zvp * (kundenSkonto / (100 + kundenSkonto));
-  const bvp = zvp - kundenSkontoBetrag;
+  // Reverse Kundenskonto: zvp = bvp + skonto, so bvp = zvp / (1 - skonto/100)
+  const bvp = zvp / (1 - kundenSkonto / 100);
+  const kundenSkontoBetrag = zvp - bvp;
   
   // Reverse Gewinn: bvp = selbstkosten + gewinn, but gewinn = selbstkosten * %
   const gewinnBetrag = bvp * (gewinnZuschlag / (100 + gewinnZuschlag));
@@ -442,6 +446,10 @@ function buildQuestion(
   // Build expected answers (only the calculated values, not the given ones)
   const expectedAnswers: Record<string, string | number> = {};
   for (const [key, value] of Object.entries(calculated)) {
+    // Skip values that are already provided as given values
+    if (Object.prototype.hasOwnProperty.call(given, key)) {
+      continue;
+    }
     expectedAnswers[key] = value.toString();
   }
 
@@ -546,7 +554,7 @@ function buildQuestion(
     solutionSteps.push(`ZEP = ${formatEuro(calculated.bep)} + ${formatEuro(calculated.skonto)} = ${formatEuro(calculated.zep)}`);
     solutionSteps.push(`Rabatt = ${formatEuro(calculated.zep)} × ${given.lieferRabatt}% / 1,${given.lieferRabatt} = ${formatEuro(calculated.rabatt)}`);
     solutionSteps.push(`LEP netto = ${formatEuro(calculated.zep)} + ${formatEuro(calculated.rabatt)} = ${formatEuro(calculated.lep)}`);
-    solutionSteps.push(`LEP brutto = ${formatEuro(calculated.lep)} × 1,19 = ${formatEuro(given.bruttovk * (100 + 19) / 100)}`);
+    solutionSteps.push(`LEP brutto = ${formatEuro(calculated.lep)} × 1,19 = ${formatEuro(calculated.lep * (100 + 19) / 100)}`);
   }
 
   // Determine difficulty based on type
