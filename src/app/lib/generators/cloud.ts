@@ -9,11 +9,12 @@ import { AnswerInputConfig } from '../../types';
 
 // --- Question Types ---
 type QuestionType = 'multipleChoice' | 'matching' | 'trueFalse';
+type CloudDifficulty = 'easy' | 'medium' | 'hard';
 
 interface CloudQuestion {
   type: QuestionType;
   topic: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: CloudDifficulty;
   scenario?: string;
   question: string;
   options?: string[];
@@ -525,6 +526,31 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
   },
 ];
 
+const CLOUD_QUESTIONS_BY_DIFFICULTY: Record<CloudDifficulty, CloudQuestion[]> = {
+  easy: CLOUD_QUESTIONS.filter((question) => question.difficulty === 'easy'),
+  medium: CLOUD_QUESTIONS.filter((question) => question.difficulty === 'medium'),
+  hard: CLOUD_QUESTIONS.filter((question) => question.difficulty === 'hard'),
+};
+
+function hasOwnDifficultyBucket(
+  difficulty: string,
+  buckets: Record<CloudDifficulty, CloudQuestion[]>
+): difficulty is CloudDifficulty {
+  return Object.prototype.hasOwnProperty.call(buckets, difficulty);
+}
+
+export function resolveCloudQuestionsForDifficulty(
+  difficulty?: CloudDifficulty | string,
+  buckets: Record<CloudDifficulty, CloudQuestion[]> = CLOUD_QUESTIONS_BY_DIFFICULTY
+): CloudQuestion[] {
+  if (!difficulty || !hasOwnDifficultyBucket(difficulty, buckets)) {
+    return CLOUD_QUESTIONS;
+  }
+
+  const bucket = buckets[difficulty];
+  return Array.isArray(bucket) && bucket.length > 0 ? bucket : CLOUD_QUESTIONS;
+}
+
 /**
  * Selects a uniformly distributed integer between the given bounds, inclusive.
  *
@@ -561,25 +587,21 @@ export interface CloudQuestionResult {
  *  - `difficulty`: the chosen question's difficulty
  *  - `answerInputs`: UI input configuration including `valueOptions` and `acceptedValues`
  *  - `scenario` (optional): associated scenario text
+ * Fallback behavior:
+ *  - unknown / invalid difficulty keys fall back to the full question bank
+ *  - empty difficulty buckets also fall back to the full question bank
  * @throws Error if a `multipleChoice` or `matching` question is selected but `options` is not a non-empty array
  */
-export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): CloudQuestionResult {
-  // Filter by difficulty if specified
-  let availableQuestions = CLOUD_QUESTIONS;
-  if (difficulty) {
-    availableQuestions = CLOUD_QUESTIONS.filter(q => q.difficulty === difficulty);
-  }
-
-  // If no questions with specified difficulty, use all
-  if (availableQuestions.length === 0) {
-    availableQuestions = CLOUD_QUESTIONS;
-  }
+export function generateCloudQuestion(difficulty?: CloudDifficulty): CloudQuestionResult {
+  const availableQuestions = resolveCloudQuestionsForDifficulty(difficulty);
 
   // Pick random question
   const q = availableQuestions[getRandomInt(0, availableQuestions.length - 1)];
 
-  // Build question text; embed scenario for UI compatibility when present
-  const questionText = q.scenario ? `${q.scenario}\n\n${q.question}` : q.question;
+  // Build question text (include scenario if present for UI compatibility)
+  const questionText = q.scenario
+    ? `${q.scenario}\n\n${q.question}`
+    : q.question;
 
   // Build answer inputs based on question type
   let answerInputs: AnswerInputConfig[] = [];

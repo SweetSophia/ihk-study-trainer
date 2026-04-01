@@ -8,30 +8,14 @@ import AuthModal from './components/AuthModal';
 import ThemeSelector from './components/ThemeSelector';
 import ProgressDashboard from './components/ProgressDashboard';
 import SqlTrainer from './components/SqlTrainer';
-import { Question, User as UserType, AnswerInputConfig } from './types';
-import { 
-  generateUniqueUser, 
-  getUserByHash, 
+import { Question, User as UserType } from './types';
+import {
+  generateUniqueUser,
+  getUserByHash,
   getAllProgress,
-  updateProgress 
+  updateProgress
 } from './lib/auth';
-
-// --- Unit-conversion maps for answer validation ---
-const SIZE_TO_BYTES: Record<string, number> = {
-  bytes: 1,
-  kib: 1024,
-  kb: 1000,
-  mib: 1024 * 1024,
-  mb: 1000 * 1000,
-  gib: 1024 * 1024 * 1024,
-  gb: 1000 * 1000 * 1000,
-};
-
-const TIME_TO_SECONDS: Record<string, number> = {
-  sekunden: 1,
-  minuten: 60,
-  stunden: 3600,
-};
+import { validateQuestionAnswers } from './lib/answerValidation';
 
 // Import all generators
 import { generateBandwidthQuestion } from './lib/generators/bandwidth';
@@ -45,121 +29,11 @@ import { generateHexQuestion } from './lib/generators/hex';
 import { generateSubnetMaskQuestion } from './lib/generators/subnetMask';
 import { generateAggregationQuestion } from './lib/generators/aggregation';
 import { generatePortQuestion } from './lib/generators/ports';
-import { generateOsiQuestion, OSI_LAYER_NAMES } from './lib/generators/osi';
+import { generateOsiQuestion } from './lib/generators/osi';
 import { generateCableQuestion, CABLE_TYPES, ALL_CABLE_PROS } from './lib/generators/cables';
 import { generateLinuxQuestion } from './lib/generators/linux';
 import { generateCloudQuestion } from './lib/generators/cloud';
-
-/**
- * Parse a numeric string where a comma is treated as the decimal separator.
- *
- * @param raw - The numeric string to parse; may use `,` as the decimal separator
- * @returns The numeric value represented by `raw`, or `NaN` if it cannot be parsed
- */
-function parseLocaleFloat(raw: string): number {
-  return parseFloat(raw.replace(',', '.'));
-}
-
-// --- Structured answer validation (unit-conversion aware) ---
-
-/**
- * Detect the conversion map that applies for the given unit options.
- * Returns null when no conversion-aware check is needed.
- */
-function detectConversionMap(
-  unitOptions: string[]
-): Record<string, number> | null {
-  const lower = unitOptions.map((u) => u.toLowerCase());
-  if (lower.some((u) => u in SIZE_TO_BYTES)) return SIZE_TO_BYTES;
-  if (lower.some((u) => u in TIME_TO_SECONDS)) return TIME_TO_SECONDS;
-  return null;
-}
-
-/**
- * Validate structured answers using unit-aware comparison.
- *
- * For file-size or time answers the user may choose a different (but valid)
- * unit and supply the mathematically equivalent value.  We normalise both
- * sides to a common base (bytes / seconds) and compare with 5 % tolerance.
- */
-function validateStructuredAnswer(
-  inputs: AnswerInputConfig[],
-  expected: Record<string, string | number | boolean>,
-  answers: Record<string, string>
-): boolean {
-  const convMap = detectConversionMap(inputs[0].unitOptions ?? []);
-
-  if (convMap) {
-    // Sum up expected total in base units
-    let expectedTotal = 0;
-    for (const cfg of inputs) {
-      const val = Number(expected[cfg.valueKey]);
-      const unit = String(expected[cfg.unitKey ?? '']).toLowerCase();
-      const factor = convMap[unit];
-      if (factor === undefined) return false;
-      expectedTotal += val * factor;
-    }
-
-    // Sum up user total in base units
-    let userTotal = 0;
-    for (const cfg of inputs) {
-      const val = parseLocaleFloat(answers[cfg.valueKey] || '');
-      const unit = (answers[cfg.unitKey ?? ''] || '').toLowerCase();
-      if (isNaN(val) || convMap[unit] === undefined) return false;
-      userTotal += val * convMap[unit];
-    }
-
-    // Compare with 5 % tolerance
-    if (expectedTotal === 0) return userTotal === 0;
-    const tolerance = Math.abs(expectedTotal) * 0.05;
-    return Math.abs(userTotal - expectedTotal) <= tolerance;
-  }
-
-  // Fallback: per-field comparison (numeric 5 % tolerance or exact string)
-  // Build a lookup from valueKey → its AnswerInputConfig
-  const configByKey = new Map(inputs.map((cfg) => [cfg.valueKey, cfg]));
-
-  // Collect answers for fields that use acceptedValues (multi-correct)
-  const acceptedFieldAnswers: string[] = [];
-
-  for (const [key, exp] of Object.entries(expected)) {
-    const cfg = configByKey.get(key);
-
-    if (cfg?.acceptedValues) {
-      // Accept any value from the accepted list (case-insensitive, whitespace-normalized, trimmed)
-      const userAnswer = (answers[key] ?? '').trim().replace(/\s+/g, ' ');
-      if (!userAnswer) return false; // Guard against undefined/empty
-      const userNorm = userAnswer.toLowerCase();
-      // Normalize acceptedValues too for consistent comparison
-      if (!cfg.acceptedValues.some((v) => v.toLowerCase().replace(/\s+/g, ' ') === userNorm)) return false;
-      if (cfg.acceptedValues.length > 1) {
-        acceptedFieldAnswers.push(userNorm); // Push normalized for case-insensitive duplicate detection
-      }
-      continue;
-    }
-
-    const userAnswer = answers[key]?.trim().toLowerCase();
-    const expectedStr = String(exp).toLowerCase();
-    const userNum = parseLocaleFloat(userAnswer);
-    const expectedNum = parseLocaleFloat(expectedStr);
-    if (!isNaN(userNum) && !isNaN(expectedNum)) {
-      const tolerance = expectedNum * 0.05;
-      if (Math.abs(userNum - expectedNum) > tolerance) return false;
-    } else if (userAnswer !== expectedStr) {
-      return false;
-    }
-  }
-
-  // Prevent duplicate picks among acceptedValues fields
-  if (
-    acceptedFieldAnswers.length > 1 &&
-    new Set(acceptedFieldAnswers).size !== acceptedFieldAnswers.length
-  ) {
-    return false;
-  }
-
-  return true;
-}
+import { generateHandelskalkulationQuestion } from './lib/generators/handelskalkulation';
 
 const GENERATORS: Record<string, () => Question> = {
   bandwidth: generateBandwidthQuestion,
@@ -299,6 +173,19 @@ const GENERATORS: Record<string, () => Question> = {
       answerInputs: q.answerInputs,
       scenario: q.scenario,
     };
+  },
+  handelskalkulation: () => {
+    const q = generateHandelskalkulationQuestion();
+    return {
+      id: `handelskalkulation-${Date.now()}`,
+      theme: q.theme,
+      module: 'handelskalkulation',
+      questionText: q.questionText,
+      expectedAnswers: q.expectedAnswers,
+      solutionSteps: q.solutionSteps,
+      difficulty: q.difficulty,
+      answerInputs: q.answerInputs,
+    };
   }
 };
 
@@ -311,17 +198,6 @@ export default function Home() {
   const [progress, setProgress] = useState<{ module: string; questions_attempted: number; questions_correct: number; streak_days?: number }[]>([]);
   const [streakDays, setStreakDays] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Load user from localStorage on mount
-  useEffect(() => {
-    const storedHash = localStorage.getItem('ihk_access_hash');
-    if (storedHash) {
-      handleLogin(storedHash);
-    } else {
-      setIsLoading(false);
-      setShowAuthModal(true);
-    }
-  }, []);
 
   const loadProgress = useCallback(async (hash: string) => {
     try {
@@ -336,7 +212,7 @@ export default function Home() {
     }
   }, []);
 
-  const handleLogin = async (hash: string): Promise<{ success: boolean; error?: string }> => {
+  const handleLogin = useCallback(async (hash: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const userData = await getUserByHash(hash);
       if (userData) {
@@ -357,7 +233,40 @@ export default function Home() {
       console.error('Login error:', error);
       return { success: false, error: 'Verbindungsfehler. Bitte versuche es erneut.' };
     }
-  };
+  }, [loadProgress]);
+
+  useEffect(() => {
+    const verifyStoredHash = async () => {
+      const storedHash = localStorage.getItem('ihk_access_hash');
+
+      if (!storedHash) {
+        setShowAuthModal(true);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const userData = await getUserByHash(storedHash);
+        if (userData) {
+          setUser(userData);
+          setAccessHash(storedHash);
+          setShowAuthModal(false);
+          setIsLoading(false);
+          loadProgress(storedHash);
+        } else {
+          localStorage.removeItem('ihk_access_hash');
+          setIsLoading(false);
+          setShowAuthModal(true);
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        setIsLoading(false);
+        setShowAuthModal(true);
+      }
+    };
+
+    verifyStoredHash();
+  }, [loadProgress]);
 
   const handleRegister = async (): Promise<string | null> => {
     try {
@@ -396,41 +305,18 @@ export default function Home() {
   };
 
   const handleCheckAnswer = useCallback((answers: Record<string, string>): boolean => {
-    if (!currentQuestion || !user || !accessHash) return false;
+    if (!currentQuestion) return false;
 
-    let correct: boolean;
+    const correct = validateQuestionAnswers(currentQuestion, answers);
 
-    if (currentQuestion.answerInputs) {
-      correct = validateStructuredAnswer(currentQuestion.answerInputs, currentQuestion.expectedAnswers, answers);
-    } else {
-      // Legacy validation for plain text inputs
-      correct = true;
-      for (const [key, expected] of Object.entries(currentQuestion.expectedAnswers)) {
-        if (key === 'unit') continue;
-        const userAnswer = answers[key]?.trim().toLowerCase();
-        const expectedStr = String(expected).toLowerCase();
-
-        const userNum = parseLocaleFloat(userAnswer);
-        const expectedNum = parseLocaleFloat(expectedStr);
-
-        if (!isNaN(userNum) && !isNaN(expectedNum)) {
-          const tolerance = expectedNum * 0.05;
-          if (Math.abs(userNum - expectedNum) > tolerance) {
-            correct = false;
-          }
-        } else if (userAnswer !== expectedStr) {
-          correct = false;
-        }
-      }
+    if (accessHash) {
+      updateProgress(accessHash, currentQuestion.module, correct)
+        .then(() => loadProgress(accessHash))
+        .catch((err) => console.error('Error updating progress:', err));
     }
 
-    // Update progress, then reload once the write is done
-    updateProgress(accessHash, currentQuestion.module, correct)
-      .then(() => loadProgress(accessHash))
-      .catch((err) => console.error('Error updating progress:', err));
-
     return correct;
-  }, [currentQuestion, user, accessHash, loadProgress]);
+  }, [currentQuestion, accessHash, loadProgress]);
 
   const handleNextQuestion = () => {
     if (currentModule) {

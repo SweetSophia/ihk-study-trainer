@@ -1,3 +1,4 @@
+import type { ButtonHTMLAttributes } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -5,7 +6,7 @@ import userEvent from '@testing-library/user-event';
 // Mock framer-motion to avoid animation complexity in tests
 vi.mock('framer-motion', () => ({
   motion: {
-    button: ({ children, onClick, className, ...props }: any) => (
+    button: ({ children, onClick, className }: ButtonHTMLAttributes<HTMLButtonElement>) => (
       <button onClick={onClick} className={className}>{children}</button>
     ),
   },
@@ -98,13 +99,13 @@ it('renders the Database icon for the SQL module when authenticated', () => {
   });
 
 describe('all modules present', () => {
-    it('renders all 15 module names including Linux, Cloud and SQL when authenticated', () => {
+    it('renders all 16 module names including Linux, Cloud, Kalkulation and SQL when authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
 const moduleNames = [
         'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
         'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'SQL',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'Kalkulation', 'SQL',
       ];
 
       for (const name of moduleNames) {
@@ -114,13 +115,13 @@ const moduleNames = [
       }
     });
 
-it('renders 14 base modules without SQL when not authenticated', () => {
+it('renders 15 base modules without SQL when not authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
 
       const moduleNames = [
         'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
         'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'Kalkulation',
       ];
 
       for (const name of moduleNames) {

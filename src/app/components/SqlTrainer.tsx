@@ -98,9 +98,9 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
     setFeedback(null);
 
     // Spin up a fresh, isolated PostgreSQL instance in the browser
-    const db = new PGlite();
-
+    let db: PGlite | null = null;
     try {
+      db = new PGlite();
       // Execute the AI's schema and dummy data (split multi-statement SQL)
       await executeMultiStatement(db, exercise.setup_sql);
 
@@ -158,7 +158,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
       });
     } finally {
       // Always close the PGlite instance to prevent memory leaks
-      await db.close();
+      await db?.close();
     }
   }, [exercise, userQuery, onCorrect, onIncorrect]);
 

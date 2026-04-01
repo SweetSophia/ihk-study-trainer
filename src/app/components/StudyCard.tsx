@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Lightbulb, ArrowRight, RotateCcw } from 'lucide-react';
-import { AnswerInputConfig, Question } from '../types';
+import { Question } from '../types';
 import LinuxTerminal from './LinuxTerminal';
 
 interface StudyCardProps {
