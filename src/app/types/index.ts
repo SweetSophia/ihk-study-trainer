@@ -33,6 +33,11 @@ export interface Question {
    * (e.g., Linux: 'commandToDescription' vs 'descriptionToCommand')
    */
   direction?: string;
+  /**
+   * Optional scenario text for modules that include situational context
+   * (e.g., Cloud: describes the business/technical scenario for scenario-based questions)
+   */
+  scenario?: string;
 }
 
 /** User interface */

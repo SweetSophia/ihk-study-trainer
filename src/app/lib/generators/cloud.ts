@@ -805,7 +805,7 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
       expectedAnswers = { answer: q.correctAnswer };
       break;
 
-    case 'trueFalse':
+    case 'trueFalse': {
       const trueFalseOptions = ['Wahr', 'Falsch'];
       answerInputs = [{
         valueKey: 'answer',
@@ -815,12 +815,12 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
       }];
       expectedAnswers = { answer: q.correctAnswer };
       break;
+    }
 
     case 'fillBlank':
       answerInputs = [{
         valueKey: 'answer',
         label: 'Antwort',
-        valueOptions: [], // Free text input
         acceptedValues: q.acceptedValues || [q.correctAnswer],
       }];
       expectedAnswers = { answer: q.correctAnswer };
