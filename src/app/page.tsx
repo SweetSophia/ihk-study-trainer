@@ -48,6 +48,7 @@ import { generatePortQuestion } from './lib/generators/ports';
 import { generateOsiQuestion, OSI_LAYER_NAMES } from './lib/generators/osi';
 import { generateCableQuestion, CABLE_TYPES, ALL_CABLE_PROS } from './lib/generators/cables';
 import { generateLinuxQuestion } from './lib/generators/linux';
+import { generateCloudQuestion } from './lib/generators/cloud';
 
 /** Parse a numeric string, treating comma as decimal separator (German locale). */
 function parseLocaleFloat(raw: string): number {
@@ -278,6 +279,20 @@ const GENERATORS: Record<string, () => Question> = {
       difficulty: q.difficulty,
       answerInputs: q.answerInputs,
       direction: q.direction,
+    };
+  },
+  cloud: () => {
+    const q = generateCloudQuestion();
+    return {
+      id: `cloud-${Date.now()}`,
+      theme: 'Cloud Computing',
+      module: 'cloud',
+      questionText: q.questionText,
+      expectedAnswers: q.expectedAnswers,
+      solutionSteps: q.solutionSteps,
+      difficulty: q.difficulty,
+      answerInputs: q.answerInputs,
+      scenario: q.scenario,
     };
   }
 };
