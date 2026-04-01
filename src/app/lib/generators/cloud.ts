@@ -461,7 +461,7 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
     type: 'multipleChoice',
     topic: 'Modern Architecture',
     difficulty: 'hard',
-    question: 'Ein Unternehmen plant eine Cloud-Migration. Welcher Ansatz ist für den Production-Start einer Webanwendung NICHT empfehlenswert?',
+    question: 'Ein Unternehmen plant eine Cloud-Migration. Welcher Ansatz hat typischerweise den höchsten operativen Aufwand und die steilste Lernkurve für ein Team ohne Kubernetes-Erfahrung?',
     options: [
       'Start mit einer einzelnen EC2-Instanz (Lift & Shift)',
       'Start mit einer vollständigen Container-Architektur auf EKS',
@@ -469,7 +469,7 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
       'Start mit einer Managed Database (RDS)'
     ],
     correctAnswer: 'Start mit einer vollständigen Container-Architektur auf EKS',
-    explanation: 'Für den Start einer neuen Anwendung ist eine vollständige Kubernetes-Architektur oft zu komplex. Ein Lift-and-Shift oder eine einfache Serverless-Architektur ist für den Anfang besser geeignet.',
+    explanation: 'Kubernetes erfordert ein tiefes Verständnis von Orchestrierungskonzepten, YAML-Konfiguration, Networking, Storage und Monitoring. EKS fügt zusätzlich AWS-spezifische Komplexität hinzu (IAM, VPC, Security Groups). Die Lernkurve ist deutlich steiler als bei EC2 (einfache VM-Verwaltung) oder Lambda (abstrakte Ausführung ohne Server-Management). Hinzu kommt der Betriebsaufwand für Cluster-Wartung, Upgrades und Self-Healing-Konfiguration.',
   },
   {
     type: 'multipleChoice',
