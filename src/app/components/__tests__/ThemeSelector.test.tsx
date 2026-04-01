@@ -114,13 +114,13 @@ const moduleNames = [
       }
     });
 
-    it('renders 12 base modules without SQL when not authenticated', () => {
+it('renders 14 base modules without SQL when not authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
 
       const moduleNames = [
         'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
         'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'Linux',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud',
       ];
 
       for (const name of moduleNames) {
