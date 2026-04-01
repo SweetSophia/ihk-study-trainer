@@ -315,6 +315,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'ip addr show',
     category: 'Netzwerk',
     difficulty: 'medium',
+    aliases: ['ifconfig'],
   },
   {
     command: 'ss',
@@ -501,19 +502,21 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'useradd',
     description: 'Erstellt einen neuen Benutzeraccount',
     explanation:
-      'useradd erstellt einen neuen Benutzer. Mit -m wird das Home-Verzeichnis erstellt, -s setzt die Shell, -G fügt zusätzliche Gruppen hinzu.',
+      'useradd erstellt einen neuen Benutzer. Mit -m wird das Home-Verzeichnis erstellt, -s setzt die Shell, -G fügt zusätzliche Gruppen hinzu. Debian/Ubuntu-Alternative: adduser.',
     example: 'useradd -m -s /bin/bash neueruser',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
+    aliases: ['adduser'],
   },
   {
     command: 'userdel',
     description: 'Löscht einen Benutzeraccount',
     explanation:
-      'userdel entfernt einen Benutzer. Mit -r wird auch das Home-Verzeichnis gelöscht.',
+      'userdel entfernt einen Benutzer. Mit -r wird auch das Home-Verzeichnis gelöscht. Debian/Ubuntu-Alternative: deluser.',
     example: 'userdel -r alteruser',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
+    aliases: ['deluser'],
   },
   {
     command: 'usermod',
@@ -528,19 +531,21 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'groupadd',
     description: 'Erstellt eine neue Benutzergruppe',
     explanation:
-      'groupadd erstellt eine neue Gruppe im System.',
+      'groupadd erstellt eine neue Gruppe im System. Debian/Ubuntu-Alternative: addgroup.',
     example: 'groupadd entwickler',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
+    aliases: ['addgroup'],
   },
   {
     command: 'groupdel',
     description: 'Löscht eine Benutzergruppe',
     explanation:
-      'groupdel entfernt eine bestehende Gruppe aus dem System.',
+      'groupdel entfernt eine bestehende Gruppe aus dem System. Debian/Ubuntu-Alternative: delgroup.',
     example: 'groupdel altegruppe',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
+    aliases: ['delgroup'],
   },
   {
     command: 'id',
@@ -965,7 +970,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
   // ── Output Redirection ─────────────────────────────────────────────────
   {
     command: '|',
-    description: 'Leitet die Ausgabe eines Befehls als Eingabe an den nächsten weiter (Pipe)',
+    description: 'Leitet die Standardausgabe eines Befehls als Standardeingabe an den nächsten weiter (Pipe)',
     explanation:
       'Der Pipe-Operator | verbindet zwei Befehle: die Standardausgabe des ersten Befehls wird zur Standardeingabe des zweiten. Beispiel: ps aux | grep nginx.',
     example: 'ps aux | grep nginx',
