@@ -570,7 +570,7 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
     case 'matching':
       // Validate that q.options exists and has entries before using it
       if (!Array.isArray(q.options) || q.options.length === 0) {
-        throw new Error(`Question "${q.question.slice(0, 40)}...": options must be a non-empty array for ${q.type} questions`);
+        throw new Error(`Frage "${q.question.slice(0, 40)}...": Antwortoptionen müssen für ${q.type}-Fragen als nicht-leeres Array definiert sein.`);
       }
       answerInputs = [{
         valueKey: 'answer',
