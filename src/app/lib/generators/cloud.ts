@@ -21,6 +21,7 @@ interface BaseCloudQuestion {
 
 interface ChoiceCloudQuestion extends BaseCloudQuestion {
   type: Exclude<QuestionType, 'trueFalse'>;
+  // Choice-based questions must always expose at least one selectable option in the UI.
   options: [string, ...string[]];
   correctAnswer: string;
   acceptedValues?: string[];
@@ -29,10 +30,12 @@ interface ChoiceCloudQuestion extends BaseCloudQuestion {
 interface TrueFalseCloudQuestion extends BaseCloudQuestion {
   type: 'trueFalse';
   correctAnswer: 'Wahr' | 'Falsch';
+  // True/false prompts should always declare accepted synonyms explicitly for answer validation.
   acceptedValues: [string, ...string[]];
 }
 
 type CloudQuestion = ChoiceCloudQuestion | TrueFalseCloudQuestion;
+export const CLOUD_TRUE_FALSE_OPTIONS = ['Wahr', 'Falsch'] as const;
 
 // --- Cloud Question Bank ---
 const CLOUD_QUESTIONS = [
@@ -547,6 +550,8 @@ for (const question of CLOUD_QUESTIONS) {
   CLOUD_QUESTIONS_BY_DIFFICULTY[question.difficulty].push(question);
 }
 
+export const CLOUD_QUESTION_COUNT = CLOUD_QUESTIONS.length;
+
 /**
  * Selects a uniformly distributed integer between the given bounds, inclusive.
  *
@@ -585,6 +590,7 @@ export interface CloudQuestionResult {
  *  - `scenario` (optional): associated scenario text
  */
 export function generateCloudQuestion(difficulty?: CloudDifficulty): CloudQuestionResult {
+  // Defensive fallback for unexpected runtime values that bypass the TypeScript type.
   const availableQuestions = difficulty
     ? CLOUD_QUESTIONS_BY_DIFFICULTY[difficulty] ?? CLOUD_QUESTIONS
     : CLOUD_QUESTIONS;
@@ -612,11 +618,10 @@ export function generateCloudQuestion(difficulty?: CloudDifficulty): CloudQuesti
       break;
 
     case 'trueFalse': {
-      const trueFalseOptions = ['Wahr', 'Falsch'];
       answerInputs = [{
         valueKey: 'answer',
         label: 'Antwort',
-        valueOptions: trueFalseOptions,
+        valueOptions: [...CLOUD_TRUE_FALSE_OPTIONS],
         acceptedValues: q.acceptedValues,
       }];
       expectedAnswers = { answer: q.correctAnswer };

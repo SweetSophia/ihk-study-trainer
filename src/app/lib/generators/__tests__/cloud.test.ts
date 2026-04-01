@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { generateCloudQuestion } from '../cloud';
+import { CLOUD_QUESTION_COUNT, CLOUD_TRUE_FALSE_OPTIONS, generateCloudQuestion } from '../cloud';
 
-const TOTAL_CLOUD_QUESTIONS = 45;
+const EXPECTED_SOLUTION_STEPS_COUNT = 4;
 
-function randomValueForIndex(index: number, total = TOTAL_CLOUD_QUESTIONS): number {
+function randomValueForIndex(index: number, total = CLOUD_QUESTION_COUNT): number {
   return (index + 0.001) / total;
 }
 
@@ -16,7 +16,7 @@ describe('generateCloudQuestion', () => {
   it('returns valid answer configuration for every question in the bank', () => {
     const randomSpy = vi.spyOn(Math, 'random');
 
-    for (let index = 0; index < TOTAL_CLOUD_QUESTIONS; index += 1) {
+    for (let index = 0; index < CLOUD_QUESTION_COUNT; index += 1) {
       randomSpy.mockReturnValue(randomValueForIndex(index));
 
       const question = generateCloudQuestion();
@@ -25,7 +25,7 @@ describe('generateCloudQuestion', () => {
 
       expect(question.theme).not.toBe('');
       expect(question.questionText).not.toBe('');
-      expect(question.solutionSteps).toHaveLength(4);
+      expect(question.solutionSteps).toHaveLength(EXPECTED_SOLUTION_STEPS_COUNT);
       expect(answerInput).toBeDefined();
       expect(answerInput.label).toBe('Antwort');
       expect(answerInput.valueOptions).toContain(expectedAnswer);
@@ -33,7 +33,10 @@ describe('generateCloudQuestion', () => {
       expect(answerInput.acceptedValues?.length).toBeGreaterThan(0);
       expect(question.solutionSteps[2]).toContain(expectedAnswer);
 
-      if (answerInput.valueOptions?.join('|') === 'Wahr|Falsch') {
+      if (
+        answerInput.valueOptions?.length === CLOUD_TRUE_FALSE_OPTIONS.length &&
+        answerInput.valueOptions.every((option, optionIndex) => option === CLOUD_TRUE_FALSE_OPTIONS[optionIndex])
+      ) {
         expect(answerInput.acceptedValues?.map((value) => value.toLowerCase())).toContain(expectedAnswer.toLowerCase());
       }
 
@@ -58,6 +61,7 @@ describe('generateCloudQuestion', () => {
   it('falls back to the full bank for unknown runtime difficulty values', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
 
+    // Runtime callers can still bypass the type system, so keep the fallback path covered.
     const question = generateCloudQuestion('expert' as never);
 
     expect(question.theme).toBe('Service Models');
