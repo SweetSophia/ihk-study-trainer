@@ -8,7 +8,7 @@ import { AnswerInputConfig } from '../../types';
 // ============================================================
 
 // --- Question Types ---
-type QuestionType = 'multipleChoice' | 'matching' | 'trueFalse' | 'fillBlank';
+type QuestionType = 'multipleChoice' | 'matching' | 'trueFalse';
 
 interface CloudQuestion {
   type: QuestionType;
@@ -324,6 +324,15 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
     acceptedValues: ['wahr', 'true', 'yes', 'ja', 'richtig', 'stimmt'],
     explanation: 'Richtig! Das ist ein Beispiel für das Shared Responsibility Model. AWS sichert die Infrastruktur (Rechenzentrum, Server, Storage-System), der Kunde sichert seine Daten (Verschlüsselung, Zugriffskontrolle).',
   },
+  {
+    type: 'trueFalse',
+    topic: 'Security',
+    difficulty: 'medium',
+    question: 'Ein Cloud-Kunde muss auf Anfrage einer betroffenen Person deren Rechte (z.B. Löschung) gewährleisten können - unabhängig davon, ob die Daten bei einem Cloud-Provider liegen.',
+    correctAnswer: 'Wahr',
+    acceptedValues: ['wahr', 'true', 'yes', 'ja', 'richtig', 'stimmt'],
+    explanation: 'Richtig! Als Datenverantwortlicher (Controller) muss der Kunde sicherstellen, dass betroffene Personen ihre DSGVO-Rechte (Auskunft, Berichtigung, Löschung, Datenübertragbarkeit) wahrnehmen können - auch bei Cloud-verarbeiteten Daten. Der Auftragsverarbeiter (Processor) unterstützt den Kunden dabei.',
+  },
 
   // ============ COST & AVAILABILITY ============
   {
@@ -559,11 +568,14 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
   switch (q.type) {
     case 'multipleChoice':
     case 'matching':
-      // Create dropdown with options
+      // Validate that q.options exists and has entries before using it
+      if (!Array.isArray(q.options) || q.options.length === 0) {
+        throw new Error(`Question "${q.question.slice(0, 40)}...": options must be a non-empty array for ${q.type} questions`);
+      }
       answerInputs = [{
         valueKey: 'answer',
         label: 'Antwort',
-        valueOptions: q.options || [],
+        valueOptions: q.options,
         acceptedValues: q.acceptedValues || [q.correctAnswer],
       }];
       expectedAnswers = { answer: q.correctAnswer };
@@ -580,15 +592,6 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
       expectedAnswers = { answer: q.correctAnswer };
       break;
     }
-
-    case 'fillBlank':
-      answerInputs = [{
-        valueKey: 'answer',
-        label: 'Antwort',
-        acceptedValues: q.acceptedValues || [q.correctAnswer],
-      }];
-      expectedAnswers = { answer: q.correctAnswer };
-      break;
   }
 
   // Build solution steps
