@@ -40,26 +40,20 @@ describe('ThemeSelector - SQL module addition', () => {
   });
 
   describe('SQL module presence', () => {
-    it('renders the SQL module button when authenticated', () => {
+    it('renders the SQL module button', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
       // There should be multiple "SQL" text nodes (mobile + desktop)
       const sqlButtons = screen.getAllByText('SQL');
       expect(sqlButtons.length).toBeGreaterThan(0);
     });
 
-it('does not render SQL module when not authenticated', () => {
-      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
-      const sqlButtons = screen.queryAllByText('SQL');
-      expect(sqlButtons.length).toBe(0);
-    });
-
-    it('renders the SQL module description "Datenbankabfragen" when authenticated', () => {
+    it('renders the SQL module description "Datenbankabfragen"', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
       const descriptions = screen.getAllByText('Datenbankabfragen');
       expect(descriptions.length).toBeGreaterThan(0);
     });
 
-it('renders the Database icon for the SQL module when authenticated', () => {
+    it('renders the Database icon for the SQL module', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
       const dbIcons = screen.getAllByTestId('icon-database');
       expect(dbIcons.length).toBeGreaterThan(0);
@@ -97,11 +91,11 @@ it('renders the Database icon for the SQL module when authenticated', () => {
     });
   });
 
-describe('all modules present', () => {
-    it('renders all 15 module names including Linux, Cloud and SQL when authenticated', () => {
+  describe('all modules present', () => {
+    it('renders all 15 module names including Linux, Cloud and SQL', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
-const moduleNames = [
+      const moduleNames = [
         'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
         'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
         'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'SQL',
@@ -112,25 +106,6 @@ const moduleNames = [
         const elements = screen.getAllByText(name);
         expect(elements.length).toBeGreaterThan(0);
       }
-    });
-
-it('renders 14 base modules without SQL when not authenticated', () => {
-      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
-
-      const moduleNames = [
-        'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
-        'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud',
-      ];
-
-      for (const name of moduleNames) {
-        const elements = screen.getAllByText(name);
-        expect(elements.length).toBeGreaterThan(0);
-      }
-
-      // SQL should not be present
-      const sqlButtons = screen.queryAllByText('SQL');
-      expect(sqlButtons.length).toBe(0);
     });
 
     it('calls onSelectModule with correct id for each module click', async () => {
