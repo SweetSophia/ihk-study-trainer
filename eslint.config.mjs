@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated static docs assets are bundled output, not source files.
+    "docs/assets/**",
   ]),
 ]);
 
