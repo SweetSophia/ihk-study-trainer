@@ -98,13 +98,13 @@ it('renders the Database icon for the SQL module when authenticated', () => {
   });
 
 describe('all modules present', () => {
-    it('renders all 15 module names including Linux, Cloud and SQL when authenticated', () => {
+    it('renders all 16 module names including Linux, Cloud, Kalkulation and SQL when authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
 const moduleNames = [
         'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
         'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'SQL',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'Kalkulation', 'SQL',
       ];
 
       for (const name of moduleNames) {
@@ -114,13 +114,13 @@ const moduleNames = [
       }
     });
 
-it('renders 14 base modules without SQL when not authenticated', () => {
+it('renders 15 base modules without SQL when not authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
 
       const moduleNames = [
         'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
         'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'Kalkulation',
       ];
 
       for (const name of moduleNames) {
