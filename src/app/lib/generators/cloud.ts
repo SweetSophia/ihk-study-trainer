@@ -9,8 +9,11 @@ import { AnswerInputConfig } from '../../types';
 
 // --- Question Types ---
 type QuestionType = 'multipleChoice' | 'matching' | 'trueFalse';
+
+/** Supported difficulty levels for Cloud Computing Basics questions. */
 type CloudDifficulty = 'easy' | 'medium' | 'hard';
 
+/** Shared fields that every Cloud question variant exposes. */
 interface BaseCloudQuestion {
   topic: string;
   difficulty: CloudDifficulty;
@@ -19,6 +22,7 @@ interface BaseCloudQuestion {
   explanation: string;
 }
 
+/** Question variant rendered as a dropdown with one or more answer options. */
 interface ChoiceCloudQuestion extends BaseCloudQuestion {
   type: Exclude<QuestionType, 'trueFalse'>;
   // Choice-based questions must always expose at least one selectable option in the UI.
@@ -27,6 +31,7 @@ interface ChoiceCloudQuestion extends BaseCloudQuestion {
   acceptedValues?: string[];
 }
 
+/** True/false question variant with explicit synonym support for validation. */
 interface TrueFalseCloudQuestion extends BaseCloudQuestion {
   type: 'trueFalse';
   correctAnswer: 'Wahr' | 'Falsch';
@@ -34,7 +39,10 @@ interface TrueFalseCloudQuestion extends BaseCloudQuestion {
   acceptedValues: [string, ...string[]];
 }
 
+/** Union of all Cloud question variants contained in the static question bank. */
 type CloudQuestion = ChoiceCloudQuestion | TrueFalseCloudQuestion;
+
+/** Canonical dropdown options used for all Cloud true/false questions. */
 export const CLOUD_TRUE_FALSE_OPTIONS = ['Wahr', 'Falsch'] as const;
 
 // --- Cloud Question Bank ---
@@ -550,6 +558,7 @@ for (const question of CLOUD_QUESTIONS) {
   CLOUD_QUESTIONS_BY_DIFFICULTY[question.difficulty].push(question);
 }
 
+/** Total number of static questions currently available in the Cloud module. */
 export const CLOUD_QUESTION_COUNT = CLOUD_QUESTIONS.length;
 
 /**
@@ -564,6 +573,7 @@ function getRandomInt(min: number, max: number): number {
 }
 
 // --- Main Generator Function ---
+/** Normalized result returned by the Cloud generator for app consumption. */
 export interface CloudQuestionResult {
   theme: string;
   questionText: string;
