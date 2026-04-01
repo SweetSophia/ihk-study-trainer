@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { 
   Calculator, Image as ImageIcon, Network, ArrowLeftRight,
-  Binary, Hexagon, Shield, Layers, Cable, Server, Globe, Settings, Database, Terminal
+  Binary, Hexagon, Shield, Layers, Cable, Server, Globe, Settings, Database, Terminal, Cloud
 } from 'lucide-react';
 
 const BASE_MODULES = [
@@ -20,6 +20,7 @@ const BASE_MODULES = [
   { id: 'osi', name: 'OSI', icon: Globe, description: 'OSI-Schichten' },
   { id: 'cables', name: 'Kabel', icon: Cable, description: 'Kabelauswahl' },
   { id: 'linux', name: 'Linux', icon: Terminal, description: 'Linux-Befehle' },
+  { id: 'cloud', name: 'Cloud', icon: Cloud, description: 'Cloud Computing' },
 ];
 
 // SQL module requires authentication

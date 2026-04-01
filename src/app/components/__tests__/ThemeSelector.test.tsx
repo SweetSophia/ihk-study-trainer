@@ -26,6 +26,8 @@ vi.mock('lucide-react', () => ({
   Globe: () => <svg data-testid="icon-globe" />,
   Settings: () => <svg data-testid="icon-settings" />,
   Database: () => <svg data-testid="icon-database" />,
+  Terminal: () => <svg data-testid="icon-terminal" />,
+  Cloud: () => <svg data-testid="icon-cloud" />,
 }));
 
 import ThemeSelector from '../ThemeSelector';
@@ -38,27 +40,33 @@ describe('ThemeSelector - SQL module addition', () => {
   });
 
   describe('SQL module presence', () => {
-    it('renders the SQL module button', () => {
-      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} />);
+    it('renders the SQL module button when authenticated', () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
       // There should be multiple "SQL" text nodes (mobile + desktop)
       const sqlButtons = screen.getAllByText('SQL');
       expect(sqlButtons.length).toBeGreaterThan(0);
     });
 
-    it('renders the SQL module description "Datenbankabfragen"', () => {
-      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} />);
+it('does not render SQL module when not authenticated', () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
+      const sqlButtons = screen.queryAllByText('SQL');
+      expect(sqlButtons.length).toBe(0);
+    });
+
+    it('renders the SQL module description "Datenbankabfragen" when authenticated', () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
       const descriptions = screen.getAllByText('Datenbankabfragen');
       expect(descriptions.length).toBeGreaterThan(0);
     });
 
-    it('renders the Database icon for the SQL module', () => {
-      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} />);
+it('renders the Database icon for the SQL module when authenticated', () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
       const dbIcons = screen.getAllByTestId('icon-database');
       expect(dbIcons.length).toBeGreaterThan(0);
     });
 
     it('calls onSelectModule with "sql" when SQL module is clicked (mobile strip)', async () => {
-      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} />);
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
       // In the mobile strip, find the button by its accessible name containing "SQL"
       // The mobile strip uses regular <button> elements
@@ -70,7 +78,7 @@ describe('ThemeSelector - SQL module addition', () => {
     });
 
     it('marks the SQL module as active when currentModule is "sql"', () => {
-      render(<ThemeSelector currentModule="sql" onSelectModule={onSelectModule} />);
+      render(<ThemeSelector currentModule="sql" onSelectModule={onSelectModule} isAuthenticated={true} />);
 
       // The active module button should have the emerald active classes
       // We can check by finding buttons that contain "SQL" text and checking their class
@@ -81,7 +89,7 @@ describe('ThemeSelector - SQL module addition', () => {
     });
 
     it('does not mark SQL module as active when currentModule is something else', () => {
-      render(<ThemeSelector currentModule="binary" onSelectModule={onSelectModule} />);
+      render(<ThemeSelector currentModule="binary" onSelectModule={onSelectModule} isAuthenticated={true} />);
 
       const sqlTexts = screen.getAllByText('SQL');
       const sqlButton = sqlTexts[0].closest('button');
@@ -89,14 +97,14 @@ describe('ThemeSelector - SQL module addition', () => {
     });
   });
 
-  describe('all modules present', () => {
-    it('renders all 13 module names including SQL', () => {
-      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} />);
+describe('all modules present', () => {
+    it('renders all 15 module names including Linux, Cloud and SQL when authenticated', () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
-      const moduleNames = [
+const moduleNames = [
         'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
         'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'SQL',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'SQL',
       ];
 
       for (const name of moduleNames) {
@@ -106,8 +114,27 @@ describe('ThemeSelector - SQL module addition', () => {
       }
     });
 
+it('renders 14 base modules without SQL when not authenticated', () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
+
+      const moduleNames = [
+        'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
+        'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud',
+      ];
+
+      for (const name of moduleNames) {
+        const elements = screen.getAllByText(name);
+        expect(elements.length).toBeGreaterThan(0);
+      }
+
+      // SQL should not be present
+      const sqlButtons = screen.queryAllByText('SQL');
+      expect(sqlButtons.length).toBe(0);
+    });
+
     it('calls onSelectModule with correct id for each module click', async () => {
-      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} />);
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
       // Click SQL module
       const sqlTexts = screen.getAllByText('SQL');
@@ -118,7 +145,7 @@ describe('ThemeSelector - SQL module addition', () => {
 
   describe('module selection behavior', () => {
     it('passes the selected module id to onSelectModule, not the display name', async () => {
-      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} />);
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
       const sqlTexts = screen.getAllByText('SQL');
       await userEvent.click(sqlTexts[0]);
@@ -129,7 +156,7 @@ describe('ThemeSelector - SQL module addition', () => {
     });
 
     it('onSelectModule is called exactly once per click', async () => {
-      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} />);
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
       const sqlTexts = screen.getAllByText('SQL');
       await userEvent.click(sqlTexts[0]);
