@@ -1,4 +1,4 @@
-import { AnswerInputConfig } from '../../types';
+import { Question, AnswerInputConfig } from '../../types';
 
 // ============================================================
 // CLOUD COMPUTING BASICS - IHK Study Trainer Generator
@@ -7,8 +7,231 @@ import { AnswerInputConfig } from '../../types';
 // Networking, Security, Cost, Availability, Modern Arch
 // ============================================================
 
+// --- Service Model Definitions ---
+interface ServiceModel {
+  name: string;
+  shortName: string;
+  description: string;
+  examples: { provider: string; service: string }[];
+  userResponsibility: string[];
+  providerResponsibility: string[];
+}
+
+const SERVICE_MODELS: ServiceModel[] = [
+  {
+    name: 'Infrastructure as a Service',
+    shortName: 'IaaS',
+    description: 'Bietet virtualisierte Computinfrastruktur (VMs, Netzwerke, Storage). Du verwaltest OS, Anwendungen und Daten.',
+    examples: [
+      { provider: 'AWS', service: 'EC2' },
+      { provider: 'Azure', service: 'Virtual Machines' },
+      { provider: 'GCP', service: 'Compute Engine' },
+    ],
+    userResponsibility: ['Betriebssystem', 'Anwendungen', 'Daten', 'Netzwerkkonfiguration'],
+    providerResponsibility: ['Physische Server', 'Rechenzentrum', 'Hypervisor', 'Netzwerk-Infrastruktur'],
+  },
+  {
+    name: 'Platform as a Service',
+    shortName: 'PaaS',
+    description: 'Bietet eine Laufzeitumgebung für Entwicklung und Deployment von Anwendungen. Du kümmerst dich nur um die Anwendung.',
+    examples: [
+      { provider: 'AWS', service: 'Elastic Beanstalk' },
+      { provider: 'Azure', service: 'App Service' },
+      { provider: 'GCP', service: 'App Engine' },
+    ],
+    userResponsibility: ['Anwendungscode', 'Daten', 'Anwendungskonfiguration'],
+    providerResponsibility: ['OS', 'Runtime', 'Middleware', 'Entwicklungstools', 'Rechenzentrum'],
+  },
+  {
+    name: 'Software as a Service',
+    shortName: 'SaaS',
+    description: 'Fertige Anwendungen werden über das Internet bereitgestellt. Keine Installation, Zugriff über Browser/App.',
+    examples: [
+      { provider: 'AWS', service: 'Amazon Chime' },
+      { provider: 'Azure', service: 'Microsoft 365' },
+      { provider: 'GCP', service: 'Google Workspace' },
+    ],
+    userResponsibility: ['Nutzung der Software', 'Daten (in der App)', 'Zugangsdaten'],
+    providerResponsibility: ['Gesamte Infrastruktur', 'Anwendung', 'Sicherheit', 'Verfügbarkeit'],
+  },
+];
+
+// --- Deployment Models ---
+const DEPLOYMENT_MODELS = [
+  {
+    name: 'Public Cloud',
+    description: 'Ressourcen werden über das Internet von einem Drittanbieter bereitgestellt. Shared Infrastructure.',
+    advantages: ['Keine Anfangsinvestition', 'Elastische Skalierung', 'Pay-per-use'],
+    disadvantages: ['Weniger Kontrolle', 'Potentielle Vendor Lock-in', 'Compliance-Anforderungen'],
+    providers: ['AWS', 'Azure', 'GCP'],
+  },
+  {
+    name: 'Private Cloud',
+    description: 'Dedizierte Cloud-Infrastruktur für ein einzelnes Unternehmen. Kann On-Premise oder gehostet sein.',
+    advantages: ['Volle Kontrolle', 'Höhere Sicherheit', 'Compliance einfacher'],
+    disadvantages: ['Hohe Anfangskosten', 'Eigenes Maintenance', 'Begrenzte Skalierung'],
+    providers: ['VMware vSphere', 'Microsoft Hyper-V', 'OpenStack'],
+  },
+  {
+    name: 'Hybrid Cloud',
+    description: 'Kombination aus Public und Private Cloud, verbunden über VPN oder dedizierte Verbindungen.',
+    advantages: ['Flexibilität', 'Sicher kritische Daten on-prem', 'Bursting in Public Cloud'],
+    disadvantages: ['Komplexere Verwaltung', 'Netzwerk-Anbindung nötig', 'Data Sovereignty'],
+    providers: ['Azure Arc', 'AWS Outposts', 'Google Distributed Cloud'],
+  },
+  {
+    name: 'Multi-Cloud',
+    description: 'Nutzung mehrerer Public-Cloud-Anbieter gleichzeitig zur Vermeidung von Vendor Lock-in.',
+    advantages: ['Keine Abhängigkeit von einem Anbieter', 'Best-of-Breed nutzen', 'Ausfallsicherheit'],
+    disadvantages: ['Sehr komplex', 'Hoher Verwaltungsaufwand', 'Kostenkontrolle schwierig'],
+    providers: ['AWS + Azure', 'Azure + GCP', 'AWS + Azure + GCP'],
+  },
+];
+
+// --- Networking Concepts ---
+const NETWORK_CONCEPTS = [
+  {
+    concept: 'VPC (Virtual Private Cloud)',
+    description: 'Isoliertes, logisch abgetrenntes Netzwerk innerhalb einer Public Cloud.',
+    providers: {
+      AWS: 'Amazon VPC',
+      Azure: 'Azure Virtual Network',
+      GCP: 'Google Cloud VPC',
+    },
+  },
+  {
+    concept: 'Subnet',
+    description: 'Logische Unterteilung eines VPC in kleinere Netzwerke. Unterschieden wird in Public Subnets (mit Internetzugang) und Private Subnets.',
+    providers: {
+      AWS: 'Subnet in VPC',
+      Azure: 'Subnet in VNet',
+      GCP: 'Subnet in VPC',
+    },
+  },
+  {
+    concept: 'VPN (Virtual Private Network)',
+    description: 'Site-to-Site IPsec-Tunnel zur sicheren Verbindung zwischen On-Premise Netzwerk und Cloud.',
+    providers: {
+      AWS: 'AWS VPN (Site-to-Site)',
+      Azure: 'Azure VPN Gateway',
+      GCP: 'Cloud VPN',
+    },
+  },
+  {
+    concept: 'Load Balancer',
+    description: 'Verteilt eingehenden Traffic auf mehrere Instanzen/Server für Lastverteilung und Hochverfügbarkeit.',
+    providers: {
+      AWS: 'Elastic Load Balancer (ELB)',
+      Azure: 'Azure Load Balancer / Application Gateway',
+      GCP: 'Cloud Load Balancing',
+    },
+  },
+];
+
+// --- Security Concepts ---
+const SECURITY_CONCEPTS = [
+  {
+    concept: 'IAM (Identity and Access Management)',
+    description: 'Rollenbasierte Zugriffskontrolle (RBAC) für Benutzer, Gruppen und Services mit dem Prinzip of Least Privilege.',
+    providers: {
+      AWS: 'AWS IAM',
+      Azure: 'Microsoft Entra ID (ehem. Azure AD)',
+      GCP: 'Cloud IAM',
+    },
+  },
+  {
+    concept: 'Shared Responsibility Model',
+    description: 'Sicherheit wird geteilt: Der Provider sichert DIE Cloud (Infrastruktur), der Kunde sichert IN der Cloud (Daten, Zugriff).',
+  },
+  {
+    concept: 'Verschlüsselung',
+    description: 'Data-at-Rest (gespeicherte Daten) und Data-in-Transit (während Übertragung, z.B. TLS/SSL).',
+    providers: {
+      AWS: 'KMS, SSE-S3',
+      Azure: 'Azure Key Vault, Storage Encryption',
+      GCP: 'Cloud KMS, Secret Manager',
+    },
+  },
+  {
+    concept: 'MFA (Multi-Faktor-Authentifizierung)',
+    description: 'Zusätzliche Sicherheitsebene durch Kombination von etwas, das man weiß (Passwort), hat (Token/Phone), und ist (Biometrie).',
+  },
+  {
+    concept: 'Zero Trust',
+    description: '"Vertraue niemandem, überprüfe jeden" - Kein implizites Vertrauen, immer Authentifizierung und Autorisierung.',
+  },
+];
+
+// --- Cost & Availability Concepts ---
+const COST_CONCEPTS = [
+  {
+    concept: 'CAPEX vs OPEX',
+    description: 'CAPEX = hohe Anfangsinvestitionen in Hardware (Server, Netzwerk). OPEX = laufende Betriebskosten für Cloud-Dienste. Cloud shiftet von CAPEX zu OPEX.',
+  },
+  {
+    concept: 'Pay-as-you-go',
+    description: 'Abrechnung nach tatsächlichem Verbrauch. Keine langfristigen Verträge, flexible Skalierung, Kosten nur wenn genutzt.',
+  },
+  {
+    concept: 'Reserved Instances',
+    description: 'Rabattierte, vorausbezahlte Kapazität für 1-3 Jahre. Günstiger als On-Demand, aber weniger flexibel.',
+  },
+  {
+    concept: 'High Availability (HA)',
+    description: 'Systemdesign für Ausfallsicherheit: Redundante Komponenten, automatische Failover, keine Single Points of Failure.',
+  },
+  {
+    concept: 'Autoscaling',
+    description: 'Automatische Anpassung der Ressourcen basierend auf Last. Scale Up bei hoher Last, Scale Down bei niedriger.',
+  },
+  {
+    concept: 'RTO & RPO',
+    description: 'RTO = Recovery Time Objective (maximale Ausfallzeit). RPO = Recovery Point Objective (maximaler Datenverlust). Wichtig für Disaster Recovery Planung.',
+  },
+];
+
+// --- Modern Architecture Concepts ---
+const MODERN_ARCH_CONCEPTS = [
+  {
+    concept: 'Container vs VM',
+    description: 'VMs enthalten vollständiges OS, sind schwergewichtiger. Container teilen sich das OS des Hosts, sind leichtgewichtiger und starten schneller.',
+    providers: {
+      AWS: 'EC2 (VMs), ECS/EKS (Container)',
+      Azure: 'Virtual Machines, ACI/AKS (Container)',
+      GCP: 'Compute Engine (VMs), Cloud Run/GKE (Container)',
+    },
+  },
+  {
+    concept: 'Serverless / FaaS',
+    description: 'Function-as-a-Service: Code ausführen ohne Server-Verwaltung. Der Provider verwaltet die Infrastruktur komplett.',
+    providers: {
+      AWS: 'AWS Lambda',
+      Azure: 'Azure Functions',
+      GCP: 'Cloud Functions',
+    },
+  },
+  {
+    concept: 'Managed Services',
+    description: 'Cloud-Dienste, bei denen der Provider die Administration übernimmt (z.B. Managed Databases, Managed Kubernetes).',
+    providers: {
+      AWS: 'RDS, EKS, S3',
+      Azure: 'Azure SQL, AKS, Blob Storage',
+      GCP: 'Cloud SQL, GKE, Cloud Storage',
+    },
+  },
+  {
+    concept: 'CDN (Content Delivery Network)',
+    description: 'Verteiltes Netzwerk von Servern zur Auslieferung von Inhalten mit niedriger Latenz. Cached Content an Edge Locations weltweit.',
+    providers: {
+      AWS: 'Amazon CloudFront',
+      Azure: 'Azure CDN',
+      GCP: 'Cloud CDN',
+    },
+  },
+];
+
 // --- Question Types ---
-type QuestionType = 'multipleChoice' | 'matching' | 'trueFalse';
+type QuestionType = 'multipleChoice' | 'matching' | 'trueFalse' | 'fillBlank';
 
 interface CloudQuestion {
   type: QuestionType;
@@ -324,15 +547,6 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
     acceptedValues: ['wahr', 'true', 'yes', 'ja', 'richtig', 'stimmt'],
     explanation: 'Richtig! Das ist ein Beispiel für das Shared Responsibility Model. AWS sichert die Infrastruktur (Rechenzentrum, Server, Storage-System), der Kunde sichert seine Daten (Verschlüsselung, Zugriffskontrolle).',
   },
-  {
-    type: 'trueFalse',
-    topic: 'Security',
-    difficulty: 'medium',
-    question: 'Ein Cloud-Kunde muss auf Anfrage einer betroffenen Person deren Rechte (z.B. Löschung) gewährleisten können - unabhängig davon, ob die Daten bei einem Cloud-Provider liegen.',
-    correctAnswer: 'Wahr',
-    acceptedValues: ['wahr', 'true', 'yes', 'ja', 'richtig', 'stimmt'],
-    explanation: 'Richtig! Als Datenverantwortlicher (Controller) muss der Kunde sicherstellen, dass betroffene Personen ihre DSGVO-Rechte (Auskunft, Berichtigung, Löschung, Datenübertragbarkeit) wahrnehmen können - auch bei Cloud-verarbeiteten Daten. Der Auftragsverarbeiter (Processor) unterstützt den Kunden dabei.',
-  },
 
   // ============ COST & AVAILABILITY ============
   {
@@ -526,6 +740,19 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
 ];
 
 // --- Helper Functions ---
+function shuffle<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+function getRandomItems<T>(array: T[], count: number): T[] {
+  return shuffle(array).slice(0, count);
+}
+
 function getRandomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -568,20 +795,17 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
   switch (q.type) {
     case 'multipleChoice':
     case 'matching':
-      // Validate that q.options exists and has entries before using it
-      if (!Array.isArray(q.options) || q.options.length === 0) {
-        throw new Error(`Question "${q.question.slice(0, 40)}...": options must be a non-empty array for ${q.type} questions`);
-      }
+      // Create dropdown with options
       answerInputs = [{
         valueKey: 'answer',
         label: 'Antwort',
-        valueOptions: q.options,
+        valueOptions: q.options || [],
         acceptedValues: q.acceptedValues || [q.correctAnswer],
       }];
       expectedAnswers = { answer: q.correctAnswer };
       break;
 
-    case 'trueFalse': {
+    case 'trueFalse':
       const trueFalseOptions = ['Wahr', 'Falsch'];
       answerInputs = [{
         valueKey: 'answer',
@@ -591,7 +815,16 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
       }];
       expectedAnswers = { answer: q.correctAnswer };
       break;
-    }
+
+    case 'fillBlank':
+      answerInputs = [{
+        valueKey: 'answer',
+        label: 'Antwort',
+        valueOptions: [], // Free text input
+        acceptedValues: q.acceptedValues || [q.correctAnswer],
+      }];
+      expectedAnswers = { answer: q.correctAnswer };
+      break;
   }
 
   // Build solution steps
