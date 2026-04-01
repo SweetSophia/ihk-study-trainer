@@ -172,7 +172,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'nano /etc/hosts',
     category: 'Dateibetrachtung und -bearbeitung',
     difficulty: 'easy',
-    aliases: ['ed', 'red', 'pico'],
+    aliases: [],
   },
   {
     command: 'vim',
@@ -182,7 +182,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'vim /etc/fstab',
     category: 'Dateibetrachtung und -bearbeitung',
     difficulty: 'medium',
-    aliases: ['vi', 'gvim', 'gview', 'evim', 'rvim', 'rgvim'],
+    aliases: ['vi'],
   },
 
   // ── System Information and Resource Monitoring ─────────────────────────
@@ -315,7 +315,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'ip addr show',
     category: 'Netzwerk',
     difficulty: 'medium',
-    aliases: ['ifconfig'],
+    aliases: [],
   },
   {
     command: 'ss',
@@ -334,7 +334,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'curl -I https://example.com',
     category: 'Netzwerk',
     difficulty: 'easy',
-    aliases: ['wget'],
+    aliases: [],
   },
   {
     command: 'wget',
@@ -344,7 +344,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'wget https://example.com/file.tar.gz',
     category: 'Netzwerk',
     difficulty: 'easy',
-    aliases: ['curl'],
+    aliases: [],
   },
   {
     command: 'ssh',
@@ -506,7 +506,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'useradd -m -s /bin/bash neueruser',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
-    aliases: ['adduser'],
+    aliases: [],
   },
   {
     command: 'userdel',
@@ -516,7 +516,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'userdel -r alteruser',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
-    aliases: ['deluser'],
+    aliases: [],
   },
   {
     command: 'usermod',
@@ -535,7 +535,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'groupadd entwickler',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
-    aliases: ['addgroup'],
+    aliases: [],
   },
   {
     command: 'groupdel',
@@ -545,7 +545,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'groupdel altegruppe',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
-    aliases: ['delgroup'],
+    aliases: [],
   },
   {
     command: 'id',
@@ -602,7 +602,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'apt install nginx',
     category: 'Paketverwaltung',
     difficulty: 'easy',
-    aliases: ['apt-get'],
+    aliases: [],
   },
   {
     command: 'dnf',
@@ -612,7 +612,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'dnf install httpd',
     category: 'Paketverwaltung',
     difficulty: 'medium',
-    aliases: ['yum'],
+    aliases: [],
   },
   {
     command: 'zypper',
@@ -669,7 +669,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'fdisk -l',
     category: 'Festplatte und Dateisystem',
     difficulty: 'hard',
-    aliases: ['gdisk', 'cfdisk', 'sfdisk', 'parted'],
+    aliases: [],
   },
   {
     command: 'mkfs',
@@ -802,7 +802,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'traceroute google.de',
     category: 'Netzwerk (erweitert)',
     difficulty: 'medium',
-    aliases: ['mtr'],
+    aliases: [],
   },
   {
     command: 'nslookup',
@@ -812,7 +812,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'nslookup google.de',
     category: 'Netzwerk (erweitert)',
     difficulty: 'easy',
-    aliases: ['dig'],
+    aliases: [],
   },
   {
     command: 'dig',
@@ -822,7 +822,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'dig google.de MX',
     category: 'Netzwerk (erweitert)',
     difficulty: 'medium',
-    aliases: ['nslookup'],
+    aliases: [],
   },
   {
     command: 'iptables',
@@ -832,7 +832,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'iptables -L -n -v',
     category: 'Netzwerk (erweitert)',
     difficulty: 'hard',
-    aliases: ['ufw'],
+    aliases: [],
   },
   {
     command: 'tracepath',
