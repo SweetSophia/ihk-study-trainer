@@ -525,7 +525,13 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
   },
 ];
 
-// --- Helper Functions ---
+/**
+ * Selects a uniformly distributed integer between the given bounds, inclusive.
+ *
+ * @param min - The lower bound (inclusive)
+ * @param max - The upper bound (inclusive)
+ * @returns A random integer x such that `min <= x <= max`
+ */
 function getRandomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -541,6 +547,22 @@ export interface CloudQuestionResult {
   scenario?: string;
 }
 
+/**
+ * Generate a randomized cloud knowledge question, optionally filtered by difficulty.
+ *
+ * If `difficulty` is provided the function prefers questions with that difficulty but falls back to the full question bank when none match.
+ *
+ * @param difficulty - Optional difficulty filter: 'easy', 'medium', or 'hard'
+ * @returns A `CloudQuestionResult` containing:
+ *  - `theme`: the question topic
+ *  - `questionText`: the question prompt (scenario returned separately via `scenario`)
+ *  - `expectedAnswers`: keyed expected answer values (e.g., `{ answer: ... }`)
+ *  - `solutionSteps`: array of strings summarizing topic, question, correct answer, and explanation
+ *  - `difficulty`: the chosen question's difficulty
+ *  - `answerInputs`: UI input configuration including `valueOptions` and `acceptedValues`
+ *  - `scenario` (optional): associated scenario text
+ * @throws Error if a `multipleChoice` or `matching` question is selected but `options` is not a non-empty array
+ */
 export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): CloudQuestionResult {
   // Filter by difficulty if specified
   let availableQuestions = CLOUD_QUESTIONS;
