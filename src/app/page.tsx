@@ -285,7 +285,7 @@ const GENERATORS: Record<string, () => Question> = {
     const q = generateCloudQuestion();
     return {
       id: `cloud-${Date.now()}`,
-      theme: 'Cloud Computing',
+      theme: q.theme,
       module: 'cloud',
       questionText: q.questionText,
       expectedAnswers: q.expectedAnswers,
