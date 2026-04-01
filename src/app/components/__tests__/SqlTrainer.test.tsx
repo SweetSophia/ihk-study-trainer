@@ -40,6 +40,11 @@ import SqlTrainer from '../SqlTrainer';
 
 const mockGenerateSqlExercise = vi.mocked(generateSqlExercise);
 
+// Helper to render SqlTrainer with default test accessHash
+const renderSqlTrainer = (props?: Partial<React.ComponentProps<typeof SqlTrainer>>) => {
+  return render(<SqlTrainer accessHash="test-access-hash" {...props} />);
+};
+
 const sampleExercise = {
   theme: 'Network Infrastructure Asset Inventory',
   themeDescription: 'Verwaltung von Netzwerkgeräten im Unternehmen',
@@ -64,35 +69,44 @@ describe('SqlTrainer', () => {
 
   describe('initial render', () => {
     it('renders the heading', () => {
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       expect(screen.getByText('SQL-Übungen (PostgreSQL)')).toBeInTheDocument();
     });
 
     it('renders the "Neue Übung" button', () => {
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       expect(screen.getByRole('button', { name: /Neue Übung/i })).toBeInTheDocument();
     });
 
     it('shows the empty state message before any exercise is loaded', () => {
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       expect(screen.getByText(/Klicke auf/i)).toBeInTheDocument();
     });
 
     it('shows the dynamic generation hint in initial state', () => {
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       expect(screen.getByText(/dynamisch mit echten PostgreSQL-Abfragen/i)).toBeInTheDocument();
     });
 
     it('"Neue Übung" button is enabled initially', () => {
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       const btn = screen.getByRole('button', { name: /Neue Übung/i });
       expect(btn).not.toBeDisabled();
     });
 
     it('does not render the exercise area before fetch', () => {
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       expect(screen.queryByText('Szenario')).not.toBeInTheDocument();
       expect(screen.queryByText('Aufgabe')).not.toBeInTheDocument();
+    });
+
+    it('shows locked UI when accessHash is null', () => {
+      render(<SqlTrainer accessHash={null} />);
+      // Lock icon and message should be visible
+      expect(screen.getByTestId('icon-lock')).toBeInTheDocument();
+      expect(screen.getByText(/Anmeldung erforderlich/i)).toBeInTheDocument();
+      // No exercise generation should occur - mock should not have been called
+      expect(mockGenerateSqlExercise).not.toHaveBeenCalled();
     });
   });
 
@@ -100,7 +114,7 @@ describe('SqlTrainer', () => {
     it('shows exercise content after successful fetch', async () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -114,7 +128,7 @@ describe('SqlTrainer', () => {
     it('shows the setup SQL schema after fetch', async () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -129,7 +143,7 @@ describe('SqlTrainer', () => {
     it('shows a textarea for SQL input after exercise is loaded', async () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -140,7 +154,7 @@ describe('SqlTrainer', () => {
     it('stays in the empty state when generateSqlExercise throws', async () => {
       mockGenerateSqlExercise.mockRejectedValueOnce(new Error('API error'));
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       // After a failed fetch, the empty state should still be shown (no exercise loaded)
@@ -153,7 +167,7 @@ describe('SqlTrainer', () => {
 
     it('clears the previous exercise and shows a new one on re-fetch', async () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
       await waitFor(() => {
         expect(screen.getByText(sampleExercise.theme)).toBeInTheDocument();
@@ -172,7 +186,7 @@ describe('SqlTrainer', () => {
     it('clears the user query when a new exercise is loaded', async () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -203,7 +217,7 @@ describe('SqlTrainer', () => {
     it('"Query ausführen" button is disabled when textarea is empty', async () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -217,7 +231,7 @@ describe('SqlTrainer', () => {
     it('"Query ausführen" button is enabled after typing in textarea', async () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -240,7 +254,7 @@ describe('SqlTrainer', () => {
         .mockResolvedValueOnce({ rows: solutionRows }); // user query
 
       const onCorrect = vi.fn();
-      render(<SqlTrainer accessHash="test-access-hash" onCorrect={onCorrect} />);
+      renderSqlTrainer({ onCorrect });
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -266,7 +280,7 @@ describe('SqlTrainer', () => {
         .mockResolvedValueOnce({ rows: [{ id: 2, name: 'Switch-01', type: 'switch' }] });
 
       const onIncorrect = vi.fn();
-      render(<SqlTrainer accessHash="test-access-hash" onIncorrect={onIncorrect} />);
+      renderSqlTrainer({ onIncorrect });
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -292,7 +306,7 @@ describe('SqlTrainer', () => {
         .mockRejectedValueOnce(new Error('syntax error at or near "SELEXT"'));
 
       const onIncorrect = vi.fn();
-      render(<SqlTrainer accessHash="test-access-hash" onIncorrect={onIncorrect} />);
+      renderSqlTrainer({ onIncorrect });
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -316,7 +330,7 @@ describe('SqlTrainer', () => {
         .mockResolvedValueOnce({ rows: [] })
         .mockRejectedValueOnce(new Error('column "nonexistent" does not exist'));
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -338,7 +352,7 @@ describe('SqlTrainer', () => {
         throw new Error('PGlite init failed');
       });
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -362,7 +376,7 @@ describe('SqlTrainer', () => {
 
       const onCorrect = vi.fn();
       const onIncorrect = vi.fn();
-      render(<SqlTrainer accessHash="test-access-hash" onCorrect={onCorrect} onIncorrect={onIncorrect} />);
+      renderSqlTrainer({ onCorrect, onIncorrect });
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -394,7 +408,7 @@ describe('SqlTrainer', () => {
         .mockResolvedValueOnce({ rows: [userRow] });
 
       const onCorrect = vi.fn();
-      render(<SqlTrainer accessHash="test-access-hash" onCorrect={onCorrect} />);
+      renderSqlTrainer({ onCorrect });
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -420,7 +434,7 @@ describe('SqlTrainer', () => {
         .mockResolvedValueOnce({ rows: [] });
 
       const onCorrect = vi.fn();
-      render(<SqlTrainer accessHash="test-access-hash" onCorrect={onCorrect} />);
+      renderSqlTrainer({ onCorrect });
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -440,7 +454,7 @@ describe('SqlTrainer', () => {
     it('shows the solution query in the "Musterlösung" details element', async () => {
       mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
 
       await waitFor(() => {
@@ -461,7 +475,7 @@ describe('SqlTrainer', () => {
         .mockResolvedValueOnce({ rows })
         .mockResolvedValueOnce({ rows });
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
       await waitFor(() => expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument());
 
@@ -481,7 +495,7 @@ describe('SqlTrainer', () => {
         .mockResolvedValueOnce({ rows: [{ id: 1 }] })
         .mockResolvedValueOnce({ rows: [{ id: 2 }] });
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
       await waitFor(() => expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument());
 
@@ -501,7 +515,7 @@ describe('SqlTrainer', () => {
         .mockResolvedValueOnce({ rows: [{ id: 1 }] })
         .mockRejectedValueOnce(new Error('relation "unknown_table" does not exist'));
 
-      render(<SqlTrainer accessHash="test-access-hash" />);
+      renderSqlTrainer();
       await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
       await waitFor(() => expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument());
 
@@ -516,13 +530,13 @@ describe('SqlTrainer', () => {
 
   describe('SqlTrainer props', () => {
     it('renders without onCorrect/onIncorrect props (optional)', () => {
-      expect(() => render(<SqlTrainer accessHash="test-access-hash" />)).not.toThrow();
+      expect(() => renderSqlTrainer()).not.toThrow();
     });
 
     it('renders with both callback props', () => {
       const onCorrect = vi.fn();
       const onIncorrect = vi.fn();
-      expect(() => render(<SqlTrainer accessHash="test-access-hash" onCorrect={onCorrect} onIncorrect={onIncorrect} />)).not.toThrow();
+      expect(() => renderSqlTrainer({ onCorrect, onIncorrect })).not.toThrow();
     });
   });
 });
