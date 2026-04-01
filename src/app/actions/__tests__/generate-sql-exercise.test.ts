@@ -9,6 +9,11 @@ vi.mock('@ai-sdk/groq', () => ({
   groq: vi.fn(() => 'mocked-groq-model'),
 }));
 
+// Mock auth functions
+vi.mock('../../lib/auth', () => ({
+  hashExists: vi.fn().mockResolvedValue(true),
+}));
+
 import { generateObject } from 'ai';
 import { groq } from '@ai-sdk/groq';
 import { generateSqlExercise, SqlExercise } from '../generate-sql-exercise';
@@ -30,12 +35,13 @@ INSERT INTO devices VALUES (2, 'Switch-01', 'switch');`,
 describe('generateSqlExercise', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('GROQ_API_KEY', 'test-groq-api-key');
   });
 
   it('returns an SqlExercise object on success', async () => {
     mockGenerateObject.mockResolvedValueOnce({ object: validExercise } as any);
 
-    const result = await generateSqlExercise();
+    const result = await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     expect(result).toEqual(validExercise);
     expect(result.theme).toBe('Network Infrastructure Asset Inventory');
@@ -45,7 +51,7 @@ describe('generateSqlExercise', () => {
   it('calls generateObject with the groq model', async () => {
     mockGenerateObject.mockResolvedValueOnce({ object: validExercise } as any);
 
-    await generateSqlExercise();
+    await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     expect(mockGroq).toHaveBeenCalledWith('llama-3.3-70b-versatile');
     expect(mockGenerateObject).toHaveBeenCalledOnce();
@@ -54,7 +60,7 @@ describe('generateSqlExercise', () => {
   it('passes a prompt that includes a theme and SQL concept', async () => {
     mockGenerateObject.mockResolvedValueOnce({ object: validExercise } as any);
 
-    await generateSqlExercise();
+    await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     const callArgs = mockGenerateObject.mock.calls[0][0] as any;
     expect(callArgs.prompt).toContain('THEMA:');
@@ -64,7 +70,7 @@ describe('generateSqlExercise', () => {
   it('passes a Zod schema to generateObject', async () => {
     mockGenerateObject.mockResolvedValueOnce({ object: validExercise } as any);
 
-    await generateSqlExercise();
+    await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     const callArgs = mockGenerateObject.mock.calls[0][0] as any;
     expect(callArgs.schema).toBeDefined();
@@ -75,13 +81,13 @@ describe('generateSqlExercise', () => {
   it('throws when generateObject rejects', async () => {
     mockGenerateObject.mockRejectedValueOnce(new Error('API rate limit exceeded'));
 
-    await expect(generateSqlExercise()).rejects.toThrow('API rate limit exceeded');
+    await expect(generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`)).rejects.toThrow('API rate limit exceeded');
   });
 
   it('throws when generateObject rejects with network error', async () => {
     mockGenerateObject.mockRejectedValueOnce(new Error('Network error'));
 
-    await expect(generateSqlExercise()).rejects.toThrow('Network error');
+    await expect(generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`)).rejects.toThrow('Network error');
   });
 
   it('selects a theme from the THEMES list', async () => {
@@ -89,7 +95,7 @@ describe('generateSqlExercise', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
     mockGenerateObject.mockResolvedValueOnce({ object: validExercise } as any);
 
-    await generateSqlExercise();
+    await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     const callArgs = mockGenerateObject.mock.calls[0][0] as any;
     expect(callArgs.prompt).toContain('Network Infrastructure Asset Inventory');
@@ -102,7 +108,7 @@ describe('generateSqlExercise', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
     mockGenerateObject.mockResolvedValueOnce({ object: validExercise } as any);
 
-    await generateSqlExercise();
+    await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     const callArgs = mockGenerateObject.mock.calls[0][0] as any;
     expect(callArgs.prompt).toContain('SELECT mit WHERE Bedingung und ORDER BY');
@@ -115,7 +121,7 @@ describe('generateSqlExercise', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0.999);
     mockGenerateObject.mockResolvedValueOnce({ object: validExercise } as any);
 
-    await generateSqlExercise();
+    await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     const callArgs = mockGenerateObject.mock.calls[0][0] as any;
     expect(callArgs.prompt).toContain('Software Lizenzverwaltung');
@@ -134,7 +140,7 @@ describe('generateSqlExercise', () => {
     };
     mockGenerateObject.mockResolvedValueOnce({ object: customExercise } as any);
 
-    const result = await generateSqlExercise();
+    const result = await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     expect(result).toEqual(customExercise);
   });
@@ -142,7 +148,7 @@ describe('generateSqlExercise', () => {
   it('includes IHK-specific instructions in the prompt', async () => {
     mockGenerateObject.mockResolvedValueOnce({ object: validExercise } as any);
 
-    await generateSqlExercise();
+    await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     const callArgs = mockGenerateObject.mock.calls[0][0] as any;
     expect(callArgs.prompt).toContain('IHK');
@@ -153,26 +159,26 @@ describe('generateSqlExercise', () => {
 describe('SqlExercise Zod schema validation', () => {
   it('schema accepts valid easy difficulty', async () => {
     mockGenerateObject.mockResolvedValueOnce({ object: { ...validExercise, difficulty: 'easy' } } as any);
-    const result = await generateSqlExercise();
+    const result = await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     expect(result.difficulty).toBe('easy');
   });
 
   it('schema accepts valid medium difficulty', async () => {
     mockGenerateObject.mockResolvedValueOnce({ object: { ...validExercise, difficulty: 'medium' } } as any);
-    const result = await generateSqlExercise();
+    const result = await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     expect(result.difficulty).toBe('medium');
   });
 
   it('schema accepts valid hard difficulty', async () => {
     mockGenerateObject.mockResolvedValueOnce({ object: { ...validExercise, difficulty: 'hard' } } as any);
-    const result = await generateSqlExercise();
+    const result = await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     expect(result.difficulty).toBe('hard');
   });
 
   it('all required SqlExercise fields are present in result', async () => {
     mockGenerateObject.mockResolvedValueOnce({ object: validExercise } as any);
 
-    const result = await generateSqlExercise();
+    const result = await generateSqlExercise(`test-hash-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     expect(result).toHaveProperty('theme');
     expect(result).toHaveProperty('themeDescription');
