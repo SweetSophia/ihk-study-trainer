@@ -9,21 +9,33 @@ import { AnswerInputConfig } from '../../types';
 
 // --- Question Types ---
 type QuestionType = 'multipleChoice' | 'matching' | 'trueFalse';
+type CloudDifficulty = 'easy' | 'medium' | 'hard';
 
-interface CloudQuestion {
-  type: QuestionType;
+interface BaseCloudQuestion {
   topic: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: CloudDifficulty;
   scenario?: string;
   question: string;
-  options?: string[];
-  correctAnswer: string;
-  acceptedValues?: string[];
   explanation: string;
 }
 
+interface ChoiceCloudQuestion extends BaseCloudQuestion {
+  type: Exclude<QuestionType, 'trueFalse'>;
+  options: [string, ...string[]];
+  correctAnswer: string;
+  acceptedValues?: string[];
+}
+
+interface TrueFalseCloudQuestion extends BaseCloudQuestion {
+  type: 'trueFalse';
+  correctAnswer: 'Wahr' | 'Falsch';
+  acceptedValues: [string, ...string[]];
+}
+
+type CloudQuestion = ChoiceCloudQuestion | TrueFalseCloudQuestion;
+
 // --- Cloud Question Bank ---
-const CLOUD_QUESTIONS: CloudQuestion[] = [
+const CLOUD_QUESTIONS = [
   // ============ SERVICE MODELS ============
   {
     type: 'multipleChoice',
@@ -523,7 +535,17 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
     correctAnswer: 'Alle drei (AWS, Azure, GCP)',
     explanation: 'Alle drei großen Cloud-Provider nutzen Regions und Availability Zones: AWS (Regionen + AZs), Azure (Regions + Availability Zones), GCP (Regions + Zones). Dies ermöglicht Hochverfügbarkeit und Disaster Recovery.',
   },
-];
+] satisfies readonly CloudQuestion[];
+
+const CLOUD_QUESTIONS_BY_DIFFICULTY: Record<CloudDifficulty, CloudQuestion[]> = {
+  easy: [],
+  medium: [],
+  hard: [],
+};
+
+for (const question of CLOUD_QUESTIONS) {
+  CLOUD_QUESTIONS_BY_DIFFICULTY[question.difficulty].push(question);
+}
 
 /**
  * Selects a uniformly distributed integer between the given bounds, inclusive.
@@ -542,7 +564,7 @@ export interface CloudQuestionResult {
   questionText: string;
   expectedAnswers: Record<string, string | number | boolean>;
   solutionSteps: string[];
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: CloudDifficulty;
   answerInputs: AnswerInputConfig[];
   scenario?: string;
 }
@@ -561,19 +583,11 @@ export interface CloudQuestionResult {
  *  - `difficulty`: the chosen question's difficulty
  *  - `answerInputs`: UI input configuration including `valueOptions` and `acceptedValues`
  *  - `scenario` (optional): associated scenario text
- * @throws Error if a `multipleChoice` or `matching` question is selected but `options` is not a non-empty array
  */
-export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): CloudQuestionResult {
-  // Filter by difficulty if specified
-  let availableQuestions = CLOUD_QUESTIONS;
-  if (difficulty) {
-    availableQuestions = CLOUD_QUESTIONS.filter(q => q.difficulty === difficulty);
-  }
-
-  // If no questions with specified difficulty, use all
-  if (availableQuestions.length === 0) {
-    availableQuestions = CLOUD_QUESTIONS;
-  }
+export function generateCloudQuestion(difficulty?: CloudDifficulty): CloudQuestionResult {
+  const availableQuestions = difficulty
+    ? CLOUD_QUESTIONS_BY_DIFFICULTY[difficulty] ?? CLOUD_QUESTIONS
+    : CLOUD_QUESTIONS;
 
   // Pick random question
   const q = availableQuestions[getRandomInt(0, availableQuestions.length - 1)];
@@ -588,10 +602,6 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
   switch (q.type) {
     case 'multipleChoice':
     case 'matching':
-      // Validate that q.options exists and has entries before using it
-      if (!Array.isArray(q.options) || q.options.length === 0) {
-        throw new Error(`Frage "${q.question.slice(0, 40)}...": Antwortoptionen müssen für ${q.type}-Fragen als nicht-leeres Array definiert sein.`);
-      }
       answerInputs = [{
         valueKey: 'answer',
         label: 'Antwort',
@@ -607,7 +617,7 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
         valueKey: 'answer',
         label: 'Antwort',
         valueOptions: trueFalseOptions,
-        acceptedValues: q.acceptedValues || [q.correctAnswer],
+        acceptedValues: q.acceptedValues,
       }];
       expectedAnswers = { answer: q.correctAnswer };
       break;
