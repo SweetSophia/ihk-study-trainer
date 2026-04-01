@@ -39,8 +39,10 @@ interface CommandEntry {
   /** Category name (German) */
   category: string;
   difficulty: 'easy' | 'medium' | 'hard';
-  /** Alternative accepted command names (e.g. "vi" for "vim") */
+  /** Alternative accepted command names (e.g. "vi" for "vim") — true synonyms only */
   aliases?: string[];
+  /** Related but non-equivalent tools shown in explanations only (not accepted as correct answers) */
+  alternatives?: string[];
 }
 
 const COMMAND_DATABASE: CommandEntry[] = [
@@ -172,7 +174,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'nano /etc/hosts',
     category: 'Dateibetrachtung und -bearbeitung',
     difficulty: 'easy',
-    aliases: ['ed', 'red', 'pico'],
+    alternatives: ['ed', 'red', 'pico'],
   },
   {
     command: 'vim',
@@ -334,7 +336,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'curl -I https://example.com',
     category: 'Netzwerk',
     difficulty: 'easy',
-    aliases: ['wget'],
+    alternatives: ['wget'],
   },
   {
     command: 'wget',
@@ -344,7 +346,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'wget https://example.com/file.tar.gz',
     category: 'Netzwerk',
     difficulty: 'easy',
-    aliases: ['curl'],
+    alternatives: ['curl'],
   },
   {
     command: 'ssh',
@@ -669,7 +671,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'fdisk -l',
     category: 'Festplatte und Dateisystem',
     difficulty: 'hard',
-    aliases: ['gdisk', 'cfdisk', 'sfdisk', 'parted'],
+    alternatives: ['gdisk', 'cfdisk', 'sfdisk', 'parted'],
   },
   {
     command: 'mkfs',
@@ -802,7 +804,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'traceroute google.de',
     category: 'Netzwerk (erweitert)',
     difficulty: 'medium',
-    aliases: ['mtr'],
+    alternatives: ['mtr'],
   },
   {
     command: 'nslookup',
@@ -812,7 +814,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'nslookup google.de',
     category: 'Netzwerk (erweitert)',
     difficulty: 'easy',
-    aliases: ['dig'],
+    alternatives: ['dig'],
   },
   {
     command: 'dig',
@@ -822,7 +824,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'dig google.de MX',
     category: 'Netzwerk (erweitert)',
     difficulty: 'medium',
-    aliases: ['nslookup'],
+    alternatives: ['nslookup'],
   },
   {
     command: 'iptables',
@@ -832,7 +834,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'iptables -L -n -v',
     category: 'Netzwerk (erweitert)',
     difficulty: 'hard',
-    aliases: ['ufw'],
+    alternatives: ['ufw'],
   },
   {
     command: 'tracepath',
@@ -1158,6 +1160,7 @@ function buildDescriptionToCommand(entry: CommandEntry): LinuxQuestion {
       '',
       'Ergebnis:',
       `  Befehl: ${entry.command}${entry.aliases?.length ? ` (auch: ${entry.aliases.join(', ')})` : ''}`,
+      ...(entry.alternatives?.length ? [`  Verwandte Tools: ${entry.alternatives.join(', ')}`] : []),
     ],
     difficulty: entry.difficulty,
   };

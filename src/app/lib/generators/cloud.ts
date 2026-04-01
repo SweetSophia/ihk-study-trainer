@@ -578,8 +578,8 @@ export function generateCloudQuestion(difficulty?: 'easy' | 'medium' | 'hard'): 
   // Pick random question
   const q = availableQuestions[getRandomInt(0, availableQuestions.length - 1)];
 
-  // Build question text (scenario is NOT embedded - it's returned separately)
-  const questionText = q.question;
+  // Build question text; embed scenario for UI compatibility when present
+  const questionText = q.scenario ? `${q.scenario}\n\n${q.question}` : q.question;
 
   // Build answer inputs based on question type
   let answerInputs: AnswerInputConfig[] = [];

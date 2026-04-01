@@ -87,7 +87,7 @@ describe('generateSqlExercise', () => {
   it('throws when generateText rejects with network error', async () => {
     mockGenerateText.mockRejectedValueOnce(new Error('Network error'));
 
-    await expect(generateSqlExercise(nextHash())).rejects.toThrow('Network error');
+    await expect(generateSqlExercise(nextHash())).rejects.toThrow('Fehler bei der Generierung: Network error');
   });
 
   it('selects a theme from the THEMES list', async () => {
