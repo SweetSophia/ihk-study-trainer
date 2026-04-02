@@ -2,47 +2,75 @@
 
 Interaktiver Lernassistent für die IHK-Prüfung zum **Fachinformatiker Systemintegration**.
 
+Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud-Grundlagen, kaufmännische Kalkulation sowie einen SQL-Trainer in einer Oberfläche mit Schritt-für-Schritt-Lösungen und Fortschritts-Tracking.
+
 🔗 **Live URL**: https://ihk-study-trainer.vercel.app
 
-## Features
+> Hinweis: Das **SQL-Modul** ist nur für angemeldete Nutzer sichtbar und nutzbar.
 
-### 17 Lernmodule
-1. **Übertragungszeit** - Dateitransfer bei gegebener Bandbreite berechnen
-2. **Bildgröße** - Speicherbedarf von Bildern berechnen
-3. **Bild-Transfer** - Kombinierte Bildgröße + Übertragungszeit berechnen
-4. **Overhead** - Protokoll-Overhead berechnen
-5. **Subnetting** - IP-Subnetze und Host-Bereiche berechnen
-6. **Einheiten** - Byte-Einheiten umrechnen (MiB vs MB)
-7. **Binär** - Binär/Dezimal Konvertierungen
-8. **Hexadezimal** - Hex/Dezimal Konvertierungen
-9. **Subnetzmaske** - CIDR zu dotted-decimal Maske
-10. **Aggregation** - Route Summarization
-11. **Ports** - Port-Nummern und Protokolle
-12. **OSI-Modell** - Schichten und Zuordnungen
-13. **Kabel** - Kabeltypen-Auswahl nach Szenario
-14. **Linux** - Linux-Befehle (Befehl → Beschreibung oder Beschreibung → Befehl)
-15. **Cloud** - Cloud Computing Konzepte und Services
-16. **Handelskalkulation** - Vorwärts-/Rückwärts-/Differenzkalkulation
-17. **SQL** - AI generierte SQL Aufgaben, geprüft in einer Live-Datenbank
+## Highlights
 
-### Features
-- ✅ Zufällig generierte Übungsaufgaben pro Modul
-- ✅ Schritt-für-Schritt Lösungen
-- ✅ Fortschritts-Tracking pro Modul
-- ✅ Genauigkeits-Statistiken
-- ✅ Tägliche Lern-Streaks
-- ✅ "Fehler üben" - Modus
-- ✅ Hash-basierte Authentifizierung (keine Email nötig)
-- ✅ Mobile-optimiertes Design
-- ✅ Dark Mode (Cyber-Security Theme)
+- **17 Lernmodule** für typische IHK-Themen
+- **Dynamisch generierte Aufgaben** statt statischer Fragenlisten
+- **Schritt-für-Schritt-Lösungen** für Rechen- und Verständnisaufgaben
+- **Fortschritts-Tracking pro Modul** inklusive Genauigkeit und Lern-Streaks
+- **"Fehler üben"-Modus**, um gezielt schwache Themen zu wiederholen
+- **Hash-basierte Anmeldung** ohne E-Mail/Passwort-Flow
+- **Mobile-first UI** mit Dark Mode und klarer Karten-Navigation
+- **SQL-Training mit KI-generierten Aufgaben** und lokaler Ausführung in einer PGlite-Sandbox
+
+## Neuere Module & Erweiterungen
+
+Diese Module wurden in den letzten Ausbauschritten ergänzt bzw. deutlich erweitert:
+
+- **Bild-Transfer** – kombiniert Bildgrößen- und Übertragungszeit-Aufgaben in einem IHK-typischen Rechenweg
+- **Linux** – trainiert Befehle als *Befehl → Beschreibung* und *Beschreibung → Befehl*
+- **Cloud** – deckt Service-Modelle, Deployment-Modelle, Security, Networking und moderne Architektur ab
+- **Handelskalkulation** – enthält Vorwärts-, Rückwärts- und Differenzkalkulation
+- **SQL** – erzeugt variable SQL-Übungen per KI und prüft Lösungen lokal gegen eine temporäre PostgreSQL-kompatible Datenbank
+
+## Lernmodule
+
+### 17 Lernmodule (16 direkt verfügbar + 1 Auth-only)
+
+1. **Übertragungszeit** – Übertragungsdauer aus Datenmenge und Bandbreite berechnen
+2. **Bildgröße** – Speicherbedarf unkomprimierter Bilder berechnen
+3. **Bild-Transfer** – Bildgröße und Übertragungszeit in einer kombinierten Aufgabe lösen
+4. **Overhead** – Protokoll-Overhead und effektive Datenmengen bestimmen
+5. **Subnetting** – IPv4-Subnetze, Netzadressen und Host-Bereiche berechnen
+6. **Einheiten** – dezimale und binäre Speichereinheiten sicher umrechnen (MB/MiB, GB/GiB)
+7. **Binär** – Binär- und Dezimalwerte umwandeln
+8. **Hexadezimal** – Hexadezimal- und Dezimalwerte umwandeln
+9. **Subnetzmaske** – CIDR-Präfixe in dotted-decimal Subnetzmasken übersetzen
+10. **Aggregation** – Netze per Route Summarization zusammenfassen
+11. **Ports** – Dienste, Portnummern und Protokolle korrekt zuordnen
+12. **OSI-Modell** – Schichten, Aufgaben und Zuordnungen trainieren
+13. **Kabel** – passende Kabeltypen anhand von Strecke, Geschwindigkeit und Umgebung wählen
+14. **Linux** – Linux-Befehle und typische Admin-Kommandos üben
+15. **Cloud** – Cloud-Computing-Konzepte, Provider-Modelle und Sicherheitsgrundlagen wiederholen
+16. **Handelskalkulation** – Vorwärts-, Rückwärts- und Differenzkalkulation Schritt für Schritt lösen
+17. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
+
+## UI & Lernerlebnis
+
+- **Desktop**: kartenbasierte Modulübersicht mit schneller Themenauswahl
+- **Mobile**: kompakte Grid-Navigation für schnelles Üben unterwegs
+- **Visual Style**: dunkles Cyber-/Tech-Theme mit klarer Zustandsanzeige
+- **Direkte Nutzung**: über die Live-URL sofort testbar
+
+Aktuell liegen im Repository keine gepflegten Produkt-Screenshots. Die **Live-Demo** ist daher die verlässlichste Vorschau auf den aktuellen UI-Stand.
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 + React 19
-- **Language**: TypeScript
+- **Sprache**: TypeScript
 - **Styling**: Tailwind CSS
-- **Animations**: Framer Motion
-- **Database**: Supabase (PostgreSQL)
+- **Animationen**: Framer Motion
+- **Icons**: Lucide React
+- **Persistenz / Auth**: Supabase (PostgreSQL)
+- **SQL-Sandbox**: PGlite
+- **KI für SQL-Übungen**: Groq über AI SDK
+- **Testing**: Vitest + Testing Library
 - **Deployment**: Vercel
 
 ## Lokale Entwicklung
@@ -55,37 +83,53 @@ cd ihk-study-trainer
 # Dependencies installieren
 npm install
 
-# Environment Variablen (.env.local)
-NEXT_PUBLIC_SUPABASE_URL=deine_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=dein_supabase_key
-
-# Dev Server starten
+# Development Server starten
 npm run dev
 ```
 
-## Datenbank Setup
+### Optionale Environment-Variablen (`.env.local`)
 
-Die SQL-Datei `database/schema.sql` enthält alle nötigen Tabellen:
+```bash
+# Für Supabase-gestützte Anmeldung und Fortschritts-Speicherung
+NEXT_PUBLIC_SUPABASE_URL=deine_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=dein_supabase_key
 
-- `users` - Benutzer mit access_hash
-- `progress` - Fortschritt pro Modul
-- `question_history` - Fragen-Verlauf
+# Für das SQL-Modul (KI-Generierung der Aufgaben)
+GROQ_API_KEY=dein_groq_api_key
+```
+
+### Hinweise zur lokalen Nutzung
+
+- **Ohne Supabase-Konfiguration** nutzt die App lokale Fallback-Speicherung für Fortschritt/Anmeldung.
+- **Ohne `GROQ_API_KEY`** ist das SQL-Modul nicht funktionsfähig.
+- Für Produktionsbetrieb sollte Supabase korrekt eingerichtet sein.
+
+## Datenbank-Setup
+
+Die Datei `database/schema.sql` enthält die nötigen Tabellen für die Supabase-gestützte Variante:
+
+- `users` – Benutzer mit `access_hash`
+- `progress` – Fortschritt pro Modul
+- `question_history` – Verlauf beantworteter Fragen
 
 ## Projektstruktur
 
-```
+```text
 ├── database/
-│   └── schema.sql          # Supabase Schema
+│   └── schema.sql                 # Supabase Schema
 ├── src/
 │   ├── app/
-│   │   ├── components/     # React Components
+│   │   ├── actions/               # Server Actions (z. B. SQL-Generierung)
+│   │   ├── components/            # React Components
 │   │   ├── lib/
-│   │   │   ├── generators/ # 17 Fragen-Generatoren
-│   │   │   ├── auth.ts     # Authentifizierung
-│   │   │   └── supabase.ts # Supabase Client
+│   │   │   ├── generators/        # 17 Fragen-Generatoren
+│   │   │   ├── answerValidation.ts# Strukturierte Antwortvalidierung
+│   │   │   ├── auth.ts            # Authentifizierung + Fortschritt
+│   │   │   ├── moduleIds.ts       # Legacy/kanonische Modul-IDs
+│   │   │   └── supabase.ts        # Supabase Client
 │   │   ├── types/
-│   │   │   └── index.ts    # TypeScript Interfaces
-│   │   ├── page.tsx        # Hauptseite
+│   │   │   └── index.ts           # TypeScript Interfaces
+│   │   ├── page.tsx               # Hauptseite
 │   │   └── layout.tsx
 │   └── ...
 └── package.json
@@ -93,15 +137,16 @@ Die SQL-Datei `database/schema.sql` enthält alle nötigen Tabellen:
 
 ## Deployment
 
-Automatisches Deployment bei jedem Push auf `main`:
+Automatisches Deployment erfolgt bei jedem Push auf `main`.
 
 ```bash
 git add .
-git commit -m "Update..."
+git commit -m "Update README"
 git push origin main
 ```
 
 ## Lizenz
 
-MIT License - Feel free to use and modify!  
+MIT License - Feel free to use and modify!
+
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/SweetSophia/ihk-study-trainer?utm_source=oss&utm_medium=github&utm_campaign=SweetSophia%2Fihk-study-trainer&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
