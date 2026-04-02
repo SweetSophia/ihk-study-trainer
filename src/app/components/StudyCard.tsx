@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Lightbulb, ArrowRight, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { Question } from '../types';
+import { CHANGELOG_ENTRIES } from '../lib/changelog';
 import LinuxTerminal from './LinuxTerminal';
 
 interface StudyCardProps {
@@ -11,12 +12,6 @@ interface StudyCardProps {
   onCheckAnswer: (answers: Record<string, string>) => boolean;
   onNextQuestion: () => void;
 }
-
-const CHANGELOG_ENTRIES = [
-  { date: '02/04/2026', summary: 'Module-IDs, Kabel-EMI, Einheiten-Fix' },
-  { date: '01/04/2026', summary: 'Cloud, Kalkulation, Linux, SQL' },
-  { date: '30/03/2026', summary: 'Auth, Dropdowns, Ports, OSI' },
-];
 
 export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: StudyCardProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
