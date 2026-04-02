@@ -1142,7 +1142,12 @@ function buildCommandToDescription(entry: CommandEntry): LinuxQuestion {
  */
 function buildDescriptionToCommand(entry: CommandEntry): LinuxQuestion {
   const acceptedValues = Array.from(
-    new Set([entry.command, ...(entry.aliases ?? []), ...(entry.acceptedCommands ?? [])])
+    new Set(
+      [entry.command, ...(entry.aliases ?? []), ...(entry.acceptedCommands ?? [])]
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.trim())
+        .filter(Boolean)
+    )
   );
 
   return {

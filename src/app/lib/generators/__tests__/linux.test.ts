@@ -26,7 +26,7 @@ describe('linux generator', () => {
     const question = generateDescriptionQuestion('iptables');
     const acceptedValues = question.answerInputs?.[0]?.acceptedValues ?? [];
 
-    expect(acceptedValues).toEqual(expect.arrayContaining(['iptables', 'ufw', 'nft', 'nftables']));
+    expect([...acceptedValues].sort()).toEqual(['iptables', 'ufw', 'nft', 'nftables'].sort());
     expect(question.solutionSteps.at(-1)).toContain('Gültige Antworten in dieser Aufgabe');
   });
 
@@ -79,7 +79,7 @@ describe('linux generator', () => {
       const inputs = question.answerInputs ?? [];
       const acceptedValues = question.answerInputs?.[0]?.acceptedValues ?? [];
 
-      expect(acceptedValues).toEqual(expect.arrayContaining(testCase.accepted));
+      expect([...acceptedValues].sort()).toEqual([...testCase.accepted].sort());
       for (const answer of testCase.accepted) {
         expect(
           validateStructuredAnswer(inputs, question.expectedAnswers, { answer })
