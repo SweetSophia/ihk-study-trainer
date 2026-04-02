@@ -75,15 +75,32 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
                   className="overflow-hidden"
                 >
                   <div className="space-y-3">
-                    {CHANGELOG_ENTRIES.map((entry) => (
-                      <div
-                        key={`${entry.date}-${entry.summary}`}
-                        className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm"
-                      >
-                        <span className="font-mono text-emerald-400 shrink-0">{entry.date}</span>
-                        <span className="text-slate-300">{entry.summary}</span>
-                      </div>
-                    ))}
+                    {CHANGELOG_ENTRIES.map((entry, index) => {
+                      const isLatest = index === 0;
+
+                      return (
+                        <div
+                          key={`${entry.date}-${entry.summary}`}
+                          className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm rounded-lg px-3 py-2 ${
+                            isLatest
+                              ? 'bg-emerald-500/10 border border-emerald-500/20'
+                              : 'bg-slate-900/40 border border-transparent'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="font-mono text-emerald-400">{entry.date}</span>
+                            {isLatest && (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold uppercase tracking-wider">
+                                Neu
+                              </span>
+                            )}
+                          </div>
+                          <span className={isLatest ? 'text-slate-200 font-medium' : 'text-slate-300'}>
+                            {entry.summary}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
