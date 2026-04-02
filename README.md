@@ -6,21 +6,24 @@ Interaktiver Lernassistent für die IHK-Prüfung zum **Fachinformatiker Systemin
 
 ## Features
 
-### 14 Lernmodule
+### 17 Lernmodule
 1. **Übertragungszeit** - Dateitransfer bei gegebener Bandbreite berechnen
 2. **Bildgröße** - Speicherbedarf von Bildern berechnen
-3. **Overhead** - Protokoll-Overhead berechnen
-4. **Subnetting** - IP-Subnetze und Host-Bereiche berechnen
-5. **Einheiten** - Byte-Einheiten umrechnen (MiB vs MB)
-6. **Binär** - Binär/Dezimal Konvertierungen
-7. **Hexadezimal** - Hex/Dezimal Konvertierungen
-8. **Subnetzmaske** - CIDR zu dotted-decimal Maske
-9. **Aggregation** - Route Summarization
-10. **Ports** - Port-Nummern und Protokolle
-11. **OSI-Modell** - Schichten und Zuordnungen
-12. **Kabel** - Kabeltypen-Auswahl nach Szenario
-13. **SQL** - AI generierte SQL Aufgaben, geprüft in einer Live-Datenbank (31/03/2026)
+3. **Bild-Transfer** - Kombinierte Bildgröße + Übertragungszeit berechnen
+4. **Overhead** - Protokoll-Overhead berechnen
+5. **Subnetting** - IP-Subnetze und Host-Bereiche berechnen
+6. **Einheiten** - Byte-Einheiten umrechnen (MiB vs MB)
+7. **Binär** - Binär/Dezimal Konvertierungen
+8. **Hexadezimal** - Hex/Dezimal Konvertierungen
+9. **Subnetzmaske** - CIDR zu dotted-decimal Maske
+10. **Aggregation** - Route Summarization
+11. **Ports** - Port-Nummern und Protokolle
+12. **OSI-Modell** - Schichten und Zuordnungen
+13. **Kabel** - Kabeltypen-Auswahl nach Szenario
 14. **Linux** - Linux-Befehle (Befehl → Beschreibung oder Beschreibung → Befehl)
+15. **Cloud** - Cloud Computing Konzepte und Services
+16. **Handelskalkulation** - Vorwärts-/Rückwärts-/Differenzkalkulation
+17. **SQL** - AI generierte SQL Aufgaben, geprüft in einer Live-Datenbank
 
 ### Features
 - ✅ Zufällig generierte Übungsaufgaben pro Modul
@@ -77,7 +80,7 @@ Die SQL-Datei `database/schema.sql` enthält alle nötigen Tabellen:
 │   ├── app/
 │   │   ├── components/     # React Components
 │   │   ├── lib/
-│   │   │   ├── generators/ # 14 Fragen-Generatoren
+│   │   │   ├── generators/ # 17 Fragen-Generatoren
 │   │   │   ├── auth.ts     # Authentifizierung
 │   │   │   └── supabase.ts # Supabase Client
 │   │   ├── types/
