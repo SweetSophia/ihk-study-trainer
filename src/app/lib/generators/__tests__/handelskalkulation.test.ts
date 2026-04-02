@@ -69,28 +69,33 @@ describe('handelskalkulation generator', () => {
     expect(question.answerInputs?.some((input) => input.valueKey === 'differenz')).toBe(true);
   });
 
-  it('renders reverse calculation factors as decimal divisors in solution steps', () => {
-    const rueckwaertsRandom = vi.spyOn(Math, 'random');
-    rueckwaertsRandom.mockImplementationOnce(() => 0.5);
-    rueckwaertsRandom.mockImplementation(() => 0.5);
+  it('renders rueckwaerts solution steps with specific decimal markup and discount factors', () => {
+    const randomSpy = vi.spyOn(Math, 'random');
+    randomSpy.mockImplementationOnce(() => 0.5);
+    randomSpy.mockImplementation(() => 0.5);
 
-    const rueckwaertsQuestion = generateHandelskalkulationQuestion();
+    const question = generateHandelskalkulationQuestion();
+    const steps = question.solutionSteps.join('\n');
 
-    expect(rueckwaertsQuestion.solutionSteps.join('\n')).not.toContain('/ (1 +');
-    expect(rueckwaertsQuestion.solutionSteps.join('\n')).not.toContain('/ (1 -');
-    expect(rueckwaertsQuestion.solutionSteps.join('\n')).toContain('/ 1,');
+    expect(steps).not.toContain('/ (1 +');
+    expect(steps).not.toContain('/ (1 -');
+    expect(steps).toMatch(/Selbstkosten = .* \/ 1,\d{2} = .*/);
+    expect(steps).toMatch(/ZEP = .* \/ 0,\d{2} = .*/);
+    expect(steps).toMatch(/LEP netto = .* \/ 0,\d{2} = .*/);
+  });
 
-    vi.restoreAllMocks();
+  it('renders differenz backward solution steps with specific decimal markup and discount factors', () => {
+    const randomSpy = vi.spyOn(Math, 'random');
+    randomSpy.mockImplementationOnce(() => 0.9);
+    randomSpy.mockImplementation(() => 0.5);
 
-    const differenzRandom = vi.spyOn(Math, 'random');
-    differenzRandom.mockImplementationOnce(() => 0.9);
-    differenzRandom.mockImplementation(() => 0.5);
+    const question = generateHandelskalkulationQuestion();
+    const steps = question.solutionSteps.join('\n');
 
-    const differenzQuestion = generateHandelskalkulationQuestion();
-    const differenzSteps = differenzQuestion.solutionSteps.join('\n');
-
-    expect(differenzSteps).not.toContain('/ (1 +');
-    expect(differenzSteps).not.toContain('/ (1 -');
-    expect(differenzSteps).toContain('/ 1,');
+    expect(steps).not.toContain('/ (1 +');
+    expect(steps).not.toContain('/ (1 -');
+    expect(steps).toMatch(/Selbstkosten = .* \/ 1,\d{2} = .*/);
+    expect(steps).toMatch(/ZEP = .* \/ 0,\d{2} = .*/);
+    expect(steps).toMatch(/LEP netto = .* \/ 0,\d{2} = .*/);
   });
 });
