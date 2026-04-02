@@ -16,6 +16,7 @@ import {
   updateProgress
 } from './lib/auth';
 import { validateQuestionAnswers } from './lib/answerValidation';
+import { toCanonicalModuleId } from './lib/moduleIds';
 
 // Import all generators
 import { generateBandwidthQuestion } from './lib/generators/bandwidth';
@@ -195,17 +196,17 @@ export default function Home() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentModule, setCurrentModule] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
-  const [progress, setProgress] = useState<{ module: string; questions_attempted: number; questions_correct: number; streak_days?: number }[]>([]);
+  const [progress, setProgress] = useState<{ module: string; questions_attempted: number; questions_correct: number; streak_days?: number | null }[]>([]);
   const [streakDays, setStreakDays] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadProgress = useCallback(async (hash: string) => {
     try {
-      const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days: number }[] = await getAllProgress(hash);
+      const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days?: number | null }[] = await getAllProgress(hash);
       setProgress(userProgress);
       
       // Calculate streak (simplified)
-      const maxStreak = Math.max(0, ...userProgress.map(p => p.streak_days));
+      const maxStreak = Math.max(0, ...userProgress.map(p => p.streak_days ?? 0));
       setStreakDays(maxStreak);
     } catch (error) {
       console.error('Error loading progress:', error);
@@ -292,12 +293,14 @@ export default function Home() {
   };
 
   const handleSelectModule = (module: string) => {
-    setCurrentModule(module);
-    generateNewQuestion(module);
+    const canonicalModule = toCanonicalModuleId(module);
+    setCurrentModule(canonicalModule);
+    generateNewQuestion(canonicalModule);
   };
 
   const generateNewQuestion = (module: string) => {
-    const generator = GENERATORS[module];
+    const canonicalModule = toCanonicalModuleId(module);
+    const generator = GENERATORS[canonicalModule];
     if (generator) {
       const question = generator();
       setCurrentQuestion(question);

@@ -138,24 +138,28 @@ export function generateCableQuestion(): CableQuestion {
   };
 }
 
-function findBestCable(distance: number, speed: number, environment: string) {
+export function findBestCable(
+  distance: number,
+  speed: number,
+  environment: string,
+  cableTypes = CABLE_TYPES
+) {
   const isEmiEnvironment = /Störquellen|EMI/i.test(environment);
 
   // Find cables that meet requirements
-  let suitable = CABLE_TYPES.filter(cable => 
+  let suitable = cableTypes.filter(cable => 
     cable.maxSpeed >= speed && 
     cable.maxDistance >= distance
   );
 
   // In EMI-heavy environments, exclude cables that are susceptible to EMI
   if (isEmiEnvironment) {
-    const emiSafe = suitable.filter(c => !c.cons.some(con => /EMI/i.test(con)));
-    if (emiSafe.length > 0) suitable = emiSafe;
+    suitable = suitable.filter(c => !c.cons.some(con => /EMI/i.test(con)));
   }
   
   if (suitable.length === 0) {
     // If nothing meets all requirements, return singlemode fiber
-    return CABLE_TYPES.find(c => c.type.includes('Singlemode')) || CABLE_TYPES[CABLE_TYPES.length - 1];
+    return cableTypes.find(c => c.type.includes('Singlemode')) || cableTypes[cableTypes.length - 1];
   }
 
   // In EMI environments, prefer shielded copper (Cat 7) or fiber

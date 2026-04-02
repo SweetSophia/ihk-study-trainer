@@ -1,5 +1,9 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { User } from '../types';
+import {
+  normalizeProgressModules,
+  toStoredProgressModuleId,
+} from './moduleIds';
 
 // ---------------------------------------------------------------------------
 // localStorage helpers - used as fallback when Supabase is not configured
@@ -141,12 +145,14 @@ export async function updateProgress(
   module: string, 
   wasCorrect: boolean
 ) {
+  const storedModule = toStoredProgressModuleId(module);
+
   // --- localStorage fallback when Supabase is not configured ---
   if (!isSupabaseConfigured) {
     const all = loadLocalProgress();
-    let entry = all.find(p => p.module === module);
+    let entry = all.find(p => p.module === storedModule);
     if (!entry) {
-      entry = { module, questions_attempted: 0, questions_correct: 0, streak_days: 0, last_session: null };
+      entry = { module: storedModule, questions_attempted: 0, questions_correct: 0, streak_days: 0, last_session: null };
       all.push(entry);
     }
     entry.questions_attempted += 1;
@@ -183,7 +189,7 @@ export async function updateProgress(
   try {
     const { data, error } = await supabase.rpc('upsert_progress', {
       p_hash: accessHash,
-      p_module: module,
+      p_module: storedModule,
       p_was_correct: wasCorrect
     });
 
@@ -209,10 +215,13 @@ export async function recordQuestionAttempt(
   correctAnswer: string
 ) {
   if (!isSupabaseConfigured) return;
+
+  const storedModule = toStoredProgressModuleId(module);
+
   try {
     const { error } = await supabase.rpc('record_question', {
       p_hash: accessHash,
-      p_module: module,
+      p_module: storedModule,
       p_question_type: questionType,
       p_was_correct: wasCorrect,
       p_user_answer: userAnswer,
@@ -232,7 +241,7 @@ export async function recordQuestionAttempt(
 export async function getAllProgress(accessHash: string) {
   // --- localStorage fallback ---
   if (!isSupabaseConfigured) {
-    return loadLocalProgress();
+    return normalizeProgressModules(loadLocalProgress());
   }
 
   try {
@@ -243,7 +252,7 @@ export async function getAllProgress(accessHash: string) {
       return [];
     }
 
-    return data || [];
+    return normalizeProgressModules(data || []);
   } catch {
     return [];
   }
