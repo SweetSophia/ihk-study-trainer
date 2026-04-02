@@ -41,6 +41,11 @@ interface CommandEntry {
   difficulty: 'easy' | 'medium' | 'hard';
   /** Alternative accepted command names (e.g. "vi" for "vim") */
   aliases?: string[];
+  /**
+   * Additional valid answers for broad description→command prompts.
+   * Use sparingly when the wording intentionally allows more than one correct tool.
+   */
+  acceptedCommands?: string[];
 }
 
 const COMMAND_DATABASE: CommandEntry[] = [
@@ -502,21 +507,23 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'useradd',
     description: 'Erstellt einen neuen Benutzeraccount',
     explanation:
-      'useradd erstellt einen neuen Benutzer. Mit -m wird das Home-Verzeichnis erstellt, -s setzt die Shell, -G fügt zusätzliche Gruppen hinzu. Debian/Ubuntu-Alternative: adduser.',
+      'useradd erstellt einen neuen Benutzer. Mit -m wird das Home-Verzeichnis erstellt, -s setzt die Shell, -G fügt zusätzliche Gruppen hinzu. Debian/Ubuntu-Alternative: adduser. In dieser allgemein formulierten Aufgabe werden daher useradd und adduser akzeptiert.',
     example: 'useradd -m -s /bin/bash neueruser',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
     aliases: [],
+    acceptedCommands: ['adduser'],
   },
   {
     command: 'userdel',
     description: 'Löscht einen Benutzeraccount',
     explanation:
-      'userdel entfernt einen Benutzer. Mit -r wird auch das Home-Verzeichnis gelöscht. Debian/Ubuntu-Alternative: deluser.',
+      'userdel entfernt einen Benutzer. Mit -r wird auch das Home-Verzeichnis gelöscht. Debian/Ubuntu-Alternative: deluser. In dieser allgemein formulierten Aufgabe werden daher userdel und deluser akzeptiert.',
     example: 'userdel -r alteruser',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
     aliases: [],
+    acceptedCommands: ['deluser'],
   },
   {
     command: 'usermod',
@@ -531,21 +538,23 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'groupadd',
     description: 'Erstellt eine neue Benutzergruppe',
     explanation:
-      'groupadd erstellt eine neue Gruppe im System. Debian/Ubuntu-Alternative: addgroup.',
+      'groupadd erstellt eine neue Gruppe im System. Debian/Ubuntu-Alternative: addgroup. In dieser allgemein formulierten Aufgabe werden daher groupadd und addgroup akzeptiert.',
     example: 'groupadd entwickler',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
     aliases: [],
+    acceptedCommands: ['addgroup'],
   },
   {
     command: 'groupdel',
     description: 'Löscht eine Benutzergruppe',
     explanation:
-      'groupdel entfernt eine bestehende Gruppe aus dem System. Debian/Ubuntu-Alternative: delgroup.',
+      'groupdel entfernt eine bestehende Gruppe aus dem System. Debian/Ubuntu-Alternative: delgroup. In dieser allgemein formulierten Aufgabe werden daher groupdel und delgroup akzeptiert.',
     example: 'groupdel altegruppe',
     category: 'Benutzerverwaltung',
     difficulty: 'medium',
     aliases: [],
+    acceptedCommands: ['delgroup'],
   },
   {
     command: 'id',
@@ -665,11 +674,12 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'fdisk',
     description: 'Verwaltet Festplattenpartitionen (anzeigen, erstellen, löschen)',
     explanation:
-      'fdisk ist ein Tool zur Partitionierung von Festplatten. Mit -l werden Partitionen angezeigt, ohne Argumente startet der interaktive Modus. Alternativen: gdisk (GPT), cfdisk (Curses-basiert), sfdisk (Skript-basiert), parted (moderner).',
+      'fdisk ist ein Tool zur Partitionierung von Festplatten. Mit -l werden Partitionen angezeigt, ohne Argumente startet der interaktive Modus. Alternativen: gdisk (GPT), cfdisk (Curses-basiert), sfdisk (Skript-basiert), parted (moderner). In dieser allgemein formulierten Aufgabe werden daher fdisk, gdisk, cfdisk, sfdisk und parted akzeptiert.',
     example: 'fdisk -l',
     category: 'Festplatte und Dateisystem',
     difficulty: 'hard',
     aliases: [],
+    acceptedCommands: ['gdisk', 'cfdisk', 'sfdisk', 'parted'],
   },
   {
     command: 'mkfs',
@@ -798,21 +808,23 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'traceroute',
     description: 'Verfolgt den Pfad von Netzwerkpaketen zum Zielhost',
     explanation:
-      'traceroute zeigt alle Router (Hops), die ein Paket auf dem Weg zum Ziel durchläuft, einschließlich der Latenzzeiten. Alternative: mtr (kombiniert traceroute und ping in Echtzeit).',
+      'traceroute zeigt alle Router (Hops), die ein Paket auf dem Weg zum Ziel durchläuft, einschließlich der Latenzzeiten. Alternativen: tracepath und mtr. In dieser allgemein formulierten Aufgabe werden traceroute, tracepath und mtr akzeptiert.',
     example: 'traceroute google.de',
     category: 'Netzwerk (erweitert)',
     difficulty: 'medium',
     aliases: [],
+    acceptedCommands: ['tracepath', 'mtr'],
   },
   {
     command: 'nslookup',
     description: 'Führt DNS-Abfragen durch (Name → IP oder IP → Name)',
     explanation:
-      'nslookup (Name Server Lookup) fragt DNS-Server ab, um IP-Adressen zu Hostnamen aufzulösen oder umgekehrt. Alternative: dig (detailliertere Ausgabe, mehr Record-Typen).',
+      'nslookup (Name Server Lookup) fragt DNS-Server ab, um IP-Adressen zu Hostnamen aufzulösen oder umgekehrt. Alternative: dig (detailliertere Ausgabe, mehr Record-Typen). In dieser allgemein formulierten Aufgabe werden daher nslookup und dig akzeptiert.',
     example: 'nslookup google.de',
     category: 'Netzwerk (erweitert)',
     difficulty: 'easy',
     aliases: [],
+    acceptedCommands: ['dig'],
   },
   {
     command: 'dig',
@@ -828,11 +840,12 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'iptables',
     description: 'Konfiguriert die Linux-Firewall (Paketfilter-Regeln)',
     explanation:
-      'iptables verwaltet die Netfilter-Firewall-Regeln im Linux-Kernel. Es kann Pakete akzeptieren, ablehnen, umleiten oder protokollieren. Wird zunehmend durch nftables ersetzt. Alternative (benutzerfreundlicher): ufw (Uncomplicated Firewall).',
+      'iptables verwaltet die Netfilter-Firewall-Regeln im Linux-Kernel. Es kann Pakete akzeptieren, ablehnen, umleiten oder protokollieren. Wird zunehmend durch nftables ersetzt. Alternative (benutzerfreundlicher): ufw (Uncomplicated Firewall). In dieser bewusst breit formulierten Aufgabe gelten daher iptables, ufw und nft/nftables als richtige Antworten.',
     example: 'iptables -L -n -v',
     category: 'Netzwerk (erweitert)',
     difficulty: 'hard',
     aliases: [],
+    acceptedCommands: ['ufw', 'nft', 'nftables'],
   },
   {
     command: 'tracepath',
@@ -1128,8 +1141,14 @@ function buildCommandToDescription(entry: CommandEntry): LinuxQuestion {
  *  - User types the command name in a terminal-style text input
  */
 function buildDescriptionToCommand(entry: CommandEntry): LinuxQuestion {
-  // Build accepted values: command + aliases
-  const acceptedValues = [entry.command, ...(entry.aliases ?? [])];
+  const acceptedValues = Array.from(
+    new Set(
+      [entry.command, ...(entry.aliases ?? []), ...(entry.acceptedCommands ?? [])]
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.trim())
+        .filter(Boolean)
+    )
+  );
 
   return {
     theme: entry.category,
@@ -1157,7 +1176,9 @@ function buildDescriptionToCommand(entry: CommandEntry): LinuxQuestion {
       `Beispiel: ${entry.example}`,
       '',
       'Ergebnis:',
-      `  Befehl: ${entry.command}${entry.aliases?.length ? ` (auch: ${entry.aliases.join(', ')})` : ''}`,
+      acceptedValues.length > 1
+        ? `  Gültige Antworten in dieser Aufgabe: ${acceptedValues.join(', ')}`
+        : `  Befehl: ${entry.command}`,
     ],
     difficulty: entry.difficulty,
   };
