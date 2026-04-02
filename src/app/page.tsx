@@ -299,8 +299,7 @@ export default function Home() {
   };
 
   const generateNewQuestion = (module: string) => {
-    const canonicalModule = toCanonicalModuleId(module);
-    const generator = GENERATORS[canonicalModule];
+    const generator = GENERATORS[module];
     if (generator) {
       const question = generator();
       setCurrentQuestion(question);

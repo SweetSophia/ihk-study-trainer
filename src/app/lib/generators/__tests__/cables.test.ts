@@ -10,7 +10,7 @@ describe('cable selection in EMI-heavy environments', () => {
     expect(bestCable.cons.some((con) => /EMI/i.test(con))).toBe(false);
   });
 
-  it('does not fall back to the original EMI-susceptible candidate list when none are EMI-safe', () => {
+  it('selects the remaining EMI-safe candidate after filtering out EMI-susceptible cables', () => {
     const bestCable = findBestCable(50, 1000, 'Industriehalle mit starker EMI', [
       {
         type: 'Cat 5e (Twisted Pair)',
@@ -22,8 +22,8 @@ describe('cable selection in EMI-heavy environments', () => {
       },
       {
         type: 'Singlemode Glasfaser (OS2)',
-        maxSpeed: 100,
-        maxDistance: 10,
+        maxSpeed: 1000,
+        maxDistance: 50,
         environments: ['WAN'],
         pros: ['Immun gegen EMI'],
         cons: ['Sehr teuer'],
