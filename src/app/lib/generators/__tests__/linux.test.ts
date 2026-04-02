@@ -1,0 +1,95 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { validateStructuredAnswer } from '../../answerValidation';
+import { COMMAND_DATABASE, generateLinuxQuestion } from '../linux';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+function generateDescriptionQuestion(command: string) {
+  const index = COMMAND_DATABASE.findIndex((entry) => entry.command === command);
+  expect(index).toBeGreaterThanOrEqual(0);
+
+  const randomSpy = vi.spyOn(Math, 'random');
+  randomSpy
+    .mockReturnValueOnce(index / COMMAND_DATABASE.length)
+    .mockReturnValueOnce(0);
+
+  const question = generateLinuxQuestion();
+  expect(question.direction).toBe('descriptionToCommand');
+  return question;
+}
+
+describe('linux generator', () => {
+  it('accepts all declared firewall answers for the broad firewall prompt', () => {
+    const question = generateDescriptionQuestion('iptables');
+    const acceptedValues = question.answerInputs?.[0]?.acceptedValues ?? [];
+
+    expect(acceptedValues).toEqual(expect.arrayContaining(['iptables', 'ufw', 'nft', 'nftables']));
+    expect(question.solutionSteps.at(-1)).toContain('Gültige Antworten in dieser Aufgabe');
+  });
+
+  it('validates broad alternative commands for generic prompts', () => {
+    const cases = [
+      {
+        command: 'iptables',
+        accepted: ['iptables', 'ufw', 'nft', 'nftables'],
+        rejected: ['firewalld'],
+      },
+      {
+        command: 'useradd',
+        accepted: ['useradd', 'adduser'],
+        rejected: ['usermod'],
+      },
+      {
+        command: 'userdel',
+        accepted: ['userdel', 'deluser'],
+        rejected: ['passwd'],
+      },
+      {
+        command: 'groupadd',
+        accepted: ['groupadd', 'addgroup'],
+        rejected: ['groupdel'],
+      },
+      {
+        command: 'groupdel',
+        accepted: ['groupdel', 'delgroup'],
+        rejected: ['groupadd'],
+      },
+      {
+        command: 'nslookup',
+        accepted: ['nslookup', 'dig'],
+        rejected: ['ping'],
+      },
+      {
+        command: 'traceroute',
+        accepted: ['traceroute', 'tracepath', 'mtr'],
+        rejected: ['ping'],
+      },
+      {
+        command: 'fdisk',
+        accepted: ['fdisk', 'gdisk', 'cfdisk', 'sfdisk', 'parted'],
+        rejected: ['mkfs'],
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const question = generateDescriptionQuestion(testCase.command);
+      const inputs = question.answerInputs ?? [];
+      const acceptedValues = question.answerInputs?.[0]?.acceptedValues ?? [];
+
+      expect(acceptedValues).toEqual(expect.arrayContaining(testCase.accepted));
+      for (const answer of testCase.accepted) {
+        expect(
+          validateStructuredAnswer(inputs, question.expectedAnswers, { answer })
+        ).toBe(true);
+      }
+      for (const answer of testCase.rejected) {
+        expect(
+          validateStructuredAnswer(inputs, question.expectedAnswers, { answer })
+        ).toBe(false);
+      }
+    }
+  });
+});
