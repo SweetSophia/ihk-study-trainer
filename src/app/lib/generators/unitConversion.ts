@@ -1,10 +1,19 @@
 import { Question } from '../../types';
 
-const unitConversions = [
+interface UnitConversion {
+  from: 'MB' | 'GB' | 'TB' | 'Mbit';
+  to: 'MiB' | 'GiB' | 'TiB' | 'MB';
+  factor: number;
+  baseFrom: number | 'Mbit';
+  baseTo: number | 'MB';
+  exponent: number;
+}
+
+const unitConversions: UnitConversion[] = [
   { from: 'MB', to: 'MiB', factor: 1000 * 1000 / (1024 * 1024), baseFrom: 1000, baseTo: 1024, exponent: 2 },
   { from: 'GB', to: 'GiB', factor: 1000 * 1000 * 1000 / (1024 * 1024 * 1024), baseFrom: 1000, baseTo: 1024, exponent: 3 },
   { from: 'TB', to: 'TiB', factor: 1000 * 1000 * 1000 * 1000 / (1024 * 1024 * 1024 * 1024), baseFrom: 1000, baseTo: 1024, exponent: 4 },
-  { from: 'Mbit', to: 'MB', factor: 1 / 8, baseFrom: 'Mbit', baseTo: 'MB' }
+  { from: 'Mbit', to: 'MB', factor: 1 / 8, baseFrom: 'Mbit', baseTo: 'MB', exponent: 1 }
 ];
 
 export function generateUnitConversionQuestion(): Question {
