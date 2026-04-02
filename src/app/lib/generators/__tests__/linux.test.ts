@@ -27,7 +27,9 @@ describe('linux generator', () => {
     const acceptedValues = question.answerInputs?.[0]?.acceptedValues ?? [];
 
     expect([...acceptedValues].sort()).toEqual(['iptables', 'ufw', 'nft', 'nftables'].sort());
-    expect(question.solutionSteps.at(-1)).toContain('Gültige Antworten in dieser Aufgabe');
+    expect(question.solutionSteps.at(-1)).toBe(
+      '  Gültige Antworten in dieser Aufgabe: iptables, ufw, nft, nftables'
+    );
   });
 
   it('validates broad alternative commands for generic prompts', () => {
