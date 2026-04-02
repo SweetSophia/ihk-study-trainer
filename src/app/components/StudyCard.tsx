@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Lightbulb, ArrowRight, RotateCcw } from 'lucide-react';
+import { Check, X, Lightbulb, ArrowRight, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { Question } from '../types';
 import LinuxTerminal from './LinuxTerminal';
 
@@ -23,6 +23,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
   const [showSolution, setShowSolution] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [checked, setChecked] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(true);
 
   if (!question) {
     return (
@@ -43,28 +44,54 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
 
         <div className="px-6 py-6 space-y-6">
           <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-                Changelog
-              </h3>
-              <span className="text-xs text-slate-500">Kurz & knapp</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowChangelog((prev) => !prev)}
+              className="w-full flex items-center justify-between gap-3 text-left"
+            >
+              <div>
+                <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                  Changelog
+                </h3>
+                <span className="text-xs text-slate-500">Kurz & knapp</span>
+              </div>
+              <span className="flex items-center gap-2 text-xs text-slate-500">
+                {showChangelog ? 'Ausblenden' : 'Anzeigen'}
+                {showChangelog ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </span>
+            </button>
 
-            <div className="space-y-3">
-              {CHANGELOG_ENTRIES.map((entry) => (
-                <div
-                  key={`${entry.date}-${entry.summary}`}
-                  className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm"
+            <AnimatePresence initial={false}>
+              {showChangelog && (
+                <motion.div
+                  key="changelog"
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  className="overflow-hidden"
                 >
-                  <span className="font-mono text-emerald-400 shrink-0">{entry.date}</span>
-                  <span className="text-slate-300">{entry.summary}</span>
-                </div>
-              ))}
-            </div>
+                  <div className="space-y-3">
+                    {CHANGELOG_ENTRIES.map((entry) => (
+                      <div
+                        key={`${entry.date}-${entry.summary}`}
+                        className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm"
+                      >
+                        <span className="font-mono text-emerald-400 shrink-0">{entry.date}</span>
+                        <span className="text-slate-300">{entry.summary}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="text-sm text-slate-500">
-            Tipp: Für den schnellsten Einstieg eignen sich <span className="text-slate-300">Subnetting</span>, <span className="text-slate-300">Linux</span> und <span className="text-slate-300">Cloud</span>.
+            Tipp: Für den schnellsten Einstieg eignen sich <span className="text-slate-300">Subnetting</span>, <span className="text-slate-300">Linux</span> und <span className="text-slate-300">Cloud</span>. Sobald du ein Modul auswählst, verschwindet dieses Panel automatisch.
           </div>
         </div>
       </div>
