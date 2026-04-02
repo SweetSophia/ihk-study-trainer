@@ -118,7 +118,7 @@ export function generateImageTransferComboQuestion(): Question {
   return {
     id: `image-transfer-combo-${Date.now()}`,
     theme: 'IT-Mathematik & Datenberechnung',
-    module: 'image-transfer-combo',
+    module: 'imageTransferCombo',
     questionText: `Ein unkomprimiertes ${resolution.name}-Bild (${resolution.width}×${resolution.height} Pixel, ${colorDepth} Bit Farbtiefe) soll über eine Leitung mit ${bandwidthValue} ${bandwidthUnit.unit} übertragen werden. Berechne die Übertragungszeit unter Berücksichtigung eines 10% Overheads (60-System bei ≥ 60 Sekunden).`,
     expectedAnswers: {
       ...(timeResult.hours !== undefined && {

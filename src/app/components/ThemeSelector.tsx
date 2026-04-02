@@ -9,6 +9,7 @@ import {
 const BASE_MODULES = [
   { id: 'bandwidth', name: 'Übertragungszeit', icon: ArrowLeftRight, description: 'Dateitransfer' },
   { id: 'imageCalc', name: 'Bildgröße', icon: ImageIcon, description: 'Speicher' },
+  { id: 'imageTransferCombo', name: 'Bild-Transfer', icon: ImageIcon, description: 'Bild + Übertragung' },
   { id: 'overhead', name: 'Overhead', icon: Calculator, description: 'Protokoll' },
   { id: 'subnetting', name: 'Subnetting', icon: Network, description: 'IP-Subnetze' },
   { id: 'unitConversion', name: 'Einheiten', icon: Settings, description: 'Umrechnung' },

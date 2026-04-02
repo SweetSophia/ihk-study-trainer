@@ -96,7 +96,7 @@ export function generateCableQuestion(): CableQuestion {
   const scenario = SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)];
   
   // Find best cable type
-  const bestCable = findBestCable(scenario.distance, scenario.speed);
+  const bestCable = findBestCable(scenario.distance, scenario.speed, scenario.environment);
   
   // Build expectedAnswers with one key per bare-minimum reason dropdown
   const reasonCount = Math.max(1, bestCable.pros.length - 1);
@@ -138,16 +138,33 @@ export function generateCableQuestion(): CableQuestion {
   };
 }
 
-function findBestCable(distance: number, speed: number) {
+function findBestCable(distance: number, speed: number, environment: string) {
+  const isEmiEnvironment = /Störquellen|EMI/i.test(environment);
+
   // Find cables that meet requirements
-  const suitable = CABLE_TYPES.filter(cable => 
+  let suitable = CABLE_TYPES.filter(cable => 
     cable.maxSpeed >= speed && 
     cable.maxDistance >= distance
   );
+
+  // In EMI-heavy environments, exclude cables that are susceptible to EMI
+  if (isEmiEnvironment) {
+    const emiSafe = suitable.filter(c => !c.cons.some(con => /EMI/i.test(con)));
+    if (emiSafe.length > 0) suitable = emiSafe;
+  }
   
   if (suitable.length === 0) {
     // If nothing meets all requirements, return singlemode fiber
     return CABLE_TYPES.find(c => c.type.includes('Singlemode')) || CABLE_TYPES[CABLE_TYPES.length - 1];
+  }
+
+  // In EMI environments, prefer shielded copper (Cat 7) or fiber
+  if (isEmiEnvironment) {
+    const cat7 = suitable.find(c => c.type.includes('Cat 7'));
+    if (cat7) return cat7;
+    const mmf = suitable.find(c => c.type.includes('Multimode'));
+    if (mmf) return mmf;
+    return suitable[0];
   }
   
   // Prefer copper for short distances, fiber for long distances

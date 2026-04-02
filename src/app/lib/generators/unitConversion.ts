@@ -27,7 +27,7 @@ export function generateUnitConversionQuestion(): Question {
     solutionSteps = [
       `Gegeben: ${value} ${conversion.from}`,
       `Umrechnung: ${conversion.from} verwendet Basis ${conversion.baseFrom}, ${conversion.to} verwendet Basis ${conversion.baseTo}`,
-      `Formel: ${value} × (${conversion.baseTo}^${conversion.exponent} ÷ ${conversion.baseFrom}^${conversion.exponent}) = Ergebnis`,
+      `Formel: ${value} × (${conversion.baseFrom}^${conversion.exponent} ÷ ${conversion.baseTo}^${conversion.exponent}) = Ergebnis`,
       `Berechnung: ${value} × ${conversion.factor.toFixed(6)} = ${result.toFixed(4)} ${conversion.to}`,
       `Gerundet: ${result.toFixed(2)} ${conversion.to}`
     ];
@@ -40,7 +40,7 @@ export function generateUnitConversionQuestion(): Question {
   return {
     id: `unit-conv-${Date.now()}`,
     theme: 'IT-Mathematik & Datenberechnung',
-    module: 'unit-conversion',
+    module: 'unitConversion',
     questionText: `Rechne ${value} ${conversion.from} in ${conversion.to} um.`,
     expectedAnswers: {
       result: Number(result.toFixed(2))
