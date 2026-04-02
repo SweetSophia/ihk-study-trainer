@@ -12,6 +12,12 @@ interface StudyCardProps {
   onNextQuestion: () => void;
 }
 
+const CHANGELOG_ENTRIES = [
+  { date: '02/04/2026', summary: 'Module-IDs, Kabel-EMI, Einheiten-Fix' },
+  { date: '01/04/2026', summary: 'Cloud, Kalkulation, Linux, SQL' },
+  { date: '30/03/2026', summary: 'Auth, Dropdowns, Ports, OSI' },
+];
+
 export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: StudyCardProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showSolution, setShowSolution] = useState(false);
@@ -20,8 +26,47 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
 
   if (!question) {
     return (
-      <div className="flex items-center justify-center h-96 bg-slate-900/50 rounded-xl border border-slate-800">
-        <p className="text-slate-400">Wähle ein Modul aus, um zu beginnen</p>
+      <div className="bg-slate-900/80 backdrop-blur rounded-xl border border-slate-800 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-800 bg-slate-900/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-500/10">
+              <Lightbulb className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-100">Willkommen</h2>
+              <p className="text-sm text-slate-400">
+                Wähle links ein Modul aus, um direkt mit dem Lernen zu starten.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-6 space-y-6">
+          <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                Changelog
+              </h3>
+              <span className="text-xs text-slate-500">Kurz & knapp</span>
+            </div>
+
+            <div className="space-y-3">
+              {CHANGELOG_ENTRIES.map((entry) => (
+                <div
+                  key={`${entry.date}-${entry.summary}`}
+                  className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm"
+                >
+                  <span className="font-mono text-emerald-400 shrink-0">{entry.date}</span>
+                  <span className="text-slate-300">{entry.summary}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-sm text-slate-500">
+            Tipp: Für den schnellsten Einstieg eignen sich <span className="text-slate-300">Subnetting</span>, <span className="text-slate-300">Linux</span> und <span className="text-slate-300">Cloud</span>.
+          </div>
+        </div>
       </div>
     );
   }
