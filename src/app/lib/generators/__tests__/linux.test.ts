@@ -26,9 +26,11 @@ describe('linux generator', () => {
     const question = generateDescriptionQuestion('iptables');
     const acceptedValues = question.answerInputs?.[0]?.acceptedValues ?? [];
 
-    expect([...acceptedValues].sort()).toEqual(['iptables', 'ufw', 'nft', 'nftables'].sort());
+    expect([...acceptedValues].sort()).toEqual(
+      ['iptables', 'ufw', 'nft', 'nftables', 'firewall-cmd'].sort()
+    );
     expect(question.solutionSteps.at(-1)).toBe(
-      '  Gültige Antworten in dieser Aufgabe: iptables, ufw, nft, nftables'
+      '  Gültige Antworten in dieser Aufgabe: iptables, ufw, nft, nftables, firewall-cmd'
     );
   });
 
@@ -36,7 +38,7 @@ describe('linux generator', () => {
     const cases = [
       {
         command: 'iptables',
-        accepted: ['iptables', 'ufw', 'nft', 'nftables'],
+        accepted: ['iptables', 'ufw', 'nft', 'nftables', 'firewall-cmd'],
         rejected: ['firewalld'],
       },
       {
@@ -93,5 +95,14 @@ describe('linux generator', () => {
         ).toBe(false);
       }
     }
+  });
+
+  it('accepts firewall alternatives case-insensitively with normalized whitespace', () => {
+    const question = generateDescriptionQuestion('iptables');
+    const inputs = question.answerInputs ?? [];
+
+    expect(
+      validateStructuredAnswer(inputs, question.expectedAnswers, { answer: '  FIREWALL-CMD  ' })
+    ).toBe(true);
   });
 });

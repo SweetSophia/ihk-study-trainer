@@ -840,12 +840,12 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'iptables',
     description: 'Konfiguriert die Linux-Firewall (Paketfilter-Regeln)',
     explanation:
-      'iptables verwaltet die Netfilter-Firewall-Regeln im Linux-Kernel. Es kann Pakete akzeptieren, ablehnen, umleiten oder protokollieren. Wird zunehmend durch nftables ersetzt. Alternative (benutzerfreundlicher): ufw (Uncomplicated Firewall). In dieser bewusst breit formulierten Aufgabe gelten daher iptables, ufw und nft/nftables als richtige Antworten.',
+      'iptables verwaltet die Netfilter-Firewall-Regeln im Linux-Kernel. Es kann Pakete akzeptieren, ablehnen, umleiten oder protokollieren. Wird zunehmend durch nftables ersetzt. Alternative (benutzerfreundlicher): ufw (Uncomplicated Firewall). Auf vielen Distributionen wird zusätzlich firewalld über das Kommando firewall-cmd verwaltet. In dieser bewusst breit formulierten Aufgabe gelten daher iptables, ufw, nft/nftables und firewall-cmd als richtige Antworten.',
     example: 'iptables -L -n -v',
     category: 'Netzwerk (erweitert)',
     difficulty: 'hard',
     aliases: [],
-    acceptedCommands: ['ufw', 'nft', 'nftables'],
+    acceptedCommands: ['ufw', 'nft', 'nftables', 'firewall-cmd'],
   },
   {
     command: 'tracepath',
