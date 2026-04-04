@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Lightbulb, ArrowRight, RotateCcw } from 'lucide-react';
-import { AnswerInputConfig, Question } from '../types';
+import { Check, X, Lightbulb, ArrowRight, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Question } from '../types';
+import { CHANGELOG_ENTRIES } from '../lib/changelog';
 import LinuxTerminal from './LinuxTerminal';
 
 interface StudyCardProps {
@@ -17,11 +18,100 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
   const [showSolution, setShowSolution] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [checked, setChecked] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(true);
 
   if (!question) {
     return (
-      <div className="flex items-center justify-center h-96 bg-slate-900/50 rounded-xl border border-slate-800">
-        <p className="text-slate-400">Wähle ein Modul aus, um zu beginnen</p>
+      <div className="bg-slate-900/80 backdrop-blur rounded-xl border border-slate-800 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-800 bg-slate-900/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-500/10">
+              <Lightbulb className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-100">Willkommen</h2>
+              <p className="text-sm text-slate-400">
+                Wähle links ein Modul aus, um direkt mit dem Lernen zu starten.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-6 space-y-6">
+          <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+            <button
+              type="button"
+              onClick={() => setShowChangelog((prev) => !prev)}
+              className="w-full flex items-center justify-between gap-3 text-left"
+            >
+              <div>
+                <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                  Changelog
+                </h3>
+                <span className="text-xs text-slate-500">Kurz & knapp</span>
+              </div>
+              <span className="flex items-center gap-2 text-xs text-slate-500">
+                {showChangelog ? 'Ausblenden' : 'Anzeigen'}
+                {showChangelog ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {showChangelog && (
+                <motion.div
+                  key="changelog"
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-3">
+                    {CHANGELOG_ENTRIES.map((entry) => {
+                      const isHighlighted = entry.highlight === true;
+
+                      return (
+                        <div
+                          key={`${entry.date}-${entry.summary}`}
+                          className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm rounded-lg px-3 py-2 ${
+                            isHighlighted
+                              ? 'bg-emerald-500/10 border border-emerald-500/20'
+                              : 'bg-slate-900/40 border border-transparent'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="font-mono text-emerald-400">{entry.date}</span>
+                            {entry.tag && (
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
+                                  isHighlighted
+                                    ? 'bg-emerald-500/20 text-emerald-300'
+                                    : 'bg-slate-800 text-slate-300'
+                                }`}
+                              >
+                                {entry.tag}
+                              </span>
+                            )}
+                          </div>
+                          <span className={isHighlighted ? 'text-slate-200 font-medium' : 'text-slate-300'}>
+                            {entry.summary}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="text-sm text-slate-500">
+            Tipp: Für den schnellsten Einstieg eignen sich <span className="text-slate-300">Subnetting</span>, <span className="text-slate-300">Linux</span> und <span className="text-slate-300">Cloud</span>. Sobald du ein Modul auswählst, verschwindet dieses Panel automatisch.
+          </div>
+        </div>
       </div>
     );
   }

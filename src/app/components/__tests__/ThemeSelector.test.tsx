@@ -1,3 +1,4 @@
+import type { ButtonHTMLAttributes } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -5,7 +6,7 @@ import userEvent from '@testing-library/user-event';
 // Mock framer-motion to avoid animation complexity in tests
 vi.mock('framer-motion', () => ({
   motion: {
-    button: ({ children, onClick, className, ...props }: any) => (
+    button: ({ children, onClick, className }: ButtonHTMLAttributes<HTMLButtonElement>) => (
       <button onClick={onClick} className={className}>{children}</button>
     ),
   },
@@ -98,13 +99,13 @@ it('renders the Database icon for the SQL module when authenticated', () => {
   });
 
 describe('all modules present', () => {
-    it('renders all 15 module names including Linux, Cloud and SQL when authenticated', () => {
+    it('renders all 17 module names including Bild-Transfer, Linux, Cloud, Kalkulation and SQL when authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
 const moduleNames = [
-        'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
+        'Übertragungszeit', 'Bildgröße', 'Bild-Transfer', 'Overhead', 'Subnetting',
         'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'SQL',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'Kalkulation', 'SQL',
       ];
 
       for (const name of moduleNames) {
@@ -114,13 +115,13 @@ const moduleNames = [
       }
     });
 
-it('renders 14 base modules without SQL when not authenticated', () => {
+it('renders 16 base modules without SQL when not authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
 
       const moduleNames = [
-        'Übertragungszeit', 'Bildgröße', 'Overhead', 'Subnetting',
+        'Übertragungszeit', 'Bildgröße', 'Bild-Transfer', 'Overhead', 'Subnetting',
         'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'Kalkulation',
       ];
 
       for (const name of moduleNames) {
@@ -162,6 +163,34 @@ it('renders 14 base modules without SQL when not authenticated', () => {
       await userEvent.click(sqlTexts[0]);
 
       expect(onSelectModule).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('imageTransferCombo module addition', () => {
+    it('renders the Bild-Transfer module button', () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
+      const buttons = screen.getAllByText('Bild-Transfer');
+      expect(buttons.length).toBeGreaterThan(0);
+    });
+
+    it('calls onSelectModule with "imageTransferCombo" when Bild-Transfer is clicked', async () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
+      const texts = screen.getAllByText('Bild-Transfer');
+      await userEvent.click(texts[0]);
+      expect(onSelectModule).toHaveBeenCalledWith('imageTransferCombo');
+    });
+
+    it('marks Bild-Transfer as active when currentModule is "imageTransferCombo"', () => {
+      render(<ThemeSelector currentModule="imageTransferCombo" onSelectModule={onSelectModule} isAuthenticated={true} />);
+      const texts = screen.getAllByText('Bild-Transfer');
+      const button = texts[0].closest('button');
+      expect(button).toHaveClass('bg-emerald-500/10');
+    });
+
+    it('renders the Bild-Transfer description "Bild + Übertragung"', () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
+      const descs = screen.getAllByText('Bild + Übertragung');
+      expect(descs.length).toBeGreaterThan(0);
     });
   });
 });

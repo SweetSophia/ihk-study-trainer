@@ -28,16 +28,24 @@ interface ProgressDashboardProps {
 const MODULE_NAMES: Record<string, string> = {
   bandwidth: 'Übertragungszeit',
   imageCalc: 'Bildgröße',
+  'image-calc': 'Bildgröße',
+  imageTransferCombo: 'Bild-Transfer',
+  'image-transfer-combo': 'Bild-Transfer',
   overhead: 'Overhead',
   subnetting: 'Subnetting',
   unitConversion: 'Einheiten',
+  'unit-conversion': 'Einheiten',
   binary: 'Binär',
   hex: 'Hexadezimal',
   subnetMask: 'Subnetzmaske',
   aggregation: 'Aggregation',
   ports: 'Ports',
   osi: 'OSI-Modell',
-  cables: 'Kabel'
+  cables: 'Kabel',
+  linux: 'Linux',
+  cloud: 'Cloud',
+  handelskalkulation: 'Kalkulation',
+  sql: 'SQL',
 };
 
 export default function ProgressDashboard({ 
@@ -127,7 +135,7 @@ export default function ProgressDashboard({
           <p className="text-2xl font-bold text-slate-100">
             {progress.filter(p => p.questions_attempted > 0).length}
           </p>
-          <p className="text-xs text-slate-500">von 12 gestartet</p>
+          <p className="text-xs text-slate-500">gestartet</p>
         </motion.div>
       </div>
 

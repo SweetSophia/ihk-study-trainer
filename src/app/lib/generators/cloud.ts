@@ -9,44 +9,22 @@ import { AnswerInputConfig } from '../../types';
 
 // --- Question Types ---
 type QuestionType = 'multipleChoice' | 'matching' | 'trueFalse';
-
-/** Supported difficulty levels for Cloud Computing Basics questions. */
 type CloudDifficulty = 'easy' | 'medium' | 'hard';
 
-/** Shared fields that every Cloud question variant exposes. */
-interface BaseCloudQuestion {
+interface CloudQuestion {
+  type: QuestionType;
   topic: string;
   difficulty: CloudDifficulty;
   scenario?: string;
   question: string;
+  options?: string[];
+  correctAnswer: string;
+  acceptedValues?: string[];
   explanation: string;
 }
 
-/** Question variant rendered as a dropdown with one or more answer options. */
-interface ChoiceCloudQuestion extends BaseCloudQuestion {
-  type: Exclude<QuestionType, 'trueFalse'>;
-  // Choice-based questions must always expose at least one selectable option in the UI.
-  options: [string, ...string[]];
-  correctAnswer: string;
-  acceptedValues?: string[];
-}
-
-/** True/false question variant with explicit synonym support for validation. */
-interface TrueFalseCloudQuestion extends BaseCloudQuestion {
-  type: 'trueFalse';
-  correctAnswer: 'Wahr' | 'Falsch';
-  // True/false prompts should always declare accepted synonyms explicitly for answer validation.
-  acceptedValues: [string, ...string[]];
-}
-
-/** Union of all Cloud question variants contained in the static question bank. */
-type CloudQuestion = ChoiceCloudQuestion | TrueFalseCloudQuestion;
-
-/** Canonical dropdown options used for all Cloud true/false questions. */
-export const CLOUD_TRUE_FALSE_OPTIONS = ['Wahr', 'Falsch'] as const;
-
 // --- Cloud Question Bank ---
-const CLOUD_QUESTIONS = [
+const CLOUD_QUESTIONS: CloudQuestion[] = [
   // ============ SERVICE MODELS ============
   {
     type: 'multipleChoice',
@@ -546,20 +524,32 @@ const CLOUD_QUESTIONS = [
     correctAnswer: 'Alle drei (AWS, Azure, GCP)',
     explanation: 'Alle drei großen Cloud-Provider nutzen Regions und Availability Zones: AWS (Regionen + AZs), Azure (Regions + Availability Zones), GCP (Regions + Zones). Dies ermöglicht Hochverfügbarkeit und Disaster Recovery.',
   },
-] satisfies readonly CloudQuestion[];
+];
 
 const CLOUD_QUESTIONS_BY_DIFFICULTY: Record<CloudDifficulty, CloudQuestion[]> = {
-  easy: [],
-  medium: [],
-  hard: [],
+  easy: CLOUD_QUESTIONS.filter((question) => question.difficulty === 'easy'),
+  medium: CLOUD_QUESTIONS.filter((question) => question.difficulty === 'medium'),
+  hard: CLOUD_QUESTIONS.filter((question) => question.difficulty === 'hard'),
 };
 
-for (const question of CLOUD_QUESTIONS) {
-  CLOUD_QUESTIONS_BY_DIFFICULTY[question.difficulty].push(question);
+function hasOwnDifficultyBucket(
+  difficulty: string,
+  buckets: Record<CloudDifficulty, CloudQuestion[]>
+): difficulty is CloudDifficulty {
+  return Object.prototype.hasOwnProperty.call(buckets, difficulty);
 }
 
-/** Total number of static questions currently available in the Cloud module. */
-export const CLOUD_QUESTION_COUNT = CLOUD_QUESTIONS.length;
+export function resolveCloudQuestionsForDifficulty(
+  difficulty?: CloudDifficulty | string,
+  buckets: Record<CloudDifficulty, CloudQuestion[]> = CLOUD_QUESTIONS_BY_DIFFICULTY
+): CloudQuestion[] {
+  if (!difficulty || !hasOwnDifficultyBucket(difficulty, buckets)) {
+    return CLOUD_QUESTIONS;
+  }
+
+  const bucket = buckets[difficulty];
+  return Array.isArray(bucket) && bucket.length > 0 ? bucket : CLOUD_QUESTIONS;
+}
 
 /**
  * Selects a uniformly distributed integer between the given bounds, inclusive.
@@ -573,13 +563,12 @@ function getRandomInt(min: number, max: number): number {
 }
 
 // --- Main Generator Function ---
-/** Normalized result returned by the Cloud generator for app consumption. */
 export interface CloudQuestionResult {
   theme: string;
   questionText: string;
   expectedAnswers: Record<string, string | number | boolean>;
   solutionSteps: string[];
-  difficulty: CloudDifficulty;
+  difficulty: 'easy' | 'medium' | 'hard';
   answerInputs: AnswerInputConfig[];
   scenario?: string;
 }
@@ -598,19 +587,21 @@ export interface CloudQuestionResult {
  *  - `difficulty`: the chosen question's difficulty
  *  - `answerInputs`: UI input configuration including `valueOptions` and `acceptedValues`
  *  - `scenario` (optional): associated scenario text
+ * Fallback behavior:
+ *  - unknown / invalid difficulty keys fall back to the full question bank
+ *  - empty difficulty buckets also fall back to the full question bank
+ * @throws Error if a `multipleChoice` or `matching` question is selected but `options` is not a non-empty array
  */
 export function generateCloudQuestion(difficulty?: CloudDifficulty): CloudQuestionResult {
-  // Defensive fallback: use difficulty bucket if it exists and is non-empty,
-  // otherwise fall back to the full question bank.
-  const bucket = difficulty ? CLOUD_QUESTIONS_BY_DIFFICULTY[difficulty] : undefined;
-  const availableQuestions =
-    bucket && bucket.length > 0 ? bucket : CLOUD_QUESTIONS;
+  const availableQuestions = resolveCloudQuestionsForDifficulty(difficulty);
 
   // Pick random question
   const q = availableQuestions[getRandomInt(0, availableQuestions.length - 1)];
 
-  // Build question text; embed scenario for UI compatibility when present
-  const questionText = q.scenario ? `${q.scenario}\n\n${q.question}` : q.question;
+  // Build question text (include scenario if present for UI compatibility)
+  const questionText = q.scenario
+    ? `${q.scenario}\n\n${q.question}`
+    : q.question;
 
   // Build answer inputs based on question type
   let answerInputs: AnswerInputConfig[] = [];
@@ -619,6 +610,10 @@ export function generateCloudQuestion(difficulty?: CloudDifficulty): CloudQuesti
   switch (q.type) {
     case 'multipleChoice':
     case 'matching':
+      // Validate that q.options exists and has entries before using it
+      if (!Array.isArray(q.options) || q.options.length === 0) {
+        throw new Error(`Frage "${q.question.slice(0, 40)}...": Antwortoptionen müssen für ${q.type}-Fragen als nicht-leeres Array definiert sein.`);
+      }
       answerInputs = [{
         valueKey: 'answer',
         label: 'Antwort',
@@ -629,11 +624,12 @@ export function generateCloudQuestion(difficulty?: CloudDifficulty): CloudQuesti
       break;
 
     case 'trueFalse': {
+      const trueFalseOptions = ['Wahr', 'Falsch'];
       answerInputs = [{
         valueKey: 'answer',
         label: 'Antwort',
-        valueOptions: [...CLOUD_TRUE_FALSE_OPTIONS],
-        acceptedValues: q.acceptedValues,
+        valueOptions: trueFalseOptions,
+        acceptedValues: q.acceptedValues || [q.correctAnswer],
       }];
       expectedAnswers = { answer: q.correctAnswer };
       break;
