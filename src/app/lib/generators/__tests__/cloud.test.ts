@@ -68,6 +68,21 @@ describe('generateCloudQuestion', () => {
     expect(question.expectedAnswers).toEqual({ answer: 'IaaS' });
   });
 
+  it('returns well-formed results for all valid difficulty levels', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    // Verify each valid difficulty level returns a properly structured question.
+    // This exercises the difficulty bucket path in generateCloudQuestion.
+    for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+      const question = generateCloudQuestion(difficulty);
+      expect(question).toBeDefined();
+      expect(question.theme).not.toBe('');
+      expect(question.questionText).not.toBe('');
+      expect(question.solutionSteps).toHaveLength(EXPECTED_SOLUTION_STEPS_COUNT);
+      expect(question.difficulty).toBe(difficulty);
+    }
+  });
+
   it('returns verified cloud knowledge answers for representative questions', () => {
     const randomSpy = vi.spyOn(Math, 'random');
 

@@ -600,10 +600,11 @@ export interface CloudQuestionResult {
  *  - `scenario` (optional): associated scenario text
  */
 export function generateCloudQuestion(difficulty?: CloudDifficulty): CloudQuestionResult {
-  // Defensive fallback for unexpected runtime values that bypass the TypeScript type.
-  const availableQuestions = difficulty
-    ? CLOUD_QUESTIONS_BY_DIFFICULTY[difficulty] ?? CLOUD_QUESTIONS
-    : CLOUD_QUESTIONS;
+  // Defensive fallback: use difficulty bucket if it exists and is non-empty,
+  // otherwise fall back to the full question bank.
+  const bucket = difficulty ? CLOUD_QUESTIONS_BY_DIFFICULTY[difficulty] : undefined;
+  const availableQuestions =
+    bucket && bucket.length > 0 ? bucket : CLOUD_QUESTIONS;
 
   // Pick random question
   const q = availableQuestions[getRandomInt(0, availableQuestions.length - 1)];
