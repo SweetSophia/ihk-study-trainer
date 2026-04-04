@@ -104,6 +104,18 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function formatFactor(value: number): string {
+  return value.toFixed(2).replace('.', ',');
+}
+
+function formatMarkupFactor(percent: number): string {
+  return formatFactor(1 + percent / 100);
+}
+
+function formatDiscountFactor(percent: number): string {
+  return formatFactor(1 - percent / 100);
+}
+
 function randomPercent(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -516,9 +528,9 @@ function buildQuestion(
     solutionSteps.push(`Selbstkosten = ${formatEuro(forwardSteps.bp)} + ${formatEuro(forwardSteps.handlungskosten)} = ${formatEuro(forwardSteps.selbstkosten)}`);
     solutionSteps.push(`Gewinn = ${formatEuro(forwardSteps.selbstkosten)} × ${given.gewinnZuschlag}% = ${formatEuro(forwardSteps.gewinn)}`);
     solutionSteps.push(`BVP = ${formatEuro(forwardSteps.selbstkosten)} + ${formatEuro(forwardSteps.gewinn)} = ${formatEuro(forwardSteps.bvp)}`);
-    solutionSteps.push(`ZVP = ${formatEuro(forwardSteps.bvp)} / (1 - ${given.kundenSkonto}%) = ${formatEuro(forwardSteps.zvp)}`);
+    solutionSteps.push(`ZVP = ${formatEuro(forwardSteps.bvp)} / ${formatDiscountFactor(given.kundenSkonto)} = ${formatEuro(forwardSteps.zvp)}`);
     solutionSteps.push(`Kundenskonto = ${formatEuro(forwardSteps.zvp)} − ${formatEuro(forwardSteps.bvp)} = ${formatEuro(forwardSteps.kundenskonto)}`);
-    solutionSteps.push(`Netto-VK = ${formatEuro(forwardSteps.zvp)} / (1 - ${given.kundenRabatt}%) = ${formatEuro(forwardSteps.nettovk)}`);
+    solutionSteps.push(`Netto-VK = ${formatEuro(forwardSteps.zvp)} / ${formatDiscountFactor(given.kundenRabatt)} = ${formatEuro(forwardSteps.nettovk)}`);
     solutionSteps.push(`Kundenrabatt = ${formatEuro(forwardSteps.nettovk)} − ${formatEuro(forwardSteps.zvp)} = ${formatEuro(forwardSteps.kundenrabatt)}`);
     solutionSteps.push(`USt = ${formatEuro(forwardSteps.nettovk)} × ${given.ustRate}% = ${formatEuro(forwardSteps.ust)}`);
     solutionSteps.push(`Brutto-VK = ${formatEuro(forwardSteps.nettovk)} + ${formatEuro(forwardSteps.ust)} = ${formatEuro(forwardSteps.bruttovk)}`);
@@ -533,14 +545,14 @@ function buildQuestion(
     solutionSteps.push(`ZVP = ${formatEuro(backwardSteps.nettovk)} − ${formatEuro(backwardSteps.kundenrabatt)} = ${formatEuro(backwardSteps.zvp)}`);
     solutionSteps.push(`Kundenskonto = ${formatEuro(backwardSteps.zvp)} × ${given.kundenSkonto}% = ${formatEuro(backwardSteps.kundenskonto)}`);
     solutionSteps.push(`BVP = ${formatEuro(backwardSteps.zvp)} − ${formatEuro(backwardSteps.kundenskonto)} = ${formatEuro(backwardSteps.bvp)}`);
-    solutionSteps.push(`Selbstkosten = ${formatEuro(backwardSteps.bvp)} / (1 + ${given.gewinnZuschlag}%) = ${formatEuro(backwardSteps.selbstkosten)}`);
+    solutionSteps.push(`Selbstkosten = ${formatEuro(backwardSteps.bvp)} / ${formatMarkupFactor(given.gewinnZuschlag)} = ${formatEuro(backwardSteps.selbstkosten)}`);
     solutionSteps.push(`Gewinn = ${formatEuro(backwardSteps.bvp)} − ${formatEuro(backwardSteps.selbstkosten)} = ${formatEuro(backwardSteps.gewinn)}`);
-    solutionSteps.push(`BP = ${formatEuro(backwardSteps.selbstkosten)} / (1 + ${given.handlungsKosten}%) = ${formatEuro(backwardSteps.bp)}`);
+    solutionSteps.push(`BP = ${formatEuro(backwardSteps.selbstkosten)} / ${formatMarkupFactor(given.handlungsKosten)} = ${formatEuro(backwardSteps.bp)}`);
     solutionSteps.push(`Handlungskosten = ${formatEuro(backwardSteps.selbstkosten)} − ${formatEuro(backwardSteps.bp)} = ${formatEuro(backwardSteps.handlungskosten)}`);
     solutionSteps.push(`BEP = ${formatEuro(backwardSteps.bp)} − ${formatEuro(backwardSteps.bezugskosten)} = ${formatEuro(backwardSteps.bep)}`);
-    solutionSteps.push(`ZEP = ${formatEuro(backwardSteps.bep)} / (1 - ${given.lieferskonto}%) = ${formatEuro(backwardSteps.zep)}`);
+    solutionSteps.push(`ZEP = ${formatEuro(backwardSteps.bep)} / ${formatDiscountFactor(given.lieferskonto)} = ${formatEuro(backwardSteps.zep)}`);
     solutionSteps.push(`Skonto = ${formatEuro(backwardSteps.zep)} − ${formatEuro(backwardSteps.bep)} = ${formatEuro(backwardSteps.skonto)}`);
-    solutionSteps.push(`LEP netto = ${formatEuro(backwardSteps.zep)} / (1 - ${given.lieferRabatt}%) = ${formatEuro(backwardSteps.lep)}`);
+    solutionSteps.push(`LEP netto = ${formatEuro(backwardSteps.zep)} / ${formatDiscountFactor(given.lieferRabatt)} = ${formatEuro(backwardSteps.lep)}`);
     solutionSteps.push(`Rabatt = ${formatEuro(backwardSteps.lep)} − ${formatEuro(backwardSteps.zep)} = ${formatEuro(backwardSteps.rabatt)}`);
     solutionSteps.push(`LEP brutto = ${formatEuro(backwardSteps.lep)} × 1,19 = ${formatEuro(backwardSteps.lep * 1.19)}`);
     solutionSteps.push('');
@@ -577,9 +589,9 @@ function buildQuestion(
       solutionSteps.push(`Selbstkosten = ${formatEuro(calculated.bp as number)} + ${formatEuro(calculated.handlungskosten as number)} = ${formatEuro(calculated.selbstkosten as number)}`);
       solutionSteps.push(`Gewinn = ${formatEuro(calculated.selbstkosten as number)} × ${given.gewinnZuschlag}% = ${formatEuro(calculated.gewinn as number)}`);
       solutionSteps.push(`BVP = ${formatEuro(calculated.selbstkosten as number)} + ${formatEuro(calculated.gewinn as number)} = ${formatEuro(calculated.bvp as number)}`);
-      solutionSteps.push(`ZVP = ${formatEuro(calculated.bvp as number)} / (1 - ${given.kundenSkonto}%) = ${formatEuro(calculated.zvp as number)}`);
+      solutionSteps.push(`ZVP = ${formatEuro(calculated.bvp as number)} / ${formatDiscountFactor(given.kundenSkonto)} = ${formatEuro(calculated.zvp as number)}`);
       solutionSteps.push(`Kundenskonto = ${formatEuro(calculated.zvp as number)} − ${formatEuro(calculated.bvp as number)} = ${formatEuro(calculated.kundenskonto as number)}`);
-      solutionSteps.push(`Netto-VK = ${formatEuro(calculated.zvp as number)} / (1 - ${given.kundenRabatt}%) = ${formatEuro(calculated.nettovk as number)}`);
+      solutionSteps.push(`Netto-VK = ${formatEuro(calculated.zvp as number)} / ${formatDiscountFactor(given.kundenRabatt)} = ${formatEuro(calculated.nettovk as number)}`);
       solutionSteps.push(`Kundenrabatt = ${formatEuro(calculated.nettovk as number)} − ${formatEuro(calculated.zvp as number)} = ${formatEuro(calculated.kundenrabatt as number)}`);
       solutionSteps.push(`USt = ${formatEuro(calculated.nettovk as number)} × ${given.ustRate}% = ${formatEuro(calculated.ust as number)}`);
       solutionSteps.push(`Brutto-VK = ${formatEuro(calculated.nettovk as number)} + ${formatEuro(calculated.ust as number)} = ${formatEuro(calculated.bruttovk as number)}`);
@@ -592,14 +604,14 @@ function buildQuestion(
       solutionSteps.push(`ZVP = ${formatEuro(calculated.nettovk as number)} − ${formatEuro(calculated.kundenrabatt as number)} = ${formatEuro(calculated.zvp as number)}`);
       solutionSteps.push(`Kundenskonto = ${formatEuro(calculated.zvp as number)} × ${given.kundenSkonto}% = ${formatEuro(calculated.kundenskonto as number)}`);
       solutionSteps.push(`BVP = ${formatEuro(calculated.zvp as number)} − ${formatEuro(calculated.kundenskonto as number)} = ${formatEuro(calculated.bvp as number)}`);
-      solutionSteps.push(`Selbstkosten = ${formatEuro(calculated.bvp as number)} / (1 + ${given.gewinnZuschlag}%) = ${formatEuro(calculated.selbstkosten as number)}`);
+      solutionSteps.push(`Selbstkosten = ${formatEuro(calculated.bvp as number)} / ${formatMarkupFactor(given.gewinnZuschlag)} = ${formatEuro(calculated.selbstkosten as number)}`);
       solutionSteps.push(`Gewinn = ${formatEuro(calculated.bvp as number)} − ${formatEuro(calculated.selbstkosten as number)} = ${formatEuro(calculated.gewinn as number)}`);
-      solutionSteps.push(`BP = ${formatEuro(calculated.selbstkosten as number)} / (1 + ${given.handlungsKosten}%) = ${formatEuro(calculated.bp as number)}`);
+      solutionSteps.push(`BP = ${formatEuro(calculated.selbstkosten as number)} / ${formatMarkupFactor(given.handlungsKosten)} = ${formatEuro(calculated.bp as number)}`);
       solutionSteps.push(`Handlungskosten = ${formatEuro(calculated.selbstkosten as number)} − ${formatEuro(calculated.bp as number)} = ${formatEuro(calculated.handlungskosten as number)}`);
       solutionSteps.push(`BEP = ${formatEuro(calculated.bp as number)} − ${formatEuro(calculated.bezugskosten as number)} = ${formatEuro(calculated.bep as number)}`);
-      solutionSteps.push(`ZEP = ${formatEuro(calculated.bep as number)} / (1 - ${given.lieferskonto}%) = ${formatEuro(calculated.zep as number)}`);
+      solutionSteps.push(`ZEP = ${formatEuro(calculated.bep as number)} / ${formatDiscountFactor(given.lieferskonto)} = ${formatEuro(calculated.zep as number)}`);
       solutionSteps.push(`Skonto = ${formatEuro(calculated.zep as number)} − ${formatEuro(calculated.bep as number)} = ${formatEuro(calculated.skonto as number)}`);
-      solutionSteps.push(`LEP netto = ${formatEuro(calculated.zep as number)} / (1 - ${given.lieferRabatt}%) = ${formatEuro(calculated.lep as number)}`);
+      solutionSteps.push(`LEP netto = ${formatEuro(calculated.zep as number)} / ${formatDiscountFactor(given.lieferRabatt)} = ${formatEuro(calculated.lep as number)}`);
       solutionSteps.push(`Rabatt = ${formatEuro(calculated.lep as number)} − ${formatEuro(calculated.zep as number)} = ${formatEuro(calculated.rabatt as number)}`);
       solutionSteps.push(`LEP brutto = ${formatEuro(calculated.lep as number)} × 1,19 = ${formatEuro((calculated.lep as number) * 1.19)}`);
     }

@@ -37,17 +37,19 @@ export function generateImageTransferComboQuestion(): Question {
   // Calculate bandwidth in bit/s
   const bandwidthBps = bandwidthValue * bandwidthUnit.multiplier;
   
-  // Calculate transfer time in seconds (no overhead yet)
+  // Calculate transfer time in seconds (before the IHK-standard 10% overhead)
   const rawTimeSeconds = (totalBytes * 8) / bandwidthBps;
-  
-  // Format time according to IHK 60-system
-  const timeResult = formatIHKTime(rawTimeSeconds);
-  
-  // Calculate with overhead for solution
+
+  // Calculate with overhead for the written-out solution
   const overheadBytes = totalBytes * 0.10;
   const effectiveBytes = totalBytes + overheadBytes;
   const effectiveTimeSeconds = (effectiveBytes * 8) / bandwidthBps;
-  const roundedEffectiveSeconds = timeResult.roundedSeconds;
+
+  // formatIHKTime() already applies the 10% IHK overhead internally, so pass
+  // the raw transfer time here and use the formatted effective result everywhere
+  // the user-facing answer is derived.
+  const formattedEffectiveResult = formatIHKTime(rawTimeSeconds);
+  const roundedEffectiveSeconds = formattedEffectiveResult.roundedSeconds;
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
     resolution.width >= 3840 || bandwidthValue <= 250 ? 'hard' :
@@ -88,62 +90,62 @@ export function generateImageTransferComboQuestion(): Question {
   ];
   
   // Add time formatting explanation based on result
-  if (timeResult.hours !== undefined) {
+  if (formattedEffectiveResult.hours !== undefined) {
     solutionSteps.push(
       ``,
       `Schritt 7: In Stunden und Minuten umrechnen (60-System)`,
       `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
-      `  Stunden = ⌊${roundedEffectiveSeconds} ÷ 3600⌋ = ${timeResult.hours} Stunden`,
-      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.hours} × 3600) = ${roundedEffectiveSeconds - (timeResult.hours * 3600)} s`,
-      `  Minuten = ⌊Restsekunden ÷ 60⌋ = ${timeResult.minutes} Minuten`,
-      `  Ergebnis: ${timeResult.hours} Stunde(n) ${timeResult.minutes} Minute(n)`
+      `  Stunden = ⌊${roundedEffectiveSeconds} ÷ 3600⌋ = ${formattedEffectiveResult.hours} Stunden`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${formattedEffectiveResult.hours} × 3600) = ${roundedEffectiveSeconds - (formattedEffectiveResult.hours * 3600)} s`,
+      `  Minuten = ⌊Restsekunden ÷ 60⌋ = ${formattedEffectiveResult.minutes} Minuten`,
+      `  Ergebnis: ${formattedEffectiveResult.hours} Stunde(n) ${formattedEffectiveResult.minutes} Minute(n)`
     );
-  } else if (timeResult.minutes !== undefined && timeResult.minutes > 0) {
+  } else if (formattedEffectiveResult.minutes !== undefined && formattedEffectiveResult.minutes > 0) {
     solutionSteps.push(
       ``,
       `Schritt 7: In Minuten und Sekunden umrechnen (60-System)`,
       `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
-      `  Minuten = ⌊${roundedEffectiveSeconds} ÷ 60⌋ = ${timeResult.minutes} Minuten`,
-      `  Restsekunden = ${roundedEffectiveSeconds} - (${timeResult.minutes} × 60) = ${roundedEffectiveSeconds - (timeResult.minutes * 60)} s`,
-      `  Sekunden = ⌊Restsekunden⌋ = ${timeResult.seconds} Sekunden`,
-      `  Ergebnis: ${timeResult.minutes} Minute(n) ${timeResult.seconds} Sekunde(n)`
+      `  Minuten = ⌊${roundedEffectiveSeconds} ÷ 60⌋ = ${formattedEffectiveResult.minutes} Minuten`,
+      `  Restsekunden = ${roundedEffectiveSeconds} - (${formattedEffectiveResult.minutes} × 60) = ${roundedEffectiveSeconds - (formattedEffectiveResult.minutes * 60)} s`,
+      `  Sekunden = ⌊Restsekunden⌋ = ${formattedEffectiveResult.seconds} Sekunden`,
+      `  Ergebnis: ${formattedEffectiveResult.minutes} Minute(n) ${formattedEffectiveResult.seconds} Sekunde(n)`
     );
   }
   
   solutionSteps.push(
     ``,
-    `Ergebnis: ${timeResult.display}`
+    `Ergebnis: ${formattedEffectiveResult.display}`
   );
   
   return {
     id: `image-transfer-combo-${Date.now()}`,
     theme: 'IT-Mathematik & Datenberechnung',
-    module: 'image-transfer-combo',
+    module: 'imageTransferCombo',
     questionText: `Ein unkomprimiertes ${resolution.name}-Bild (${resolution.width}×${resolution.height} Pixel, ${colorDepth} Bit Farbtiefe) soll über eine Leitung mit ${bandwidthValue} ${bandwidthUnit.unit} übertragen werden. Berechne die Übertragungszeit unter Berücksichtigung eines 10% Overheads (60-System bei ≥ 60 Sekunden).`,
     expectedAnswers: {
-      ...(timeResult.hours !== undefined && {
-        hours: timeResult.hours,
+      ...(formattedEffectiveResult.hours !== undefined && {
+        hours: formattedEffectiveResult.hours,
         hourUnit: UNIT_STUNDEN,
-        minutes: timeResult.minutes,
+        minutes: formattedEffectiveResult.minutes,
         minuteUnit: UNIT_MINUTEN,
       }),
-      ...(timeResult.hours === undefined && timeResult.minutes !== undefined && {
-        minutes: timeResult.minutes,
+      ...(formattedEffectiveResult.hours === undefined && formattedEffectiveResult.minutes !== undefined && {
+        minutes: formattedEffectiveResult.minutes,
         minuteUnit: UNIT_MINUTEN,
-        seconds: timeResult.seconds,
+        seconds: formattedEffectiveResult.seconds,
         secondUnit: UNIT_SEKUNDEN,
       }),
-      ...(timeResult.hours === undefined && timeResult.minutes === undefined && {
-        seconds: timeResult.seconds,
+      ...(formattedEffectiveResult.hours === undefined && formattedEffectiveResult.minutes === undefined && {
+        seconds: formattedEffectiveResult.seconds,
         secondUnit: UNIT_SEKUNDEN,
       }),
     },
-    answerInputs: timeResult.hours !== undefined
+    answerInputs: formattedEffectiveResult.hours !== undefined
       ? [
           { valueKey: 'hours', unitKey: 'hourUnit', unitOptions: TIME_UNITS, label: 'Stunden' },
           { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS, label: 'Minuten' },
         ]
-      : timeResult.minutes !== undefined
+      : formattedEffectiveResult.minutes !== undefined
       ? [
           { valueKey: 'minutes', unitKey: 'minuteUnit', unitOptions: TIME_UNITS, label: 'Minuten' },
           { valueKey: 'seconds', unitKey: 'secondUnit', unitOptions: TIME_UNITS, label: 'Sekunden' },

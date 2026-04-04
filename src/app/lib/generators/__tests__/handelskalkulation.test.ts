@@ -68,4 +68,34 @@ describe('handelskalkulation generator', () => {
     expect(question.answerInputs?.some((input) => input.valueKey === 'backward_bvp')).toBe(true);
     expect(question.answerInputs?.some((input) => input.valueKey === 'differenz')).toBe(true);
   });
+
+  it('renders rueckwaerts solution steps with specific decimal markup and discount factors', () => {
+    const randomSpy = vi.spyOn(Math, 'random');
+    randomSpy.mockImplementationOnce(() => 0.5);
+    randomSpy.mockImplementation(() => 0.5);
+
+    const question = generateHandelskalkulationQuestion();
+    const steps = question.solutionSteps.join('\n');
+
+    expect(steps).not.toContain('/ (1 +');
+    expect(steps).not.toContain('/ (1 -');
+    expect(steps).toMatch(/Selbstkosten = .* \/ 1,\d{2} = .*/);
+    expect(steps).toMatch(/ZEP = .* \/ 0,\d{2} = .*/);
+    expect(steps).toMatch(/LEP netto = .* \/ 0,\d{2} = .*/);
+  });
+
+  it('renders differenz backward solution steps with specific decimal markup and discount factors', () => {
+    const randomSpy = vi.spyOn(Math, 'random');
+    randomSpy.mockImplementationOnce(() => 0.9);
+    randomSpy.mockImplementation(() => 0.5);
+
+    const question = generateHandelskalkulationQuestion();
+    const steps = question.solutionSteps.join('\n');
+
+    expect(steps).not.toContain('/ (1 +');
+    expect(steps).not.toContain('/ (1 -');
+    expect(steps).toMatch(/Selbstkosten = .* \/ 1,\d{2} = .*/);
+    expect(steps).toMatch(/ZEP = .* \/ 0,\d{2} = .*/);
+    expect(steps).toMatch(/LEP netto = .* \/ 0,\d{2} = .*/);
+  });
 });
