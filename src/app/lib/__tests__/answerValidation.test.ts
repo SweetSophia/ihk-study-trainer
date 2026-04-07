@@ -98,7 +98,7 @@ describe('answer validation helpers', () => {
       expect(validateQuestionAnswers(binaryQuestion, { binary: '11000' })).toBe(false);
     });
 
-    it('rejects wrong binary answer of same numeric value', () => {
+    it('rejects binary answer with wrong bit-width but same numeric value', () => {
       expect(validateQuestionAnswers(binaryQuestion, { binary: '0011000' })).toBe(false);
     });
 
@@ -202,6 +202,70 @@ describe('answer validation helpers', () => {
       expect(validateQuestionAnswers(hexWithLetter, { hex: '0xAF' })).toBe(true);
       expect(validateQuestionAnswers(hexWithLetter, { hex: '0xaf' })).toBe(true);
       expect(validateQuestionAnswers(hexWithLetter, { hex: 'AB' })).toBe(false);
+    });
+
+    it('rejects bare 0x prefix with no value', () => {
+      expect(validateQuestionAnswers(hexQuestion, { hex: '0x' })).toBe(false);
+    });
+  });
+
+  describe('structured path for binary and hex', () => {
+    it('validates binary and hex through answerInputs', () => {
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'binary' }, { valueKey: 'hex' }],
+          { binary: '00011000', hex: '18' },
+          { binary: '00011000', hex: '0x18' }
+        )
+      ).toBe(true);
+    });
+
+    it('rejects binary with missing leading zeros via structured path', () => {
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'binary' }],
+          { binary: '00011000' },
+          { binary: '11000' }
+        )
+      ).toBe(false);
+    });
+
+    it('rejects wrong hex via structured path', () => {
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'hex' }],
+          { hex: '18' },
+          { hex: '1B' }
+        )
+      ).toBe(false);
+    });
+
+    it('accepts hex 0x prefix via structured path', () => {
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'hex' }],
+          { hex: 'AF' },
+          { hex: '0xaf' }
+        )
+      ).toBe(true);
+    });
+
+    it('validates binary and hex in leftover-keys structured path', () => {
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'other' }],
+          { other: 42, binary: '00011000', hex: '18' },
+          { other: '42', binary: '00011000', hex: '0x18' }
+        )
+      ).toBe(true);
+
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'other' }],
+          { other: 42, binary: '00011000', hex: '18' },
+          { other: '42', binary: '11000', hex: '0x18' }
+        )
+      ).toBe(false);
     });
   });
 

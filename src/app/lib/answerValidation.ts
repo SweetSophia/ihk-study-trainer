@@ -27,7 +27,7 @@ export function parseLocaleFloat(raw?: string | null): number {
   return parseFloat(raw.replace(',', '.'));
 }
 
-const NON_DECIMAL_KEYS = new Set(['binary', 'hex']);
+const RADIX_KEYS = new Set(['binary', 'hex']);
 
 const BASE_FOR_KEY: Record<string, number> = {
   binary: 2,
@@ -51,9 +51,6 @@ function normalizeHexAnswer(s: string): string {
  * (e.g. "00011000"). Such values must be compared as fixed-width strings because
  * numeric parsing strips leading zeros and would incorrectly match "11000"
  * against "00011000".
- *
- * Scoped to binary-only patterns so that hex values like "018" (zero-padded
- * digits from the hex generator) can still be compared numerically via parseInt.
  */
 function hasBinaryLeadingZeros(s: string): boolean {
   return /^0[01]+$/.test(s);
@@ -68,7 +65,9 @@ function validateNonDecimalKey(
   rawUserAnswer: string,
   expectedStr: string,
 ): boolean | undefined {
-  if (!NON_DECIMAL_KEYS.has(key)) return undefined;
+  if (!RADIX_KEYS.has(key)) return undefined;
+
+  // Note: "0b" prefix is intentionally not supported for binary; only bare digit strings are accepted.
 
   let userAnswer = rawUserAnswer;
   if (key === 'hex') {
@@ -76,6 +75,7 @@ function validateNonDecimalKey(
   }
 
   if (key === 'binary' && hasBinaryLeadingZeros(expectedStr)) {
+    if (!VALID_BASE_PATTERN[2].test(userAnswer)) return false;
     return userAnswer === expectedStr;
   }
 
