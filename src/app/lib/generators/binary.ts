@@ -25,7 +25,6 @@ export function generateBinaryQuestion(): BinaryQuestion {
         `Gegeben: Dezimalzahl = ${decimal}`,
         ``,
         `Schritt 1: Division durch 2 mit Rest`,
-        `  ${decimal} ÷ 2 = ${Math.floor(decimal / 2)} Rest ${decimal % 2}`,
         ...generateDivisionSteps(decimal),
         ``,
         `Schritt 2: Reste von unten nach oben lesen`,
