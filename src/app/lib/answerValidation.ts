@@ -27,12 +27,12 @@ export function parseLocaleFloat(raw?: string | null): number {
   return parseFloat(raw.replace(',', '.'));
 }
 
-const RADIX_KEYS = new Set(['binary', 'hex']);
-
 const BASE_FOR_KEY: Record<string, number> = {
   binary: 2,
   hex: 16,
-};
+} as const;
+
+const RADIX_KEYS = new Set(Object.keys(BASE_FOR_KEY));
 
 const VALID_BASE_PATTERN: Record<number, RegExp> = {
   2: /^[01]+$/,
@@ -80,11 +80,17 @@ function validateNonDecimalKey(
   }
 
   const base = BASE_FOR_KEY[key];
+  let normalizedExpected = expectedStr;
+  if (key === 'hex') {
+    normalizedExpected = normalizeHexAnswer(expectedStr);
+  }
+
   if (!VALID_BASE_PATTERN[base].test(userAnswer)) return false;
-  if (key === 'binary' && userAnswer.length !== expectedStr.length) return false;
+  if (!VALID_BASE_PATTERN[base].test(normalizedExpected)) return false;
+  if (key === 'binary' && userAnswer.length !== normalizedExpected.length) return false;
 
   const userVal = parseInt(userAnswer, base);
-  const expectedVal = parseInt(expectedStr, base);
+  const expectedVal = parseInt(normalizedExpected, base);
   return !isNaN(userVal) && !isNaN(expectedVal) && userVal === expectedVal;
 }
 
