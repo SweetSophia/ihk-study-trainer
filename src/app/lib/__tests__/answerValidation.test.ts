@@ -112,6 +112,8 @@ describe('answer validation helpers', () => {
       };
       expect(validateQuestionAnswers(highBitBinaryQuestion, { binary: '11001000' })).toBe(true);
       expect(validateQuestionAnswers(highBitBinaryQuestion, { binary: '11001001' })).toBe(false);
+      expect(validateQuestionAnswers(highBitBinaryQuestion, { binary: '011001000' })).toBe(false);
+      expect(validateQuestionAnswers(highBitBinaryQuestion, { binary: '11001000abc' })).toBe(false);
     });
 
     it('enforces leading zeros for all-zero binary', () => {

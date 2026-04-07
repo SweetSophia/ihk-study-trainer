@@ -54,6 +54,11 @@ const BASE_FOR_KEY: Record<string, number> = {
   hex: 16,
 };
 
+const VALID_BASE_PATTERN: Record<number, RegExp> = {
+  2: /^[01]+$/,
+  16: /^[0-9a-f]+$/,
+};
+
 /**
  * Detect the conversion map that applies for the given unit options.
  * Returns null when no conversion-aware check is needed.
@@ -117,6 +122,8 @@ export function validateStructuredAnswer(
 
     if (NON_DECIMAL_KEYS.has(cfg.valueKey)) {
       const base = BASE_FOR_KEY[cfg.valueKey];
+      if (!VALID_BASE_PATTERN[base].test(userAnswer)) return false;
+      if (cfg.valueKey === 'binary' && userAnswer.length !== expectedStr.length) return false;
       const userVal = parseInt(userAnswer, base);
       const expectedVal = parseInt(expectedStr, base);
       if (isNaN(userVal) || isNaN(expectedVal) || userVal !== expectedVal) return false;
@@ -182,6 +189,8 @@ export function validateStructuredAnswer(
 
     if (NON_DECIMAL_KEYS.has(key)) {
       const base = BASE_FOR_KEY[key];
+      if (!VALID_BASE_PATTERN[base].test(userAnswer)) return false;
+      if (key === 'binary' && userAnswer.length !== expectedStr.length) return false;
       const userVal = parseInt(userAnswer, base);
       const expectedVal = parseInt(expectedStr, base);
       if (isNaN(userVal) || isNaN(expectedVal) || userVal !== expectedVal) return false;
@@ -236,6 +245,8 @@ export function validateQuestionAnswers(
 
     if (NON_DECIMAL_KEYS.has(key)) {
       const base = BASE_FOR_KEY[key];
+      if (!VALID_BASE_PATTERN[base].test(userAnswer)) return false;
+      if (key === 'binary' && userAnswer.length !== expectedStr.length) return false;
       const userVal = parseInt(userAnswer, base);
       const expectedVal = parseInt(expectedStr, base);
       if (isNaN(userVal) || isNaN(expectedVal) || userVal !== expectedVal) return false;
