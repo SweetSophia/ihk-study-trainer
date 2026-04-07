@@ -44,6 +44,17 @@ function normalizeHexAnswer(s: string): string {
 }
 
 /**
+ * Keys whose values must never be compared with decimal tolerance.
+ * Binary and hex answers are exact-position or base-aware comparisons.
+ */
+const NON_DECIMAL_KEYS = new Set(['binary', 'hex']);
+
+const BASE_FOR_KEY: Record<string, number> = {
+  binary: 2,
+  hex: 16,
+};
+
+/**
  * Detect the conversion map that applies for the given unit options.
  * Returns null when no conversion-aware check is needed.
  */
@@ -104,6 +115,14 @@ export function validateStructuredAnswer(
       continue;
     }
 
+    if (NON_DECIMAL_KEYS.has(cfg.valueKey)) {
+      const base = BASE_FOR_KEY[cfg.valueKey];
+      const userVal = parseInt(userAnswer, base);
+      const expectedVal = parseInt(expectedStr, base);
+      if (isNaN(userVal) || isNaN(expectedVal) || userVal !== expectedVal) return false;
+      continue;
+    }
+
     const userNum = parseLocaleFloat(userAnswer);
     const expectedNum = parseLocaleFloat(expectedStr);
     const convMap = detectConversionMap(cfg.unitOptions ?? []);
@@ -161,6 +180,14 @@ export function validateStructuredAnswer(
       continue;
     }
 
+    if (NON_DECIMAL_KEYS.has(key)) {
+      const base = BASE_FOR_KEY[key];
+      const userVal = parseInt(userAnswer, base);
+      const expectedVal = parseInt(expectedStr, base);
+      if (isNaN(userVal) || isNaN(expectedVal) || userVal !== expectedVal) return false;
+      continue;
+    }
+
     const userNum = parseLocaleFloat(userAnswer);
     const expectedNum = parseLocaleFloat(expectedStr);
     if (!isNaN(userNum) && !isNaN(expectedNum)) {
@@ -204,6 +231,14 @@ export function validateQuestionAnswers(
 
     if (hasSignificantLeadingZeros(expectedStr)) {
       if (userAnswer !== expectedStr) return false;
+      continue;
+    }
+
+    if (NON_DECIMAL_KEYS.has(key)) {
+      const base = BASE_FOR_KEY[key];
+      const userVal = parseInt(userAnswer, base);
+      const expectedVal = parseInt(expectedStr, base);
+      if (isNaN(userVal) || isNaN(expectedVal) || userVal !== expectedVal) return false;
       continue;
     }
 

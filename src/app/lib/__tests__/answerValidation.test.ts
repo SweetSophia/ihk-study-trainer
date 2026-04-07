@@ -102,6 +102,18 @@ describe('answer validation helpers', () => {
       expect(validateQuestionAnswers(binaryQuestion, { binary: '0011000' })).toBe(false);
     });
 
+    it('rejects off-by-one answers for 8-bit binary values starting with 1', () => {
+      const highBitBinaryQuestion: Question = {
+        ...binaryQuestion,
+        id: 'binary-2',
+        questionText: 'Wandle die Dezimalzahl 200 in eine 8-Bit-Binärzahl um.',
+        expectedAnswers: { binary: '11001000' },
+        solutionSteps: ['11001000'],
+      };
+      expect(validateQuestionAnswers(highBitBinaryQuestion, { binary: '11001000' })).toBe(true);
+      expect(validateQuestionAnswers(highBitBinaryQuestion, { binary: '11001001' })).toBe(false);
+    });
+
     it('enforces leading zeros for all-zero binary', () => {
       const allZeros: Question = {
         ...binaryQuestion,
@@ -138,6 +150,29 @@ describe('answer validation helpers', () => {
 
     it('rejects wrong hex answer', () => {
       expect(validateQuestionAnswers(hexQuestion, { hex: '1B' })).toBe(false);
+    });
+
+    it('accepts 0x-prefixed shorthand for zero-padded expected hex answers', () => {
+      const zeroPaddedHexQuestion: Question = {
+        ...hexQuestion,
+        expectedAnswers: { hex: '00F' },
+        solutionSteps: ['0x00F'],
+      };
+      expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '00F' })).toBe(true);
+      expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '00f' })).toBe(true);
+      expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '0xF' })).toBe(true);
+      expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '0xf' })).toBe(true);
+      expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '0xE' })).toBe(false);
+    });
+
+    it('accepts hex answer with leading zeros and 0x prefix', () => {
+      const hexWithLeadingZeros: Question = {
+        ...hexQuestion,
+        expectedAnswers: { hex: '001' },
+      };
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '001' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '0x001' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '1' })).toBe(false);
     });
 
     it('handles hex answers with letters case-insensitively', () => {
