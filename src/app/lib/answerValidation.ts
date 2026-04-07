@@ -27,26 +27,6 @@ export function parseLocaleFloat(raw?: string | null): number {
   return parseFloat(raw.replace(',', '.'));
 }
 
-/**
- * Returns true when the string has significant leading zeros (e.g. "00011000").
- * Such values must be compared as strings, not numbers, because parseFloat
- * strips leading zeros and would incorrectly match "11000" against "00011000".
- */
-function hasSignificantLeadingZeros(s: string): boolean {
-  return /^0[0-9]+$/.test(s);
-}
-
-/**
- * Normalise a hex-style user answer by stripping an optional "0x" prefix.
- */
-function normalizeHexAnswer(s: string): string {
-  return s.replace(/^0x/i, '');
-}
-
-/**
- * Keys whose values must never be compared with decimal tolerance.
- * Binary and hex answers are exact-position or base-aware comparisons.
- */
 const NON_DECIMAL_KEYS = new Set(['binary', 'hex']);
 
 const BASE_FOR_KEY: Record<string, number> = {
@@ -58,6 +38,55 @@ const VALID_BASE_PATTERN: Record<number, RegExp> = {
   2: /^[01]+$/,
   16: /^[0-9a-f]+$/,
 };
+
+/**
+ * Normalise a hex-style user answer by stripping an optional "0x" prefix.
+ */
+function normalizeHexAnswer(s: string): string {
+  return s.replace(/^0x/i, '');
+}
+
+/**
+ * Returns true when the string is a binary value with significant leading zeros
+ * (e.g. "00011000"). Such values must be compared as fixed-width strings because
+ * numeric parsing strips leading zeros and would incorrectly match "11000"
+ * against "00011000".
+ *
+ * Scoped to binary-only patterns so that hex values like "018" (zero-padded
+ * digits from the hex generator) can still be compared numerically via parseInt.
+ */
+function hasBinaryLeadingZeros(s: string): boolean {
+  return /^0[01]+$/.test(s);
+}
+
+/**
+ * Validate a non-decimal (binary or hex) answer field.
+ * Returns true when the answer is acceptable, false to reject.
+ */
+function validateNonDecimalKey(
+  key: string,
+  rawUserAnswer: string,
+  expectedStr: string,
+): boolean | undefined {
+  if (!NON_DECIMAL_KEYS.has(key)) return undefined;
+
+  let userAnswer = rawUserAnswer;
+  if (key === 'hex') {
+    userAnswer = normalizeHexAnswer(userAnswer);
+  }
+
+  if (key === 'binary' && hasBinaryLeadingZeros(expectedStr)) {
+    return userAnswer === expectedStr;
+  }
+
+  const base = BASE_FOR_KEY[key];
+  if (!VALID_BASE_PATTERN[base].test(userAnswer)) return false;
+  if (key === 'binary' && userAnswer.length !== expectedStr.length) return false;
+
+  const userVal = parseInt(userAnswer, base);
+  const expectedVal = parseInt(expectedStr, base);
+  return !isNaN(userVal) && !isNaN(expectedVal) && userVal === expectedVal;
+}
 
 /**
  * Detect the conversion map that applies for the given unit options.
@@ -108,25 +137,12 @@ export function validateStructuredAnswer(
       continue;
     }
 
-    let userAnswer = (answers[cfg.valueKey] ?? '').trim().toLowerCase();
+    const userAnswer = (answers[cfg.valueKey] ?? '').trim().toLowerCase();
     const expectedStr = String(expected[cfg.valueKey]).toLowerCase();
 
-    if (cfg.valueKey === 'hex') {
-      userAnswer = normalizeHexAnswer(userAnswer);
-    }
-
-    if (hasSignificantLeadingZeros(expectedStr)) {
-      if (userAnswer !== expectedStr) return false;
-      continue;
-    }
-
-    if (NON_DECIMAL_KEYS.has(cfg.valueKey)) {
-      const base = BASE_FOR_KEY[cfg.valueKey];
-      if (!VALID_BASE_PATTERN[base].test(userAnswer)) return false;
-      if (cfg.valueKey === 'binary' && userAnswer.length !== expectedStr.length) return false;
-      const userVal = parseInt(userAnswer, base);
-      const expectedVal = parseInt(expectedStr, base);
-      if (isNaN(userVal) || isNaN(expectedVal) || userVal !== expectedVal) return false;
+    const nonDecimalResult = validateNonDecimalKey(cfg.valueKey, userAnswer, expectedStr);
+    if (nonDecimalResult !== undefined) {
+      if (!nonDecimalResult) return false;
       continue;
     }
 
@@ -175,25 +191,12 @@ export function validateStructuredAnswer(
       continue;
     }
 
-    let userAnswer = (answers[key] ?? '').trim().toLowerCase();
+    const userAnswer = (answers[key] ?? '').trim().toLowerCase();
     const expectedStr = String(exp).toLowerCase();
 
-    if (key === 'hex') {
-      userAnswer = normalizeHexAnswer(userAnswer);
-    }
-
-    if (hasSignificantLeadingZeros(expectedStr)) {
-      if (userAnswer !== expectedStr) return false;
-      continue;
-    }
-
-    if (NON_DECIMAL_KEYS.has(key)) {
-      const base = BASE_FOR_KEY[key];
-      if (!VALID_BASE_PATTERN[base].test(userAnswer)) return false;
-      if (key === 'binary' && userAnswer.length !== expectedStr.length) return false;
-      const userVal = parseInt(userAnswer, base);
-      const expectedVal = parseInt(expectedStr, base);
-      if (isNaN(userVal) || isNaN(expectedVal) || userVal !== expectedVal) return false;
+    const nonDecimalResult = validateNonDecimalKey(key, userAnswer, expectedStr);
+    if (nonDecimalResult !== undefined) {
+      if (!nonDecimalResult) return false;
       continue;
     }
 
@@ -231,25 +234,12 @@ export function validateQuestionAnswers(
   for (const [key, expected] of Object.entries(question.expectedAnswers)) {
     if (key === 'unit') continue;
 
-    let userAnswer = (answers[key] ?? '').trim().toLowerCase();
+    const userAnswer = (answers[key] ?? '').trim().toLowerCase();
     const expectedStr = String(expected).toLowerCase();
 
-    if (key === 'hex') {
-      userAnswer = normalizeHexAnswer(userAnswer);
-    }
-
-    if (hasSignificantLeadingZeros(expectedStr)) {
-      if (userAnswer !== expectedStr) return false;
-      continue;
-    }
-
-    if (NON_DECIMAL_KEYS.has(key)) {
-      const base = BASE_FOR_KEY[key];
-      if (!VALID_BASE_PATTERN[base].test(userAnswer)) return false;
-      if (key === 'binary' && userAnswer.length !== expectedStr.length) return false;
-      const userVal = parseInt(userAnswer, base);
-      const expectedVal = parseInt(expectedStr, base);
-      if (isNaN(userVal) || isNaN(expectedVal) || userVal !== expectedVal) return false;
+    const nonDecimalResult = validateNonDecimalKey(key, userAnswer, expectedStr);
+    if (nonDecimalResult !== undefined) {
+      if (!nonDecimalResult) return false;
       continue;
     }
 

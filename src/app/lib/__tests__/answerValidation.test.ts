@@ -167,14 +167,29 @@ describe('answer validation helpers', () => {
       expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '0xE' })).toBe(false);
     });
 
-    it('accepts hex answer with leading zeros and 0x prefix', () => {
+    it('accepts numeric equivalents for zero-padded hex answers', () => {
       const hexWithLeadingZeros: Question = {
         ...hexQuestion,
         expectedAnswers: { hex: '001' },
       };
       expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '001' })).toBe(true);
       expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '0x001' })).toBe(true);
-      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '1' })).toBe(false);
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '1' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '0x1' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '2' })).toBe(false);
+    });
+
+    it('accepts shorthand for digit-only zero-padded hex answers', () => {
+      const digitOnlyZeroPadded: Question = {
+        ...hexQuestion,
+        expectedAnswers: { hex: '018' },
+        solutionSteps: ['0x018'],
+      };
+      expect(validateQuestionAnswers(digitOnlyZeroPadded, { hex: '018' })).toBe(true);
+      expect(validateQuestionAnswers(digitOnlyZeroPadded, { hex: '0x018' })).toBe(true);
+      expect(validateQuestionAnswers(digitOnlyZeroPadded, { hex: '18' })).toBe(true);
+      expect(validateQuestionAnswers(digitOnlyZeroPadded, { hex: '0x18' })).toBe(true);
+      expect(validateQuestionAnswers(digitOnlyZeroPadded, { hex: '0x19' })).toBe(false);
     });
 
     it('handles hex answers with letters case-insensitively', () => {
