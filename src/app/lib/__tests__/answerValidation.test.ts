@@ -78,4 +78,109 @@ describe('answer validation helpers', () => {
       )
     ).toBe(false);
   });
+
+  describe('binary answers with leading zeros', () => {
+    const binaryQuestion: Question = {
+      id: 'binary-1',
+      theme: 'Zahlensysteme',
+      module: 'binary',
+      questionText: 'Wandle die Dezimalzahl 24 in eine 8-Bit-Binärzahl um.',
+      expectedAnswers: { binary: '00011000' },
+      solutionSteps: ['00011000'],
+      difficulty: 'easy',
+    };
+
+    it('accepts the correct 8-bit binary answer', () => {
+      expect(validateQuestionAnswers(binaryQuestion, { binary: '00011000' })).toBe(true);
+    });
+
+    it('rejects binary answer without leading zeros', () => {
+      expect(validateQuestionAnswers(binaryQuestion, { binary: '11000' })).toBe(false);
+    });
+
+    it('rejects wrong binary answer of same numeric value', () => {
+      expect(validateQuestionAnswers(binaryQuestion, { binary: '0011000' })).toBe(false);
+    });
+
+    it('enforces leading zeros for all-zero binary', () => {
+      const allZeros: Question = {
+        ...binaryQuestion,
+        expectedAnswers: { binary: '00000000' },
+      };
+      expect(validateQuestionAnswers(allZeros, { binary: '00000000' })).toBe(true);
+      expect(validateQuestionAnswers(allZeros, { binary: '0' })).toBe(false);
+      expect(validateQuestionAnswers(allZeros, { binary: '0000000' })).toBe(false);
+    });
+  });
+
+  describe('hex answers with 0x prefix', () => {
+    const hexQuestion: Question = {
+      id: 'hex-1',
+      theme: 'Zahlensysteme',
+      module: 'hexBinary',
+      questionText: 'Wandle die Binärzahl 00011000 in eine Hexadezimalzahl um.',
+      expectedAnswers: { hex: '18' },
+      solutionSteps: ['0x18'],
+      difficulty: 'easy',
+    };
+
+    it('accepts plain hex answer', () => {
+      expect(validateQuestionAnswers(hexQuestion, { hex: '18' })).toBe(true);
+    });
+
+    it('accepts hex answer with 0x prefix', () => {
+      expect(validateQuestionAnswers(hexQuestion, { hex: '0x18' })).toBe(true);
+    });
+
+    it('accepts hex answer with 0X prefix (uppercase)', () => {
+      expect(validateQuestionAnswers(hexQuestion, { hex: '0X18' })).toBe(true);
+    });
+
+    it('rejects wrong hex answer', () => {
+      expect(validateQuestionAnswers(hexQuestion, { hex: '1B' })).toBe(false);
+    });
+
+    it('handles hex answers with letters case-insensitively', () => {
+      const hexWithLetter: Question = {
+        ...hexQuestion,
+        expectedAnswers: { hex: 'AF' },
+      };
+      expect(validateQuestionAnswers(hexWithLetter, { hex: 'AF' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLetter, { hex: 'af' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLetter, { hex: '0xAF' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLetter, { hex: '0xaf' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLetter, { hex: 'AB' })).toBe(false);
+    });
+  });
+
+  describe('regular numeric answers are unaffected', () => {
+    it('still accepts numeric answers within 5% tolerance', () => {
+      const question: Question = {
+        id: 'bandwidth-1',
+        theme: 'Test',
+        module: 'bandwidth',
+        questionText: 'How long?',
+        expectedAnswers: { result: 100 },
+        solutionSteps: ['100'],
+        difficulty: 'medium',
+      };
+      expect(validateQuestionAnswers(question, { result: '100' })).toBe(true);
+      expect(validateQuestionAnswers(question, { result: '102' })).toBe(true);
+      expect(validateQuestionAnswers(question, { result: '110' })).toBe(false);
+    });
+
+    it('still handles decimal comma', () => {
+      const question: Question = {
+        id: 'calc-1',
+        theme: 'Test',
+        module: 'math',
+        questionText: 'Calculate',
+        expectedAnswers: { result: 4.5 },
+        solutionSteps: ['4.5'],
+        difficulty: 'easy',
+      };
+      expect(validateQuestionAnswers(question, { result: '4,5' })).toBe(true);
+      expect(validateQuestionAnswers(question, { result: '4.5' })).toBe(true);
+    });
+  });
 });

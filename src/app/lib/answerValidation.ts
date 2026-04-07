@@ -28,6 +28,22 @@ export function parseLocaleFloat(raw?: string | null): number {
 }
 
 /**
+ * Returns true when the string has significant leading zeros (e.g. "00011000").
+ * Such values must be compared as strings, not numbers, because parseFloat
+ * strips leading zeros and would incorrectly match "11000" against "00011000".
+ */
+function hasSignificantLeadingZeros(s: string): boolean {
+  return /^0[0-9]+$/.test(s);
+}
+
+/**
+ * Normalise a hex-style user answer by stripping an optional "0x" prefix.
+ */
+function normalizeHexAnswer(s: string): string {
+  return s.replace(/^0x/i, '');
+}
+
+/**
  * Detect the conversion map that applies for the given unit options.
  * Returns null when no conversion-aware check is needed.
  */
@@ -76,8 +92,18 @@ export function validateStructuredAnswer(
       continue;
     }
 
-    const userAnswer = answers[cfg.valueKey]?.trim().toLowerCase();
+    let userAnswer = (answers[cfg.valueKey] ?? '').trim().toLowerCase();
     const expectedStr = String(expected[cfg.valueKey]).toLowerCase();
+
+    if (cfg.valueKey === 'hex') {
+      userAnswer = normalizeHexAnswer(userAnswer);
+    }
+
+    if (hasSignificantLeadingZeros(expectedStr)) {
+      if (userAnswer !== expectedStr) return false;
+      continue;
+    }
+
     const userNum = parseLocaleFloat(userAnswer);
     const expectedNum = parseLocaleFloat(expectedStr);
     const convMap = detectConversionMap(cfg.unitOptions ?? []);
@@ -123,8 +149,18 @@ export function validateStructuredAnswer(
       continue;
     }
 
-    const userAnswer = answers[key]?.trim().toLowerCase();
+    let userAnswer = (answers[key] ?? '').trim().toLowerCase();
     const expectedStr = String(exp).toLowerCase();
+
+    if (key === 'hex') {
+      userAnswer = normalizeHexAnswer(userAnswer);
+    }
+
+    if (hasSignificantLeadingZeros(expectedStr)) {
+      if (userAnswer !== expectedStr) return false;
+      continue;
+    }
+
     const userNum = parseLocaleFloat(userAnswer);
     const expectedNum = parseLocaleFloat(expectedStr);
     if (!isNaN(userNum) && !isNaN(expectedNum)) {
@@ -159,8 +195,18 @@ export function validateQuestionAnswers(
   for (const [key, expected] of Object.entries(question.expectedAnswers)) {
     if (key === 'unit') continue;
 
-    const userAnswer = answers[key]?.trim().toLowerCase();
+    let userAnswer = (answers[key] ?? '').trim().toLowerCase();
     const expectedStr = String(expected).toLowerCase();
+
+    if (key === 'hex') {
+      userAnswer = normalizeHexAnswer(userAnswer);
+    }
+
+    if (hasSignificantLeadingZeros(expectedStr)) {
+      if (userAnswer !== expectedStr) return false;
+      continue;
+    }
+
     const userNum = parseLocaleFloat(userAnswer);
     const expectedNum = parseLocaleFloat(expectedStr);
 
