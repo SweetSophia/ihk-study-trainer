@@ -58,7 +58,8 @@ function hasBinaryLeadingZeros(s: string): boolean {
 
 /**
  * Validate a non-decimal (binary or hex) answer field.
- * Returns true when the answer is acceptable, false to reject.
+ * Returns true when the answer is acceptable, false to reject, and
+ * undefined when `key` is not a supported radix key.
  */
 function validateNonDecimalKey(
   key: string,
