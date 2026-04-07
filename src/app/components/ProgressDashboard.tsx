@@ -37,6 +37,7 @@ const MODULE_NAMES: Record<string, string> = {
   'unit-conversion': 'Einheiten',
   binary: 'Binär',
   hex: 'Hexadezimal',
+  hexBinary: 'Hex/Binär',
   subnetMask: 'Subnetzmaske',
   aggregation: 'Aggregation',
   ports: 'Ports',

@@ -1,7 +1,7 @@
 export interface HexBinaryQuestion {
   theme: string;
   questionText: string;
-  expectedAnswers: { hex: string; binary: string };
+  expectedAnswers: { binary: string } | { hex: string };
   solutionSteps: string[];
   difficulty: 'easy' | 'medium' | 'hard';
 }
@@ -321,7 +321,6 @@ export function generateHexBinaryQuestion(): HexBinaryQuestion {
       theme: 'Zahlensysteme',
       questionText: `Wandle die Hexadezimalzahl 0x${pair.hex} in eine 8-Bit-Binärzahl um.`,
       expectedAnswers: {
-        hex: pair.hex,
         binary: pair.binary,
       },
       solutionSteps: buildHexToBinarySteps(pair),
@@ -333,7 +332,6 @@ export function generateHexBinaryQuestion(): HexBinaryQuestion {
       questionText: `Wandle die Binärzahl ${pair.binary} in eine Hexadezimalzahl um.`,
       expectedAnswers: {
         hex: pair.hex,
-        binary: pair.binary,
       },
       solutionSteps: buildBinaryToHexSteps(pair),
       difficulty: pair.difficulty,

@@ -8,8 +8,8 @@ describe('generateHexBinaryQuestion', () => {
     expect(q.theme).toBe('Zahlensysteme');
     expect(q.questionText).toBeDefined();
     expect(q.solutionSteps.length).toBeGreaterThan(0);
-    expect(q.expectedAnswers.hex).toBeDefined();
-    expect(q.expectedAnswers.binary).toBeDefined();
+    expect('hex' in q.expectedAnswers || 'binary' in q.expectedAnswers).toBe(true);
+    expect(Object.keys(q.expectedAnswers)).toHaveLength(1);
     expect(['easy', 'medium', 'hard']).toContain(q.difficulty);
   });
 
@@ -19,9 +19,9 @@ describe('generateHexBinaryQuestion', () => {
 
     for (let i = 0; i < 100; i++) {
       const q = generateHexBinaryQuestion();
-      if (q.questionText.includes('Hexadezimalzahl') && q.questionText.includes('Binärzahl')) {
+      if (q.questionText.startsWith('Wandle die Hexadezimalzahl')) {
         sawHexToBinary = true;
-      } else if (q.questionText.includes('Binärzahl') && q.questionText.includes('Hexadezimalzahl')) {
+      } else if (q.questionText.startsWith('Wandle die Binärzahl')) {
         sawBinaryToHex = true;
       }
 
@@ -95,8 +95,10 @@ describe('generateHexBinaryQuestion', () => {
       const lastStep = q.solutionSteps[q.solutionSteps.length - 1];
 
       if (q.questionText.startsWith('Wandle die Hexadezimalzahl')) {
+        expect('binary' in q.expectedAnswers).toBe(true);
         expect(lastStep).toContain(q.expectedAnswers.binary);
       } else {
+        expect('hex' in q.expectedAnswers).toBe(true);
         expect(lastStep).toContain(q.expectedAnswers.hex);
       }
     }
