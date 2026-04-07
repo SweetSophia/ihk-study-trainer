@@ -51,7 +51,7 @@ describe('generateHexBinaryQuestion', () => {
     let tested = false;
     for (let i = 0; i < 50; i++) {
       const q = generateHexBinaryQuestion();
-      if (q.questionText.includes('Hexadezimalzahl')) {
+      if (q.questionText.startsWith('Wandle die Hexadezimalzahl')) {
         tested = true;
         expect(q.solutionSteps.join('\n')).toContain('4-Bit-Binär');
         expect(q.solutionSteps.join('\n')).toContain('Schritt 1');
@@ -67,7 +67,7 @@ describe('generateHexBinaryQuestion', () => {
     let tested = false;
     for (let i = 0; i < 50; i++) {
       const q = generateHexBinaryQuestion();
-      if (q.questionText.includes('Binärzahl') && q.questionText.includes('Hexadezimalzahl')) {
+      if (q.questionText.startsWith('Wandle die Binärzahl')) {
         tested = true;
         expect(q.solutionSteps.join('\n')).toContain('4-Bit-Gruppen');
         expect(q.solutionSteps.join('\n')).toContain('Schritt 1');
@@ -94,7 +94,7 @@ describe('generateHexBinaryQuestion', () => {
       const q = generateHexBinaryQuestion();
       const lastStep = q.solutionSteps[q.solutionSteps.length - 1];
 
-      if (q.questionText.includes('Hexadezimalzahl')) {
+      if (q.questionText.startsWith('Wandle die Hexadezimalzahl')) {
         expect(lastStep).toContain(q.expectedAnswers.binary);
       } else {
         expect(lastStep).toContain(q.expectedAnswers.hex);

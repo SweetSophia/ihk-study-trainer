@@ -6,7 +6,7 @@ export interface HexBinaryQuestion {
   difficulty: 'easy' | 'medium' | 'hard';
 }
 
-const HEX_BINARY_PAIRS: { hex: string; binary: string; decimal: number; difficulty: 'easy' | 'medium' | 'hard' }[] = [
+export const HEX_BINARY_PAIRS: { hex: string; binary: string; decimal: number; difficulty: 'easy' | 'medium' | 'hard' }[] = [
   { hex: '00', binary: '00000000', decimal: 0, difficulty: 'easy' },
   { hex: '01', binary: '00000001', decimal: 1, difficulty: 'easy' },
   { hex: '02', binary: '00000010', decimal: 2, difficulty: 'easy' },
@@ -264,13 +264,6 @@ const HEX_BINARY_PAIRS: { hex: string; binary: string; decimal: number; difficul
   { hex: 'FE', binary: '11111110', decimal: 254, difficulty: 'hard' },
   { hex: 'FF', binary: '11111111', decimal: 255, difficulty: 'hard' },
 ];
-
-function nibbleToBinaryTable(nibble: string): string[] {
-  const val = parseInt(nibble, 16);
-  return [
-    `  ${nibble} → ${val.toString(2).padStart(4, '0')}`,
-  ];
-}
 
 function buildHexToBinarySteps(pair: typeof HEX_BINARY_PAIRS[number]): string[] {
   const highNibble = pair.hex[0];
