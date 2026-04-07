@@ -10,7 +10,7 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 
 ## Highlights
 
-- **17 Lernmodule** für typische IHK-Themen
+- **18 Lernmodule** für typische IHK-Themen
 - **Dynamisch generierte Aufgaben** statt statischer Fragenlisten
 - **Schritt-für-Schritt-Lösungen** für Rechen- und Verständnisaufgaben
 - **Fortschritts-Tracking pro Modul** inklusive Genauigkeit und Lern-Streaks
@@ -31,7 +31,7 @@ Diese Module wurden in den letzten Ausbauschritten ergänzt bzw. deutlich erweit
 
 ## Lernmodule
 
-### 17 Lernmodule (16 direkt verfügbar + 1 Auth-only)
+### 18 Lernmodule (17 direkt verfügbar + 1 Auth-only)
 
 1. **Übertragungszeit** – Übertragungsdauer aus Datenmenge und Bandbreite berechnen
 2. **Bildgröße** – Speicherbedarf unkomprimierter Bilder berechnen
@@ -41,15 +41,16 @@ Diese Module wurden in den letzten Ausbauschritten ergänzt bzw. deutlich erweit
 6. **Einheiten** – dezimale und binäre Speichereinheiten sicher umrechnen (MB/MiB, GB/GiB)
 7. **Binär** – Binär- und Dezimalwerte umwandeln
 8. **Hexadezimal** – Hexadezimal- und Dezimalwerte umwandeln
-9. **Subnetzmaske** – CIDR-Präfixe in dotted-decimal Subnetzmasken übersetzen
-10. **Aggregation** – Netze per Route Summarization zusammenfassen
-11. **Ports** – Dienste, Portnummern und Protokolle korrekt zuordnen
-12. **OSI-Modell** – Schichten, Aufgaben und Zuordnungen trainieren
-13. **Kabel** – passende Kabeltypen anhand von Strecke, Geschwindigkeit und Umgebung wählen
-14. **Linux** – Linux-Befehle und typische Admin-Kommandos üben
-15. **Cloud** – Cloud-Computing-Konzepte, Provider-Modelle und Sicherheitsgrundlagen wiederholen
-16. **Handelskalkulation** – Vorwärts-, Rückwärts- und Differenzkalkulation Schritt für Schritt lösen
-17. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
+9. **Hex/Binär** – Hexadezimal- und Binärwerte direkt umwandeln (ohne Dezimalumweg)
+10. **Subnetzmaske** – CIDR-Präfixe in dotted-decimal Subnetzmasken übersetzen
+11. **Aggregation** – Netze per Route Summarization zusammenfassen
+12. **Ports** – Dienste, Portnummern und Protokolle korrekt zuordnen
+13. **OSI-Modell** – Schichten, Aufgaben und Zuordnungen trainieren
+14. **Kabel** – passende Kabeltypen anhand von Strecke, Geschwindigkeit und Umgebung wählen
+15. **Linux** – Linux-Befehle und typische Admin-Kommandos üben
+16. **Cloud** – Cloud-Computing-Konzepte, Provider-Modelle und Sicherheitsgrundlagen wiederholen
+17. **Handelskalkulation** – Vorwärts-, Rückwärts- und Differenzkalkulation Schritt für Schritt lösen
+18. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
 
 ## UI & Lernerlebnis
 
