@@ -27,6 +27,74 @@ export function parseLocaleFloat(raw?: string | null): number {
   return parseFloat(raw.replace(',', '.'));
 }
 
+const BASE_FOR_KEY: Record<string, number> = {
+  binary: 2,
+  hex: 16,
+} as const;
+
+const RADIX_KEYS = new Set(Object.keys(BASE_FOR_KEY));
+
+const VALID_BASE_PATTERN: Record<number, RegExp> = {
+  2: /^[01]+$/,
+  16: /^[0-9a-f]+$/,
+};
+
+/**
+ * Normalise a hex-style user answer by stripping an optional "0x" prefix.
+ */
+function normalizeHexAnswer(s: string): string {
+  return s.replace(/^0x/i, '');
+}
+
+/**
+ * Returns true when the string is a binary value with significant leading zeros
+ * (e.g. "00011000"). Such values must be compared as fixed-width strings because
+ * numeric parsing strips leading zeros and would incorrectly match "11000"
+ * against "00011000".
+ */
+function hasBinaryLeadingZeros(s: string): boolean {
+  return /^0[01]+$/.test(s);
+}
+
+/**
+ * Validate a non-decimal (binary or hex) answer field.
+ * Returns true when the answer is acceptable, false to reject, and
+ * undefined when `key` is not a supported radix key.
+ */
+function validateNonDecimalKey(
+  key: string,
+  rawUserAnswer: string,
+  expectedStr: string,
+): boolean | undefined {
+  if (!RADIX_KEYS.has(key)) return undefined;
+
+  // Note: "0b" prefix is intentionally not supported for binary; only bare digit strings are accepted.
+
+  let userAnswer = rawUserAnswer;
+  if (key === 'hex') {
+    userAnswer = normalizeHexAnswer(userAnswer);
+  }
+
+  if (key === 'binary' && hasBinaryLeadingZeros(expectedStr)) {
+    if (!VALID_BASE_PATTERN[2].test(userAnswer)) return false;
+    return userAnswer === expectedStr;
+  }
+
+  const base = BASE_FOR_KEY[key];
+  let normalizedExpected = expectedStr;
+  if (key === 'hex') {
+    normalizedExpected = normalizeHexAnswer(expectedStr);
+  }
+
+  if (!VALID_BASE_PATTERN[base].test(userAnswer)) return false;
+  if (!VALID_BASE_PATTERN[base].test(normalizedExpected)) return false;
+  if (key === 'binary' && userAnswer.length !== normalizedExpected.length) return false;
+
+  const userVal = parseInt(userAnswer, base);
+  const expectedVal = parseInt(normalizedExpected, base);
+  return !isNaN(userVal) && !isNaN(expectedVal) && userVal === expectedVal;
+}
+
 /**
  * Detect the conversion map that applies for the given unit options.
  * Returns null when no conversion-aware check is needed.
@@ -76,8 +144,15 @@ export function validateStructuredAnswer(
       continue;
     }
 
-    const userAnswer = answers[cfg.valueKey]?.trim().toLowerCase();
+    const userAnswer = (answers[cfg.valueKey] ?? '').trim().toLowerCase();
     const expectedStr = String(expected[cfg.valueKey]).toLowerCase();
+
+    const nonDecimalResult = validateNonDecimalKey(cfg.valueKey, userAnswer, expectedStr);
+    if (nonDecimalResult !== undefined) {
+      if (!nonDecimalResult) return false;
+      continue;
+    }
+
     const userNum = parseLocaleFloat(userAnswer);
     const expectedNum = parseLocaleFloat(expectedStr);
     const convMap = detectConversionMap(cfg.unitOptions ?? []);
@@ -123,8 +198,15 @@ export function validateStructuredAnswer(
       continue;
     }
 
-    const userAnswer = answers[key]?.trim().toLowerCase();
+    const userAnswer = (answers[key] ?? '').trim().toLowerCase();
     const expectedStr = String(exp).toLowerCase();
+
+    const nonDecimalResult = validateNonDecimalKey(key, userAnswer, expectedStr);
+    if (nonDecimalResult !== undefined) {
+      if (!nonDecimalResult) return false;
+      continue;
+    }
+
     const userNum = parseLocaleFloat(userAnswer);
     const expectedNum = parseLocaleFloat(expectedStr);
     if (!isNaN(userNum) && !isNaN(expectedNum)) {
@@ -159,8 +241,15 @@ export function validateQuestionAnswers(
   for (const [key, expected] of Object.entries(question.expectedAnswers)) {
     if (key === 'unit') continue;
 
-    const userAnswer = answers[key]?.trim().toLowerCase();
+    const userAnswer = (answers[key] ?? '').trim().toLowerCase();
     const expectedStr = String(expected).toLowerCase();
+
+    const nonDecimalResult = validateNonDecimalKey(key, userAnswer, expectedStr);
+    if (nonDecimalResult !== undefined) {
+      if (!nonDecimalResult) return false;
+      continue;
+    }
+
     const userNum = parseLocaleFloat(userAnswer);
     const expectedNum = parseLocaleFloat(expectedStr);
 

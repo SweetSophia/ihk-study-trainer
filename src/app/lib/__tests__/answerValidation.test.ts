@@ -78,4 +78,225 @@ describe('answer validation helpers', () => {
       )
     ).toBe(false);
   });
+
+  describe('binary answers with leading zeros', () => {
+    const binaryQuestion: Question = {
+      id: 'binary-1',
+      theme: 'Zahlensysteme',
+      module: 'binary',
+      questionText: 'Wandle die Dezimalzahl 24 in eine 8-Bit-Binärzahl um.',
+      expectedAnswers: { binary: '00011000' },
+      solutionSteps: ['00011000'],
+      difficulty: 'easy',
+    };
+
+    it('accepts the correct 8-bit binary answer', () => {
+      expect(validateQuestionAnswers(binaryQuestion, { binary: '00011000' })).toBe(true);
+    });
+
+    it('rejects binary answer without leading zeros', () => {
+      expect(validateQuestionAnswers(binaryQuestion, { binary: '11000' })).toBe(false);
+    });
+
+    it('rejects binary answer with wrong bit-width but same numeric value', () => {
+      expect(validateQuestionAnswers(binaryQuestion, { binary: '0011000' })).toBe(false);
+    });
+
+    it('rejects off-by-one answers for 8-bit binary values starting with 1', () => {
+      const highBitBinaryQuestion: Question = {
+        ...binaryQuestion,
+        id: 'binary-2',
+        questionText: 'Wandle die Dezimalzahl 200 in eine 8-Bit-Binärzahl um.',
+        expectedAnswers: { binary: '11001000' },
+        solutionSteps: ['11001000'],
+      };
+      expect(validateQuestionAnswers(highBitBinaryQuestion, { binary: '11001000' })).toBe(true);
+      expect(validateQuestionAnswers(highBitBinaryQuestion, { binary: '11001001' })).toBe(false);
+      expect(validateQuestionAnswers(highBitBinaryQuestion, { binary: '011001000' })).toBe(false);
+      expect(validateQuestionAnswers(highBitBinaryQuestion, { binary: '11001000abc' })).toBe(false);
+    });
+
+    it('enforces leading zeros for all-zero binary', () => {
+      const allZeros: Question = {
+        ...binaryQuestion,
+        expectedAnswers: { binary: '00000000' },
+      };
+      expect(validateQuestionAnswers(allZeros, { binary: '00000000' })).toBe(true);
+      expect(validateQuestionAnswers(allZeros, { binary: '0' })).toBe(false);
+      expect(validateQuestionAnswers(allZeros, { binary: '0000000' })).toBe(false);
+    });
+  });
+
+  describe('hex answers with 0x prefix', () => {
+    const hexQuestion: Question = {
+      id: 'hex-1',
+      theme: 'Zahlensysteme',
+      module: 'hexBinary',
+      questionText: 'Wandle die Binärzahl 00011000 in eine Hexadezimalzahl um.',
+      expectedAnswers: { hex: '18' },
+      solutionSteps: ['0x18'],
+      difficulty: 'easy',
+    };
+
+    it('accepts plain hex answer', () => {
+      expect(validateQuestionAnswers(hexQuestion, { hex: '18' })).toBe(true);
+    });
+
+    it('accepts hex answer with 0x prefix', () => {
+      expect(validateQuestionAnswers(hexQuestion, { hex: '0x18' })).toBe(true);
+    });
+
+    it('accepts hex answer with 0X prefix (uppercase)', () => {
+      expect(validateQuestionAnswers(hexQuestion, { hex: '0X18' })).toBe(true);
+    });
+
+    it('rejects wrong hex answer', () => {
+      expect(validateQuestionAnswers(hexQuestion, { hex: '1B' })).toBe(false);
+    });
+
+    it('accepts 0x-prefixed shorthand for zero-padded expected hex answers', () => {
+      const zeroPaddedHexQuestion: Question = {
+        ...hexQuestion,
+        expectedAnswers: { hex: '00F' },
+        solutionSteps: ['0x00F'],
+      };
+      expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '00F' })).toBe(true);
+      expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '00f' })).toBe(true);
+      expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '0xF' })).toBe(true);
+      expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '0xf' })).toBe(true);
+      expect(validateQuestionAnswers(zeroPaddedHexQuestion, { hex: '0xE' })).toBe(false);
+    });
+
+    it('accepts numeric equivalents for zero-padded hex answers', () => {
+      const hexWithLeadingZeros: Question = {
+        ...hexQuestion,
+        expectedAnswers: { hex: '001' },
+      };
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '001' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '0x001' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '1' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '0x1' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLeadingZeros, { hex: '2' })).toBe(false);
+    });
+
+    it('accepts shorthand for digit-only zero-padded hex answers', () => {
+      const digitOnlyZeroPadded: Question = {
+        ...hexQuestion,
+        expectedAnswers: { hex: '018' },
+        solutionSteps: ['0x018'],
+      };
+      expect(validateQuestionAnswers(digitOnlyZeroPadded, { hex: '018' })).toBe(true);
+      expect(validateQuestionAnswers(digitOnlyZeroPadded, { hex: '0x018' })).toBe(true);
+      expect(validateQuestionAnswers(digitOnlyZeroPadded, { hex: '18' })).toBe(true);
+      expect(validateQuestionAnswers(digitOnlyZeroPadded, { hex: '0x18' })).toBe(true);
+      expect(validateQuestionAnswers(digitOnlyZeroPadded, { hex: '0x19' })).toBe(false);
+    });
+
+    it('handles hex answers with letters case-insensitively', () => {
+      const hexWithLetter: Question = {
+        ...hexQuestion,
+        expectedAnswers: { hex: 'AF' },
+      };
+      expect(validateQuestionAnswers(hexWithLetter, { hex: 'AF' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLetter, { hex: 'af' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLetter, { hex: '0xAF' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLetter, { hex: '0xaf' })).toBe(true);
+      expect(validateQuestionAnswers(hexWithLetter, { hex: 'AB' })).toBe(false);
+    });
+
+    it('rejects bare 0x prefix with no value', () => {
+      expect(validateQuestionAnswers(hexQuestion, { hex: '0x' })).toBe(false);
+    });
+  });
+
+  describe('structured path for binary and hex', () => {
+    it('validates binary and hex through answerInputs', () => {
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'binary' }, { valueKey: 'hex' }],
+          { binary: '00011000', hex: '18' },
+          { binary: '00011000', hex: '0x18' }
+        )
+      ).toBe(true);
+    });
+
+    it('rejects binary with missing leading zeros via structured path', () => {
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'binary' }],
+          { binary: '00011000' },
+          { binary: '11000' }
+        )
+      ).toBe(false);
+    });
+
+    it('rejects wrong hex via structured path', () => {
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'hex' }],
+          { hex: '18' },
+          { hex: '1B' }
+        )
+      ).toBe(false);
+    });
+
+    it('accepts hex 0x prefix via structured path', () => {
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'hex' }],
+          { hex: 'AF' },
+          { hex: '0xaf' }
+        )
+      ).toBe(true);
+    });
+
+    it('validates binary and hex in leftover-keys structured path', () => {
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'other' }],
+          { other: 42, binary: '00011000', hex: '18' },
+          { other: '42', binary: '00011000', hex: '0x18' }
+        )
+      ).toBe(true);
+
+      expect(
+        validateStructuredAnswer(
+          [{ valueKey: 'other' }],
+          { other: 42, binary: '00011000', hex: '18' },
+          { other: '42', binary: '11000', hex: '0x18' }
+        )
+      ).toBe(false);
+    });
+  });
+
+  describe('regular numeric answers are unaffected', () => {
+    it('still accepts numeric answers within 5% tolerance', () => {
+      const question: Question = {
+        id: 'bandwidth-1',
+        theme: 'Test',
+        module: 'bandwidth',
+        questionText: 'How long?',
+        expectedAnswers: { result: 100 },
+        solutionSteps: ['100'],
+        difficulty: 'medium',
+      };
+      expect(validateQuestionAnswers(question, { result: '100' })).toBe(true);
+      expect(validateQuestionAnswers(question, { result: '102' })).toBe(true);
+      expect(validateQuestionAnswers(question, { result: '110' })).toBe(false);
+    });
+
+    it('still handles decimal comma', () => {
+      const question: Question = {
+        id: 'calc-1',
+        theme: 'Test',
+        module: 'math',
+        questionText: 'Calculate',
+        expectedAnswers: { result: 4.5 },
+        solutionSteps: ['4.5'],
+        difficulty: 'easy',
+      };
+      expect(validateQuestionAnswers(question, { result: '4,5' })).toBe(true);
+      expect(validateQuestionAnswers(question, { result: '4.5' })).toBe(true);
+    });
+  });
 });
