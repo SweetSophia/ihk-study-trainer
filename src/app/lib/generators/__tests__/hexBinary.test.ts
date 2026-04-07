@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 
 import { generateHexBinaryQuestion, HEX_BINARY_PAIRS } from '../hexBinary';
 
 describe('generateHexBinaryQuestion', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('generates a question with valid structure', () => {
     const q = generateHexBinaryQuestion();
     expect(q.theme).toBe('Zahlensysteme');
@@ -13,23 +17,18 @@ describe('generateHexBinaryQuestion', () => {
     expect(['easy', 'medium', 'hard']).toContain(q.difficulty);
   });
 
-  it('generates either hex-to-binary or binary-to-hex questions', () => {
-    let sawHexToBinary = false;
-    let sawBinaryToHex = false;
+  it('generates hex-to-binary when direction roll > 0.5', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.6);
+    const q = generateHexBinaryQuestion();
+    expect(q.questionText).toMatch(/^Wandle die Hexadezimalzahl/);
+    expect('binary' in q.expectedAnswers).toBe(true);
+  });
 
-    for (let i = 0; i < 100; i++) {
-      const q = generateHexBinaryQuestion();
-      if (q.questionText.startsWith('Wandle die Hexadezimalzahl')) {
-        sawHexToBinary = true;
-      } else if (q.questionText.startsWith('Wandle die Binärzahl')) {
-        sawBinaryToHex = true;
-      }
-
-      if (sawHexToBinary && sawBinaryToHex) break;
-    }
-
-    expect(sawHexToBinary).toBe(true);
-    expect(sawBinaryToHex).toBe(true);
+  it('generates binary-to-hex when direction roll <= 0.5', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.3);
+    const q = generateHexBinaryQuestion();
+    expect(q.questionText).toMatch(/^Wandle die Binärzahl/);
+    expect('hex' in q.expectedAnswers).toBe(true);
   });
 
   it('has exactly 256 hex/binary pairs covering 0x00-0xFF', () => {
@@ -48,35 +47,21 @@ describe('generateHexBinaryQuestion', () => {
   });
 
   it('hex-to-binary solution steps contain nibble conversion', () => {
-    let tested = false;
-    for (let i = 0; i < 50; i++) {
-      const q = generateHexBinaryQuestion();
-      if (q.questionText.startsWith('Wandle die Hexadezimalzahl')) {
-        tested = true;
-        expect(q.solutionSteps.join('\n')).toContain('4-Bit-Binär');
-        expect(q.solutionSteps.join('\n')).toContain('Schritt 1');
-        expect(q.solutionSteps.join('\n')).toContain('Schritt 2');
-        expect(q.solutionSteps.join('\n')).toContain('Schritt 3');
-        break;
-      }
-    }
-    expect(tested).toBe(true);
+    vi.spyOn(Math, 'random').mockReturnValue(0.6);
+    const q = generateHexBinaryQuestion();
+    expect(q.solutionSteps.join('\n')).toContain('4-Bit-Binär');
+    expect(q.solutionSteps.join('\n')).toContain('Schritt 1');
+    expect(q.solutionSteps.join('\n')).toContain('Schritt 2');
+    expect(q.solutionSteps.join('\n')).toContain('Schritt 3');
   });
 
   it('binary-to-hex solution steps contain 4-bit grouping', () => {
-    let tested = false;
-    for (let i = 0; i < 50; i++) {
-      const q = generateHexBinaryQuestion();
-      if (q.questionText.startsWith('Wandle die Binärzahl')) {
-        tested = true;
-        expect(q.solutionSteps.join('\n')).toContain('4-Bit-Gruppen');
-        expect(q.solutionSteps.join('\n')).toContain('Schritt 1');
-        expect(q.solutionSteps.join('\n')).toContain('Schritt 2');
-        expect(q.solutionSteps.join('\n')).toContain('Schritt 3');
-        break;
-      }
-    }
-    expect(tested).toBe(true);
+    vi.spyOn(Math, 'random').mockReturnValue(0.3);
+    const q = generateHexBinaryQuestion();
+    expect(q.solutionSteps.join('\n')).toContain('4-Bit-Gruppen');
+    expect(q.solutionSteps.join('\n')).toContain('Schritt 1');
+    expect(q.solutionSteps.join('\n')).toContain('Schritt 2');
+    expect(q.solutionSteps.join('\n')).toContain('Schritt 3');
   });
 
   it('difficulty is easy for values 0-127, medium for 128-191, hard for 192-255', () => {
@@ -89,18 +74,17 @@ describe('generateHexBinaryQuestion', () => {
     expect(hard.every(p => p.difficulty === 'hard')).toBe(true);
   });
 
-  it('solution steps end with the correct result', () => {
-    for (let i = 0; i < 50; i++) {
-      const q = generateHexBinaryQuestion();
-      const lastStep = q.solutionSteps[q.solutionSteps.length - 1];
+  it('hex-to-binary solution ends with binary result', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.6);
+    const q = generateHexBinaryQuestion();
+    const lastStep = q.solutionSteps[q.solutionSteps.length - 1];
+    expect(lastStep).toContain(q.expectedAnswers.binary);
+  });
 
-      if (q.questionText.startsWith('Wandle die Hexadezimalzahl')) {
-        expect('binary' in q.expectedAnswers).toBe(true);
-        expect(lastStep).toContain(q.expectedAnswers.binary);
-      } else {
-        expect('hex' in q.expectedAnswers).toBe(true);
-        expect(lastStep).toContain(q.expectedAnswers.hex);
-      }
-    }
+  it('binary-to-hex solution ends with hex result', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.3);
+    const q = generateHexBinaryQuestion();
+    const lastStep = q.solutionSteps[q.solutionSteps.length - 1];
+    expect(lastStep).toContain(q.expectedAnswers.hex);
   });
 });
