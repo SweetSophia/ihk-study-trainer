@@ -27,6 +27,7 @@ import { generateSubnettingQuestion } from './lib/generators/subnetting';
 import { generateUnitConversionQuestion } from './lib/generators/unitConversion';
 import { generateBinaryQuestion } from './lib/generators/binary';
 import { generateHexQuestion } from './lib/generators/hex';
+import { generateHexBinaryQuestion } from './lib/generators/hexBinary';
 import { generateSubnetMaskQuestion } from './lib/generators/subnetMask';
 import { generateAggregationQuestion } from './lib/generators/aggregation';
 import { generatePortQuestion } from './lib/generators/ports';
@@ -53,6 +54,18 @@ const GENERATORS: Record<string, () => Question> = {
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
       difficulty: 'easy'
+    };
+  },
+  hexBinary: () => {
+    const q = generateHexBinaryQuestion();
+    return {
+      id: `hexBinary-${Date.now()}`,
+      theme: q.theme,
+      module: 'hexBinary',
+      questionText: q.questionText,
+      expectedAnswers: q.expectedAnswers,
+      solutionSteps: q.solutionSteps,
+      difficulty: q.difficulty,
     };
   },
   hex: () => {

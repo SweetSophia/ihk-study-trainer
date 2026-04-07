@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { 
   Calculator, Image as ImageIcon, Network, ArrowLeftRight,
-  Binary, Hexagon, Shield, Layers, Cable, Server, Globe, Settings, Database, Terminal, Cloud
+  Binary, Hexagon, Shield, Layers, Cable, Server, Globe, Settings, Database, Terminal, Cloud, Repeat
 } from 'lucide-react';
 
 const BASE_MODULES = [
@@ -15,6 +15,7 @@ const BASE_MODULES = [
   { id: 'unitConversion', name: 'Einheiten', icon: Settings, description: 'Umrechnung' },
   { id: 'binary', name: 'Binär', icon: Binary, description: 'Binär/Dezimal' },
   { id: 'hex', name: 'Hex', icon: Hexagon, description: 'Hex/Dezimal' },
+  { id: 'hexBinary', name: 'Hex/Binär', icon: Repeat, description: 'Hex/Binär' },
   { id: 'subnetMask', name: 'Subnetzmaske', icon: Shield, description: 'CIDR→Maske' },
   { id: 'aggregation', name: 'Aggregation', icon: Layers, description: 'Summarization' },
   { id: 'ports', name: 'Ports', icon: Server, description: 'Port/Protokoll' },
