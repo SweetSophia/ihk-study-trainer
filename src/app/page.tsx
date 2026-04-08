@@ -203,29 +203,11 @@ const GENERATORS: Record<string, () => Question> = {
   },
   'handelskalkulation-vorwaerts': () => {
     const q = generateVorwaertsKalkulationQuestion();
-    return {
-      id: `handelskalkulation-vorwaerts-${Date.now()}`,
-      theme: q.theme,
-      module: 'handelskalkulation-vorwaerts',
-      questionText: q.questionText,
-      expectedAnswers: q.expectedAnswers,
-      solutionSteps: q.solutionSteps,
-      difficulty: q.difficulty,
-      answerInputs: q.answerInputs,
-    };
+    return { ...q, id: `handelskalkulation-vorwaerts-${Date.now()}` };
   },
   'handelskalkulation-rueckwaerts': () => {
     const q = generateRueckwaertsKalkulationQuestion();
-    return {
-      id: `handelskalkulation-rueckwaerts-${Date.now()}`,
-      theme: q.theme,
-      module: 'handelskalkulation-rueckwaerts',
-      questionText: q.questionText,
-      expectedAnswers: q.expectedAnswers,
-      solutionSteps: q.solutionSteps,
-      difficulty: q.difficulty,
-      answerInputs: q.answerInputs,
-    };
+    return { ...q, id: `handelskalkulation-rueckwaerts-${Date.now()}` };
   },
 };
 

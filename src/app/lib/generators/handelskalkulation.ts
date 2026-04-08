@@ -634,12 +634,14 @@ function buildQuestion(
 
 export function generateVorwaertsKalkulationQuestion(): Question {
   const { given, calculated, schema } = generateVorwaertsCalculation();
-  return buildQuestion('vorwaerts', given, calculated, schema);
+  const q = buildQuestion('vorwaerts', given, calculated, schema);
+  return { ...q, id: `handelskalkulation-vorwaerts-${Date.now()}`, module: 'handelskalkulation-vorwaerts' };
 }
 
 export function generateRueckwaertsKalkulationQuestion(): Question {
   const { given, calculated, schema } = generateRueckwaertsCalculation();
-  return buildQuestion('rueckwaerts', given, calculated, schema);
+  const q = buildQuestion('rueckwaerts', given, calculated, schema);
+  return { ...q, id: `handelskalkulation-rueckwaerts-${Date.now()}`, module: 'handelskalkulation-rueckwaerts' };
 }
 
 export function generateHandelskalkulationQuestion(): Question {
