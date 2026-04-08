@@ -90,7 +90,7 @@ describe('handelskalkulation generator', () => {
     const question = generateVorwaertsKalkulationQuestion();
 
     expect(question.module).toBe('handelskalkulationVorwaerts');
-    expect(question.id).toMatch(/^handelskalkulationVorwaerts-\d+$/);
+    expect(question.id).toMatch(/^handelskalkulationVorwaerts-[a-f0-9]+$/);
     expect(question.answerInputs).toBeDefined();
     expect(question.answerInputs!.length).toBeGreaterThan(0);
     expect(question.answerInputs!.some((input) => input.valueKey === 'bruttovk')).toBe(true);
@@ -101,7 +101,7 @@ describe('handelskalkulation generator', () => {
     const question = generateRueckwaertsKalkulationQuestion();
 
     expect(question.module).toBe('handelskalkulationRueckwaerts');
-    expect(question.id).toMatch(/^handelskalkulationRueckwaerts-\d+$/);
+    expect(question.id).toMatch(/^handelskalkulationRueckwaerts-[a-f0-9]+$/);
     expect(question.answerInputs).toBeDefined();
     expect(question.answerInputs!.length).toBeGreaterThan(0);
     expect(question.answerInputs!.some((input) => input.valueKey === 'lep')).toBe(true);
