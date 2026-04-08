@@ -23,8 +23,8 @@ const BASE_MODULES = [
   { id: 'cables', name: 'Kabel', icon: Cable, description: 'Kabelauswahl' },
   { id: 'linux', name: 'Linux', icon: Terminal, description: 'Linux-Befehle' },
   { id: 'cloud', name: 'Cloud', icon: Cloud, description: 'Cloud Computing' },
-  { id: 'handelskalkulation-vorwaerts', name: 'Vorwärtskalk.', icon: Calculator, description: 'LEP → Brutto-VK' },
-  { id: 'handelskalkulation-rueckwaerts', name: 'Rückwärtskalk.', icon: Calculator, description: 'Brutto-VK → LEP' },
+  { id: 'handelskalkulationVorwaerts', name: 'Vorwärtskalk.', icon: Calculator, description: 'LEP → Brutto-VK' },
+  { id: 'handelskalkulationRueckwaerts', name: 'Rückwärtskalk.', icon: Calculator, description: 'Brutto-VK → LEP' },
 ];
 
 // SQL module requires authentication

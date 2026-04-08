@@ -4,6 +4,8 @@ import {
   generateDifferenzCalculation,
   generateHandelskalkulationQuestion,
   generateRueckwaertsCalculation,
+  generateVorwaertsKalkulationQuestion,
+  generateRueckwaertsKalkulationQuestion,
 } from '../handelskalkulation';
 
 function expectMoneyClose(actual: number, expected: number) {
@@ -82,6 +84,47 @@ describe('handelskalkulation generator', () => {
     expect(steps).toMatch(/Selbstkosten = .* \/ 1,\d{2} = .*/);
     expect(steps).toMatch(/ZEP = .* \/ 0,\d{2} = .*/);
     expect(steps).toMatch(/LEP netto = .* \/ 0,\d{2} = .*/);
+  });
+
+  it('generateVorwaertsKalkulationQuestion sets correct module and id prefix', () => {
+    const question = generateVorwaertsKalkulationQuestion();
+
+    expect(question.module).toBe('handelskalkulationVorwaerts');
+    expect(question.id).toMatch(/^handelskalkulationVorwaerts-\d+$/);
+    expect(question.answerInputs).toBeDefined();
+    expect(question.answerInputs!.length).toBeGreaterThan(0);
+    expect(question.answerInputs!.some((input) => input.valueKey === 'bruttovk')).toBe(true);
+    expect(question.solutionSteps.length).toBeGreaterThan(0);
+  });
+
+  it('generateRueckwaertsKalkulationQuestion sets correct module and id prefix', () => {
+    const question = generateRueckwaertsKalkulationQuestion();
+
+    expect(question.module).toBe('handelskalkulationRueckwaerts');
+    expect(question.id).toMatch(/^handelskalkulationRueckwaerts-\d+$/);
+    expect(question.answerInputs).toBeDefined();
+    expect(question.answerInputs!.length).toBeGreaterThan(0);
+    expect(question.answerInputs!.some((input) => input.valueKey === 'lep')).toBe(true);
+    expect(question.solutionSteps.length).toBeGreaterThan(0);
+  });
+
+  it('generateVorwaertsKalkulationQuestion never produces rueckwaerts or differenz questions', () => {
+    for (let i = 0; i < 20; i += 1) {
+      const question = generateVorwaertsKalkulationQuestion();
+      expect(question.module).toBe('handelskalkulationVorwaerts');
+      expect(question.answerInputs!.some((input) => input.valueKey === 'differenz')).toBe(false);
+    }
+  });
+
+  it('generateRueckwaertsKalkulationQuestion never produces vorwaerts or differenz questions', () => {
+    for (let i = 0; i < 20; i += 1) {
+      const question = generateRueckwaertsKalkulationQuestion();
+      expect(question.module).toBe('handelskalkulationRueckwaerts');
+      expect(question.answerInputs!.some((input) => input.valueKey === 'differenz')).toBe(false);
+      // bruttovk is given in rückwärts, lep is the final computed answer
+      expect(question.answerInputs!.some((input) => input.valueKey === 'bruttovk')).toBe(false);
+      expect(question.answerInputs!.some((input) => input.valueKey === 'lep')).toBe(true);
+    }
   });
 
   it('renders differenz backward solution steps with specific decimal markup and discount factors', () => {

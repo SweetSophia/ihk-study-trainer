@@ -20,6 +20,7 @@ vi.mock('lucide-react', () => ({
   ArrowLeftRight: () => <svg data-testid="icon-arrow-left-right" />,
   Binary: () => <svg data-testid="icon-binary" />,
   Hexagon: () => <svg data-testid="icon-hexagon" />,
+  Repeat: () => <svg data-testid="icon-repeat" />,
   Shield: () => <svg data-testid="icon-shield" />,
   Layers: () => <svg data-testid="icon-layers" />,
   Cable: () => <svg data-testid="icon-cable" />,
@@ -99,13 +100,13 @@ it('renders the Database icon for the SQL module when authenticated', () => {
   });
 
 describe('all modules present', () => {
-    it('renders all 17 module names including Bild-Transfer, Linux, Cloud, Kalkulation and SQL when authenticated', () => {
+    it('renders all 18 module names including Bild-Transfer, Linux, Cloud, Vorwärts/Rückwärtskalk. and SQL when authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
 const moduleNames = [
         'Übertragungszeit', 'Bildgröße', 'Bild-Transfer', 'Overhead', 'Subnetting',
-        'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'Kalkulation', 'SQL',
+        'Einheiten', 'Binär', 'Hex', 'Hex/Binär', 'Subnetzmaske', 'Aggregation',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'Vorwärtskalk.', 'Rückwärtskalk.', 'SQL',
       ];
 
       for (const name of moduleNames) {
@@ -115,13 +116,13 @@ const moduleNames = [
       }
     });
 
-it('renders 16 base modules without SQL when not authenticated', () => {
+it('renders 17 base modules without SQL when not authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
 
       const moduleNames = [
         'Übertragungszeit', 'Bildgröße', 'Bild-Transfer', 'Overhead', 'Subnetting',
-        'Einheiten', 'Binär', 'Hex', 'Subnetzmaske', 'Aggregation',
-        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'Kalkulation',
+        'Einheiten', 'Binär', 'Hex', 'Hex/Binär', 'Subnetzmaske', 'Aggregation',
+        'Ports', 'OSI', 'Kabel', 'Linux', 'Cloud', 'Vorwärtskalk.', 'Rückwärtskalk.',
       ];
 
       for (const name of moduleNames) {

@@ -11,6 +11,8 @@ describe('module ID compatibility helpers', () => {
     expect(toCanonicalModuleId('image-calc')).toBe('imageCalc');
     expect(toCanonicalModuleId('unit-conversion')).toBe('unitConversion');
     expect(toCanonicalModuleId('image-transfer-combo')).toBe('imageTransferCombo');
+    expect(toCanonicalModuleId('handelskalkulation-vorwaerts')).toBe('handelskalkulationVorwaerts');
+    expect(toCanonicalModuleId('handelskalkulation-rueckwaerts')).toBe('handelskalkulationRueckwaerts');
   });
 
   it('maps canonical IDs back to stored progress IDs for backward compatibility', () => {

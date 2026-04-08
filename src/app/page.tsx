@@ -201,14 +201,8 @@ const GENERATORS: Record<string, () => Question> = {
       answerInputs: q.answerInputs,
     };
   },
-  'handelskalkulation-vorwaerts': () => {
-    const q = generateVorwaertsKalkulationQuestion();
-    return { ...q, id: `handelskalkulation-vorwaerts-${Date.now()}` };
-  },
-  'handelskalkulation-rueckwaerts': () => {
-    const q = generateRueckwaertsKalkulationQuestion();
-    return { ...q, id: `handelskalkulation-rueckwaerts-${Date.now()}` };
-  },
+  handelskalkulationVorwaerts: generateVorwaertsKalkulationQuestion,
+  handelskalkulationRueckwaerts: generateRueckwaertsKalkulationQuestion,
 };
 
 export default function Home() {

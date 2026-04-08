@@ -635,13 +635,13 @@ function buildQuestion(
 export function generateVorwaertsKalkulationQuestion(): Question {
   const { given, calculated, schema } = generateVorwaertsCalculation();
   const q = buildQuestion('vorwaerts', given, calculated, schema);
-  return { ...q, id: `handelskalkulation-vorwaerts-${Date.now()}`, module: 'handelskalkulation-vorwaerts' };
+  return { ...q, id: `handelskalkulationVorwaerts-${Date.now()}`, module: 'handelskalkulationVorwaerts' };
 }
 
 export function generateRueckwaertsKalkulationQuestion(): Question {
   const { given, calculated, schema } = generateRueckwaertsCalculation();
   const q = buildQuestion('rueckwaerts', given, calculated, schema);
-  return { ...q, id: `handelskalkulation-rueckwaerts-${Date.now()}`, module: 'handelskalkulation-rueckwaerts' };
+  return { ...q, id: `handelskalkulationRueckwaerts-${Date.now()}`, module: 'handelskalkulationRueckwaerts' };
 }
 
 export function generateHandelskalkulationQuestion(): Question {

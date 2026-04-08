@@ -2,6 +2,8 @@ const LEGACY_TO_CANONICAL_MODULE_ID: Record<string, string> = {
   'image-calc': 'imageCalc',
   'unit-conversion': 'unitConversion',
   'image-transfer-combo': 'imageTransferCombo',
+  'handelskalkulation-vorwaerts': 'handelskalkulationVorwaerts',
+  'handelskalkulation-rueckwaerts': 'handelskalkulationRueckwaerts',
 };
 
 const CANONICAL_TO_STORED_MODULE_ID: Record<string, string> = {
