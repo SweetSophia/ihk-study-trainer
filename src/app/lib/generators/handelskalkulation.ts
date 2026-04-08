@@ -632,6 +632,16 @@ function buildQuestion(
   };
 }
 
+export function generateVorwaertsKalkulationQuestion(): Question {
+  const { given, calculated, schema } = generateVorwaertsCalculation();
+  return buildQuestion('vorwaerts', given, calculated, schema);
+}
+
+export function generateRueckwaertsKalkulationQuestion(): Question {
+  const { given, calculated, schema } = generateRueckwaertsCalculation();
+  return buildQuestion('rueckwaerts', given, calculated, schema);
+}
+
 export function generateHandelskalkulationQuestion(): Question {
   const rand = Math.random();
   const type: KalkulationType = rand < 0.333 ? 'vorwaerts' : rand < 0.666 ? 'rueckwaerts' : 'differenz';

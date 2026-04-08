@@ -35,7 +35,7 @@ import { generateOsiQuestion } from './lib/generators/osi';
 import { generateCableQuestion, CABLE_TYPES, ALL_CABLE_PROS } from './lib/generators/cables';
 import { generateLinuxQuestion } from './lib/generators/linux';
 import { generateCloudQuestion } from './lib/generators/cloud';
-import { generateHandelskalkulationQuestion } from './lib/generators/handelskalkulation';
+import { generateHandelskalkulationQuestion, generateVorwaertsKalkulationQuestion, generateRueckwaertsKalkulationQuestion } from './lib/generators/handelskalkulation';
 
 const GENERATORS: Record<string, () => Question> = {
   bandwidth: generateBandwidthQuestion,
@@ -200,7 +200,33 @@ const GENERATORS: Record<string, () => Question> = {
       difficulty: q.difficulty,
       answerInputs: q.answerInputs,
     };
-  }
+  },
+  'handelskalkulation-vorwaerts': () => {
+    const q = generateVorwaertsKalkulationQuestion();
+    return {
+      id: `handelskalkulation-vorwaerts-${Date.now()}`,
+      theme: q.theme,
+      module: 'handelskalkulation-vorwaerts',
+      questionText: q.questionText,
+      expectedAnswers: q.expectedAnswers,
+      solutionSteps: q.solutionSteps,
+      difficulty: q.difficulty,
+      answerInputs: q.answerInputs,
+    };
+  },
+  'handelskalkulation-rueckwaerts': () => {
+    const q = generateRueckwaertsKalkulationQuestion();
+    return {
+      id: `handelskalkulation-rueckwaerts-${Date.now()}`,
+      theme: q.theme,
+      module: 'handelskalkulation-rueckwaerts',
+      questionText: q.questionText,
+      expectedAnswers: q.expectedAnswers,
+      solutionSteps: q.solutionSteps,
+      difficulty: q.difficulty,
+      answerInputs: q.answerInputs,
+    };
+  },
 };
 
 export default function Home() {
