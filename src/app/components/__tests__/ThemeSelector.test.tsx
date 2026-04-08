@@ -100,7 +100,7 @@ it('renders the Database icon for the SQL module when authenticated', () => {
   });
 
 describe('all modules present', () => {
-    it('renders all 18 module names including Bild-Transfer, Linux, Cloud, Vorwärts/Rückwärtskalk. and SQL when authenticated', () => {
+    it('renders all 19 module names including Bild-Transfer, Linux, Cloud, Vorwärts/Rückwärtskalk. and SQL when authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
 
 const moduleNames = [
@@ -116,7 +116,7 @@ const moduleNames = [
       }
     });
 
-it('renders 17 base modules without SQL when not authenticated', () => {
+it('renders 18 base modules without SQL when not authenticated', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
 
       const moduleNames = [
