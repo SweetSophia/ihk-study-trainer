@@ -153,16 +153,49 @@ function buildAnswerInputs(
     }));
 }
 
-export function generateVorwaertsCalculation(): GeneratedKalkulation {
-  const lepBrutto = randomAmount(100, 1500);
-  const ustRate = 19;
-  const lieferRabatt = randomPercent(5, 20);
-  const lieferskonto = randomPercent(1, 4);
-  const bezugskosten = randomAmount(5, 80);
-  const handlungsKosten = randomPercent(25, 60);
-  const gewinnZuschlag = randomPercent(8, 25);
-  const kundenSkonto = randomPercent(2, 5);
-  const kundenRabatt = randomPercent(5, 20);
+/** Shared calculation chain — single source of truth for all kalkulation types. */
+interface BaseKalkulationParams {
+  lepBrutto: number;
+  ustRate: number;
+  lieferRabatt: number;
+  lieferskonto: number;
+  bezugskosten: number;
+  handlungsKosten: number;
+  gewinnZuschlag: number;
+  kundenSkonto: number;
+  kundenRabatt: number;
+}
+
+interface BaseKalkulationChain {
+  params: BaseKalkulationParams;
+  lepNettoStep: ReturnType<typeof reverseMarkup>;
+  rabattStep: ReturnType<typeof applyDeduction>;
+  skontoStep: ReturnType<typeof applyDeduction>;
+  bp: number;
+  handlungskostenStep: ReturnType<typeof applyMarkup>;
+  gewinnStep: ReturnType<typeof applyMarkup>;
+  kundenskontoStep: ReturnType<typeof reverseDiscount>;
+  kundenrabattStep: ReturnType<typeof reverseDiscount>;
+  ustStep: ReturnType<typeof applyMarkup>;
+}
+
+function randomKalkulationParams(): BaseKalkulationParams {
+  return {
+    lepBrutto: randomAmount(100, 1500),
+    ustRate: 19,
+    lieferRabatt: randomPercent(5, 20),
+    lieferskonto: randomPercent(1, 4),
+    bezugskosten: randomAmount(5, 80),
+    handlungsKosten: randomPercent(25, 60),
+    gewinnZuschlag: randomPercent(8, 25),
+    kundenSkonto: randomPercent(2, 5),
+    kundenRabatt: randomPercent(5, 20),
+  };
+}
+
+function computeKalkulationChain(params: BaseKalkulationParams): BaseKalkulationChain {
+  const { lepBrutto, ustRate, lieferRabatt, lieferskonto, bezugskosten,
+    handlungsKosten, gewinnZuschlag, kundenSkonto, kundenRabatt } = params;
 
   const lepNettoStep = reverseMarkup(lepBrutto, ustRate);
   const rabattStep = applyDeduction(lepNettoStep.base, lieferRabatt);
@@ -174,116 +207,95 @@ export function generateVorwaertsCalculation(): GeneratedKalkulation {
   const kundenrabattStep = reverseDiscount(kundenskontoStep.base, kundenRabatt);
   const ustStep = applyMarkup(kundenrabattStep.base, ustRate);
 
+  return {
+    params, lepNettoStep, rabattStep, skontoStep, bp,
+    handlungskostenStep, gewinnStep, kundenskontoStep, kundenrabattStep, ustStep,
+  };
+}
+
+export function generateVorwaertsCalculation(): GeneratedKalkulation {
+  const params = randomKalkulationParams();
+  const chain = computeKalkulationChain(params);
+
   const calculated = toRoundedRecord({
-    lep: lepNettoStep.base,
-    rabatt: rabattStep.amount,
-    zep: rabattStep.remaining,
-    skonto: skontoStep.amount,
-    bep: skontoStep.remaining,
-    bezugskosten,
-    bp,
-    handlungskosten: handlungskostenStep.amount,
-    selbstkosten: handlungskostenStep.total,
-    gewinn: gewinnStep.amount,
-    bvp: gewinnStep.total,
-    kundenskonto: kundenskontoStep.amount,
-    zvp: kundenskontoStep.base,
-    kundenrabatt: kundenrabattStep.amount,
-    nettovk: kundenrabattStep.base,
-    ust: ustStep.amount,
-    bruttovk: ustStep.total,
+    lep: chain.lepNettoStep.base,
+    rabatt: chain.rabattStep.amount,
+    zep: chain.rabattStep.remaining,
+    skonto: chain.skontoStep.amount,
+    bep: chain.skontoStep.remaining,
+    bezugskosten: params.bezugskosten,
+    bp: chain.bp,
+    handlungskosten: chain.handlungskostenStep.amount,
+    selbstkosten: chain.handlungskostenStep.total,
+    gewinn: chain.gewinnStep.amount,
+    bvp: chain.gewinnStep.total,
+    kundenskonto: chain.kundenskontoStep.amount,
+    zvp: chain.kundenskontoStep.base,
+    kundenrabatt: chain.kundenrabattStep.amount,
+    nettovk: chain.kundenrabattStep.base,
+    ust: chain.ustStep.amount,
+    bruttovk: chain.ustStep.total,
   });
 
   const given: Record<string, number> = {
-    lepBrutto: round2(lepBrutto),
-    ustRate,
-    lieferRabatt,
-    lieferskonto,
-    bezugskosten: round2(bezugskosten),
-    handlungsKosten,
-    gewinnZuschlag,
-    kundenSkonto,
-    kundenRabatt,
+    lepBrutto: round2(params.lepBrutto),
+    ustRate: params.ustRate,
+    lieferRabatt: params.lieferRabatt,
+    lieferskonto: params.lieferskonto,
+    bezugskosten: round2(params.bezugskosten),
+    handlungsKosten: params.handlungsKosten,
+    gewinnZuschlag: params.gewinnZuschlag,
+    kundenSkonto: params.kundenSkonto,
+    kundenRabatt: params.kundenRabatt,
   };
 
   return { given, calculated, schema: VORWAERTS_SCHEMA };
 }
 
 export function generateRueckwaertsCalculation(): GeneratedKalkulation {
-  const lepBrutto = randomAmount(100, 1500);
-  const ustRate = 19;
-  const lieferRabatt = randomPercent(5, 20);
-  const lieferskonto = randomPercent(1, 4);
-  const bezugskosten = randomAmount(5, 80);
-  const handlungsKosten = randomPercent(25, 60);
-  const gewinnZuschlag = randomPercent(8, 25);
-  const kundenSkonto = randomPercent(2, 5);
-  const kundenRabatt = randomPercent(5, 20);
-
-  const lepNettoStep = reverseMarkup(lepBrutto, ustRate);
-  const rabattStep = applyDeduction(lepNettoStep.base, lieferRabatt);
-  const skontoStep = applyDeduction(rabattStep.remaining, lieferskonto);
-  const bp = skontoStep.remaining + bezugskosten;
-  const handlungskostenStep = applyMarkup(bp, handlungsKosten);
-  const gewinnStep = applyMarkup(handlungskostenStep.total, gewinnZuschlag);
-  const kundenskontoStep = reverseDiscount(gewinnStep.total, kundenSkonto);
-  const kundenrabattStep = reverseDiscount(kundenskontoStep.base, kundenRabatt);
-  const ustStep = applyMarkup(kundenrabattStep.base, ustRate);
+  const params = randomKalkulationParams();
+  const chain = computeKalkulationChain(params);
 
   const calculated = toRoundedRecord({
-    ust: ustStep.amount,
-    nettovk: kundenrabattStep.base,
-    kundenrabatt: kundenrabattStep.amount,
-    zvp: kundenskontoStep.base,
-    kundenskonto: kundenskontoStep.amount,
-    bvp: gewinnStep.total,
-    gewinn: gewinnStep.amount,
-    selbstkosten: handlungskostenStep.total,
-    handlungskosten: handlungskostenStep.amount,
-    bp,
-    bezugskosten,
-    bep: skontoStep.remaining,
-    skonto: skontoStep.amount,
-    zep: rabattStep.remaining,
-    rabatt: rabattStep.amount,
-    lep: lepNettoStep.base,
+    ust: chain.ustStep.amount,
+    nettovk: chain.kundenrabattStep.base,
+    kundenrabatt: chain.kundenrabattStep.amount,
+    zvp: chain.kundenskontoStep.base,
+    kundenskonto: chain.kundenskontoStep.amount,
+    bvp: chain.gewinnStep.total,
+    gewinn: chain.gewinnStep.amount,
+    selbstkosten: chain.handlungskostenStep.total,
+    handlungskosten: chain.handlungskostenStep.amount,
+    bp: chain.bp,
+    bezugskosten: params.bezugskosten,
+    bep: chain.skontoStep.remaining,
+    skonto: chain.skontoStep.amount,
+    zep: chain.rabattStep.remaining,
+    rabatt: chain.rabattStep.amount,
+    lep: chain.lepNettoStep.base,
   });
 
   const given: Record<string, number> = {
-    bruttovk: round2(ustStep.total),
-    ustRate,
-    kundenRabatt,
-    kundenSkonto,
-    gewinnZuschlag,
-    handlungsKosten,
-    bezugskosten: round2(bezugskosten),
-    lieferskonto,
-    lieferRabatt,
+    bruttovk: round2(chain.ustStep.total),
+    ustRate: params.ustRate,
+    kundenRabatt: params.kundenRabatt,
+    kundenSkonto: params.kundenSkonto,
+    gewinnZuschlag: params.gewinnZuschlag,
+    handlungsKosten: params.handlungsKosten,
+    bezugskosten: round2(params.bezugskosten),
+    lieferskonto: params.lieferskonto,
+    lieferRabatt: params.lieferRabatt,
   };
 
   return { given, calculated, schema: RUECKWAERTS_SCHEMA };
 }
 
 export function generateDifferenzCalculation(): GeneratedDifferenz {
-  const lepBrutto = randomAmount(100, 1500);
-  const ustRate = 19;
-  const lieferRabatt = randomPercent(5, 20);
-  const lieferskonto = randomPercent(1, 4);
-  const bezugskosten = randomAmount(5, 80);
-  const handlungsKosten = randomPercent(25, 60);
-  const gewinnZuschlag = randomPercent(8, 25);
-  const kundenSkonto = randomPercent(2, 5);
-  const kundenRabatt = randomPercent(5, 20);
-
-  const lepNettoStep = reverseMarkup(lepBrutto, ustRate);
-  const rabattStep = applyDeduction(lepNettoStep.base, lieferRabatt);
-  const skontoStep = applyDeduction(rabattStep.remaining, lieferskonto);
-  const bp = skontoStep.remaining + bezugskosten;
-  const handlungskostenStep = applyMarkup(bp, handlungsKosten);
-  const gewinnStep = applyMarkup(handlungskostenStep.total, gewinnZuschlag);
-  const kundenskontoStep = reverseDiscount(gewinnStep.total, kundenSkonto);
-  const kundenrabattStep = reverseDiscount(kundenskontoStep.base, kundenRabatt);
-  const ustForwardStep = applyMarkup(kundenrabattStep.base, ustRate);
+  const params = randomKalkulationParams();
+  const chain = computeKalkulationChain(params);
+  const { ustRate, lieferRabatt, lieferskonto, bezugskosten,
+    handlungsKosten, gewinnZuschlag, kundenSkonto, kundenRabatt } = params;
+  const ustForwardStep = chain.ustStep;
 
   const buildBackwardFromMarket = (marketBruttovk: number) => {
     const ustBackwardStep = reverseMarkup(marketBruttovk, ustRate);
@@ -368,21 +380,21 @@ export function generateDifferenzCalculation(): GeneratedDifferenz {
   } = backwardMarket;
 
   const forwardSteps = toRoundedRecord({
-    lep: lepNettoStep.base,
-    rabatt: rabattStep.amount,
-    zep: rabattStep.remaining,
-    skonto: skontoStep.amount,
-    bep: skontoStep.remaining,
+    lep: chain.lepNettoStep.base,
+    rabatt: chain.rabattStep.amount,
+    zep: chain.rabattStep.remaining,
+    skonto: chain.skontoStep.amount,
+    bep: chain.skontoStep.remaining,
     bezugskosten,
-    bp,
-    handlungskosten: handlungskostenStep.amount,
-    selbstkosten: handlungskostenStep.total,
-    gewinn: gewinnStep.amount,
-    bvp: gewinnStep.total,
-    kundenskonto: kundenskontoStep.amount,
-    zvp: kundenskontoStep.base,
-    kundenrabatt: kundenrabattStep.amount,
-    nettovk: kundenrabattStep.base,
+    bp: chain.bp,
+    handlungskosten: chain.handlungskostenStep.amount,
+    selbstkosten: chain.handlungskostenStep.total,
+    gewinn: chain.gewinnStep.amount,
+    bvp: chain.gewinnStep.total,
+    kundenskonto: chain.kundenskontoStep.amount,
+    zvp: chain.kundenskontoStep.base,
+    kundenrabatt: chain.kundenrabattStep.amount,
+    nettovk: chain.kundenrabattStep.base,
     ust: ustForwardStep.amount,
     bruttovk: ustForwardStep.total,
   });
@@ -409,7 +421,7 @@ export function generateDifferenzCalculation(): GeneratedDifferenz {
   const differenz = round2(bruttovkMarkt - forwardSteps.bruttovk);
 
   const given: Record<string, number> = {
-    lepBrutto: round2(lepBrutto),
+    lepBrutto: round2(params.lepBrutto),
     ustRate,
     lieferRabatt,
     lieferskonto,
@@ -450,7 +462,8 @@ function buildQuestion(
   calculated: Record<string, number>,
   schema: KalkulationStep[],
   forwardSteps?: Record<string, number>,
-  backwardSteps?: Record<string, number>
+  backwardSteps?: Record<string, number>,
+  moduleId?: string
 ): Question {
   const typeLabel = type === 'vorwaerts'
     ? 'Vorwärtskalkulation'
@@ -554,7 +567,7 @@ function buildQuestion(
     solutionSteps.push(`Skonto = ${formatEuro(backwardSteps.zep)} − ${formatEuro(backwardSteps.bep)} = ${formatEuro(backwardSteps.skonto)}`);
     solutionSteps.push(`LEP netto = ${formatEuro(backwardSteps.zep)} / ${formatDiscountFactor(given.lieferRabatt)} = ${formatEuro(backwardSteps.lep)}`);
     solutionSteps.push(`Rabatt = ${formatEuro(backwardSteps.lep)} − ${formatEuro(backwardSteps.zep)} = ${formatEuro(backwardSteps.rabatt)}`);
-    solutionSteps.push(`LEP brutto = ${formatEuro(backwardSteps.lep)} × 1,19 = ${formatEuro(backwardSteps.lep * 1.19)}`);
+    solutionSteps.push(`LEP brutto = ${formatEuro(backwardSteps.lep)} × 1,19 = ${formatEuro(round2(backwardSteps.lep * 1.19))}`);
     solutionSteps.push('');
 
     const differenz = calculated.differenz as number;
@@ -613,7 +626,7 @@ function buildQuestion(
       solutionSteps.push(`Skonto = ${formatEuro(calculated.zep as number)} − ${formatEuro(calculated.bep as number)} = ${formatEuro(calculated.skonto as number)}`);
       solutionSteps.push(`LEP netto = ${formatEuro(calculated.zep as number)} / ${formatDiscountFactor(given.lieferRabatt)} = ${formatEuro(calculated.lep as number)}`);
       solutionSteps.push(`Rabatt = ${formatEuro(calculated.lep as number)} − ${formatEuro(calculated.zep as number)} = ${formatEuro(calculated.rabatt as number)}`);
-      solutionSteps.push(`LEP brutto = ${formatEuro(calculated.lep as number)} × 1,19 = ${formatEuro((calculated.lep as number) * 1.19)}`);
+      solutionSteps.push(`LEP brutto = ${formatEuro(calculated.lep as number)} × 1,19 = ${formatEuro(round2((calculated.lep as number) * 1.19))}`);
     }
   }
 
@@ -621,9 +634,9 @@ function buildQuestion(
     type === 'vorwaerts' ? 'medium' : 'hard';
 
   return {
-    id: `handelskalkulation-${Date.now()}`,
+    id: `${moduleId ?? 'handelskalkulation'}-${Date.now()}`,
     theme: 'Wirtschaftsrechnen',
-    module: 'handelskalkulation',
+    module: moduleId ?? 'handelskalkulation',
     questionText: frage,
     expectedAnswers,
     solutionSteps,
@@ -634,32 +647,36 @@ function buildQuestion(
 
 export function generateVorwaertsKalkulationQuestion(): Question {
   const { given, calculated, schema } = generateVorwaertsCalculation();
-  const q = buildQuestion('vorwaerts', given, calculated, schema);
-  return { ...q, id: `handelskalkulationVorwaerts-${Date.now()}`, module: 'handelskalkulationVorwaerts' };
+  return buildQuestion('vorwaerts', given, calculated, schema, undefined, undefined, 'handelskalkulationVorwaerts');
 }
 
 export function generateRueckwaertsKalkulationQuestion(): Question {
   const { given, calculated, schema } = generateRueckwaertsCalculation();
-  const q = buildQuestion('rueckwaerts', given, calculated, schema);
-  return { ...q, id: `handelskalkulationRueckwaerts-${Date.now()}`, module: 'handelskalkulationRueckwaerts' };
+  return buildQuestion('rueckwaerts', given, calculated, schema, undefined, undefined, 'handelskalkulationRueckwaerts');
 }
 
 export function generateHandelskalkulationQuestion(): Question {
   const rand = Math.random();
   const type: KalkulationType = rand < 0.333 ? 'vorwaerts' : rand < 0.666 ? 'rueckwaerts' : 'differenz';
 
-  if (type === 'vorwaerts') {
+  try {
+    if (type === 'vorwaerts') {
+      const { given, calculated, schema } = generateVorwaertsCalculation();
+      return buildQuestion(type, given, calculated, schema);
+    }
+
+    if (type === 'rueckwaerts') {
+      const { given, calculated, schema } = generateRueckwaertsCalculation();
+      return buildQuestion(type, given, calculated, schema);
+    }
+
+    const { given, calculated, forwardSteps, backwardSteps, schema } = generateDifferenzCalculation();
+    return buildQuestion(type, given, calculated, schema, forwardSteps, backwardSteps);
+  } catch {
+    // DifferenzCalculation can fail to find valid values — fallback to vorwaerts
     const { given, calculated, schema } = generateVorwaertsCalculation();
-    return buildQuestion(type, given, calculated, schema);
+    return buildQuestion('vorwaerts', given, calculated, schema);
   }
-
-  if (type === 'rueckwaerts') {
-    const { given, calculated, schema } = generateRueckwaertsCalculation();
-    return buildQuestion(type, given, calculated, schema);
-  }
-
-  const { given, calculated, forwardSteps, backwardSteps, schema } = generateDifferenzCalculation();
-  return buildQuestion(type, given, calculated, schema, forwardSteps, backwardSteps);
 }
 
 export { VORWAERTS_SCHEMA, RUECKWAERTS_SCHEMA };
