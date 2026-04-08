@@ -536,7 +536,7 @@ function buildQuestion(
     solutionSteps.push('=== VORWÄRTSKALKULATION (LEP → Brutto-VK) ===');
     solutionSteps.push(`Gegeben: LEP brutto = ${formatEuro(given.lepBrutto)}`);
     solutionSteps.push('');
-    solutionSteps.push(`LEP netto = ${formatEuro(given.lepBrutto)} / 1,19 = ${formatEuro(forwardSteps.lep)}`);
+    solutionSteps.push(`LEP netto = ${formatEuro(given.lepBrutto)} / 1,${given.ustRate} = ${formatEuro(forwardSteps.lep)}`);
     solutionSteps.push(`Rabatt = ${formatEuro(forwardSteps.lep)} × ${given.lieferRabatt}% = ${formatEuro(forwardSteps.rabatt)}`);
     solutionSteps.push(`ZEP = ${formatEuro(forwardSteps.lep)} − ${formatEuro(forwardSteps.rabatt)} = ${formatEuro(forwardSteps.zep)}`);
     solutionSteps.push(`Skonto = ${formatEuro(forwardSteps.zep)} × ${given.lieferskonto}% = ${formatEuro(forwardSteps.skonto)}`);
@@ -557,7 +557,7 @@ function buildQuestion(
     solutionSteps.push('=== RÜCKWÄRTSKALKULATION (Markt-Brutto-VK → LEP) ===');
     solutionSteps.push(`Gegeben: Markt-Brutto-VK = ${formatEuro(given.bruttovkMarkt)}`);
     solutionSteps.push('');
-    solutionSteps.push(`Netto-VK = ${formatEuro(given.bruttovkMarkt)} / 1,19 = ${formatEuro(backwardSteps.nettovk)}`);
+    solutionSteps.push(`Netto-VK = ${formatEuro(given.bruttovkMarkt)} / 1,${given.ustRate} = ${formatEuro(backwardSteps.nettovk)}`);
     solutionSteps.push(`USt = ${formatEuro(given.bruttovkMarkt)} − ${formatEuro(backwardSteps.nettovk)} = ${formatEuro(backwardSteps.ust)}`);
     solutionSteps.push(`Kundenrabatt = ${formatEuro(backwardSteps.nettovk)} × ${given.kundenRabatt}% = ${formatEuro(backwardSteps.kundenrabatt)}`);
     solutionSteps.push(`ZVP = ${formatEuro(backwardSteps.nettovk)} − ${formatEuro(backwardSteps.kundenrabatt)} = ${formatEuro(backwardSteps.zvp)}`);
@@ -597,7 +597,7 @@ function buildQuestion(
     if (type === 'vorwaerts') {
       solutionSteps.push(`Gegeben: LEP brutto = ${formatEuro(given.lepBrutto)}, Rabatt = ${given.lieferRabatt}%, Skonto = ${given.lieferskonto}%`);
       solutionSteps.push('');
-      solutionSteps.push(`LEP netto = ${formatEuro(given.lepBrutto)} / 1,19 = ${formatEuro(calculated.lep as number)}`);
+      solutionSteps.push(`LEP netto = ${formatEuro(given.lepBrutto)} / 1,${given.ustRate} = ${formatEuro(calculated.lep as number)}`);
       solutionSteps.push(`Rabatt = ${formatEuro(calculated.lep as number)} × ${given.lieferRabatt}% = ${formatEuro(calculated.rabatt as number)}`);
       solutionSteps.push(`ZEP = ${formatEuro(calculated.lep as number)} − ${formatEuro(calculated.rabatt as number)} = ${formatEuro(calculated.zep as number)}`);
       solutionSteps.push(`Skonto = ${formatEuro(calculated.zep as number)} × ${given.lieferskonto}% = ${formatEuro(calculated.skonto as number)}`);
@@ -616,7 +616,7 @@ function buildQuestion(
     } else {
       solutionSteps.push(`Gegeben: Brutto-VK = ${formatEuro(given.bruttovk)}, alle Zu- und Abschläge`);
       solutionSteps.push('');
-      solutionSteps.push(`Netto-VK = ${formatEuro(given.bruttovk)} / 1,19 = ${formatEuro(calculated.nettovk as number)}`);
+      solutionSteps.push(`Netto-VK = ${formatEuro(given.bruttovk)} / 1,${given.ustRate} = ${formatEuro(calculated.nettovk as number)}`);
       solutionSteps.push(`USt = ${formatEuro(given.bruttovk)} − ${formatEuro(calculated.nettovk as number)} = ${formatEuro(calculated.ust as number)}`);
       solutionSteps.push(`Kundenrabatt = ${formatEuro(calculated.nettovk as number)} × ${given.kundenRabatt}% = ${formatEuro(calculated.kundenrabatt as number)}`);
       solutionSteps.push(`ZVP = ${formatEuro(calculated.nettovk as number)} − ${formatEuro(calculated.kundenrabatt as number)} = ${formatEuro(calculated.zvp as number)}`);

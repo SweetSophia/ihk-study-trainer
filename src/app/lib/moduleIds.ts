@@ -10,6 +10,8 @@ const CANONICAL_TO_STORED_MODULE_ID: Record<string, string> = {
   imageCalc: 'image-calc',
   unitConversion: 'unit-conversion',
   imageTransferCombo: 'image-transfer-combo',
+  handelskalkulationVorwaerts: 'handelskalkulation-vorwaerts',
+  handelskalkulationRueckwaerts: 'handelskalkulation-rueckwaerts',
 };
 
 export interface ProgressLike {
