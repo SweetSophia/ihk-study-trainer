@@ -125,12 +125,32 @@ describe('handelskalkulation generator', () => {
   });
 
   it('generateVorwaertsKalkulationQuestion never produces rueckwaerts or differenz questions', () => {
+    const expectedVorwaertsKeys = [
+      'lep',
+      'rabatt',
+      'zep',
+      'skonto',
+      'bep',
+      'bp',
+      'handlungskosten',
+      'selbstkosten',
+      'gewinn',
+      'bvp',
+      'kundenskonto',
+      'zvp',
+      'kundenrabatt',
+      'nettovk',
+      'ust',
+      'bruttovk',
+    ];
+
     for (let i = 0; i < 20; i += 1) {
       const question = generateVorwaertsKalkulationQuestion();
+      const valueKeys = question.answerInputs?.map((input) => input.valueKey) ?? [];
+
       expect(question.module).toBe('handelskalkulationVorwaerts');
-      expect(question.answerInputs!.some((input) => input.valueKey === 'differenz')).toBe(false);
-      expect(question.answerInputs!.some((input) => input.valueKey.startsWith('backward_'))).toBe(false);
-      expect(question.answerInputs!.some((input) => input.valueKey.startsWith('forward_'))).toBe(false);
+      expect(valueKeys).toEqual(expectedVorwaertsKeys);
+      expect(valueKeys).not.toContain('differenz');
     }
   });
 
