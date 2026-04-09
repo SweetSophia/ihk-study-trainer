@@ -687,14 +687,21 @@ export function generateHandelskalkulationQuestion(): Question {
     return buildQuestion(type, given, calculated, schema);
   }
 
-  // DifferenzCalculation can fail to find valid values — only catch generator failures.
+  // DifferenzCalculation can fail to find valid values — only fallback for that known case.
   let differenzResult;
   try {
     differenzResult = generateDifferenzCalculation();
   } catch (error) {
-    console.warn('[handelskalkulation] DifferenzCalculation failed, falling back to vorwaerts', error);
-    const { given, calculated, schema } = generateVorwaertsCalculation();
-    return buildQuestion('vorwaerts', given, calculated, schema);
+    if (
+      error instanceof Error &&
+      error.message === 'Konnte keine gültige Differenzkalkulation erzeugen.'
+    ) {
+      console.warn('[handelskalkulation] DifferenzCalculation failed, falling back to vorwaerts', error);
+      const { given, calculated, schema } = generateVorwaertsCalculation();
+      return buildQuestion('vorwaerts', given, calculated, schema);
+    }
+
+    throw error;
   }
 
   const { given, calculated, forwardSteps, backwardSteps, schema } = differenzResult;
