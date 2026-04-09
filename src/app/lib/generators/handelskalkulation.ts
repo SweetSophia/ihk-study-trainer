@@ -466,10 +466,13 @@ function buildQuestion(
   given: Record<string, number>,
   calculated: Record<string, number>,
   schema: KalkulationStep[],
-  forwardSteps?: Record<string, number>,
-  backwardSteps?: Record<string, number>,
-  moduleId?: string
+  options: {
+    forwardSteps?: Record<string, number>;
+    backwardSteps?: Record<string, number>;
+    moduleId?: string;
+  } = {}
 ): Question {
+  const { forwardSteps, backwardSteps, moduleId } = options;
   if (type === 'differenz' && (!forwardSteps || !backwardSteps)) {
     throw new Error('buildQuestion: forwardSteps and backwardSteps are required for differenz type');
   }
@@ -655,12 +658,12 @@ function buildQuestion(
 
 export function generateVorwaertsKalkulationQuestion(): Question {
   const { given, calculated, schema } = generateVorwaertsCalculation();
-  return buildQuestion('vorwaerts', given, calculated, schema, undefined, undefined, 'handelskalkulationVorwaerts');
+  return buildQuestion('vorwaerts', given, calculated, schema, { moduleId: 'handelskalkulationVorwaerts' });
 }
 
 export function generateRueckwaertsKalkulationQuestion(): Question {
   const { given, calculated, schema } = generateRueckwaertsCalculation();
-  return buildQuestion('rueckwaerts', given, calculated, schema, undefined, undefined, 'handelskalkulationRueckwaerts');
+  return buildQuestion('rueckwaerts', given, calculated, schema, { moduleId: 'handelskalkulationRueckwaerts' });
 }
 
 export function generateHandelskalkulationQuestion(): Question {
@@ -680,7 +683,7 @@ export function generateHandelskalkulationQuestion(): Question {
   // DifferenzCalculation can fail to find valid values — wrap in try/catch and fallback
   try {
     const { given, calculated, forwardSteps, backwardSteps, schema } = generateDifferenzCalculation();
-    return buildQuestion(type, given, calculated, schema, forwardSteps, backwardSteps);
+    return buildQuestion(type, given, calculated, schema, { forwardSteps, backwardSteps });
   } catch (error) {
     console.warn('[handelskalkulation] DifferenzCalculation failed, falling back to vorwaerts', error);
     const { given, calculated, schema } = generateVorwaertsCalculation();

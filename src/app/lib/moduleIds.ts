@@ -13,6 +13,7 @@ const CANONICAL_TO_STORED_MODULE_ID: Record<string, string> = {
   imageTransferCombo: 'image-transfer-combo',
   handelskalkulationVorwaerts: 'handelskalkulation-vorwaerts',
   handelskalkulationRueckwaerts: 'handelskalkulation-rueckwaerts',
+  handelskalkulation: 'handelskalkulation-vorwaerts',
 };
 
 export interface ProgressLike {

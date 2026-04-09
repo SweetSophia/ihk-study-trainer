@@ -16,7 +16,7 @@ import {
   updateProgress
 } from './lib/auth';
 import { validateQuestionAnswers } from './lib/answerValidation';
-import { normalizeProgressModules, toCanonicalModuleId } from './lib/moduleIds';
+import { toCanonicalModuleId } from './lib/moduleIds';
 
 // Import all generators
 import { generateBandwidthQuestion } from './lib/generators/bandwidth';
@@ -206,11 +206,10 @@ export default function Home() {
   const loadProgress = useCallback(async (hash: string) => {
     try {
       const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days?: number | null }[] = await getAllProgress(hash);
-      const normalizedProgress = normalizeProgressModules(userProgress);
-      setProgress(normalizedProgress);
+      setProgress(userProgress);
       
       // Calculate streak (simplified)
-      const maxStreak = Math.max(0, ...normalizedProgress.map(p => p.streak_days ?? 0));
+      const maxStreak = Math.max(0, ...userProgress.map(p => p.streak_days ?? 0));
       setStreakDays(maxStreak);
     } catch (error) {
       console.error('Error loading progress:', error);
