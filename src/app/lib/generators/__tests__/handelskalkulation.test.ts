@@ -27,6 +27,8 @@ describe('handelskalkulation generator', () => {
       expectMoneyClose(calculated.bep + given.bezugskosten, calculated.bp);
       expectMoneyClose(calculated.bp + calculated.handlungskosten, calculated.selbstkosten);
       expectMoneyClose(calculated.selbstkosten + calculated.gewinn, calculated.bvp);
+      expectMoneyClose(calculated.zvp + calculated.kundenrabatt, calculated.nettovk);
+      expectMoneyClose(calculated.bvp + calculated.kundenskonto, calculated.zvp);
       expectMoneyClose(calculated.nettovk + calculated.ust, calculated.bruttovk);
     }
   });
@@ -104,7 +106,7 @@ describe('handelskalkulation generator', () => {
     const question = generateVorwaertsKalkulationQuestion();
 
     expect(question.module).toBe('handelskalkulationVorwaerts');
-    expect(question.id).toMatch(/^handelskalkulationVorwaerts-[a-f0-9]+$/);
+    expect(question.id).toMatch(/^handelskalkulationVorwaerts-[a-f0-9-]+$/);
     expect(question.answerInputs).toBeDefined();
     expect(question.answerInputs!.length).toBeGreaterThan(0);
     expect(question.answerInputs!.some((input) => input.valueKey === 'bruttovk')).toBe(true);
@@ -115,7 +117,7 @@ describe('handelskalkulation generator', () => {
     const question = generateRueckwaertsKalkulationQuestion();
 
     expect(question.module).toBe('handelskalkulationRueckwaerts');
-    expect(question.id).toMatch(/^handelskalkulationRueckwaerts-[a-f0-9]+$/);
+    expect(question.id).toMatch(/^handelskalkulationRueckwaerts-[a-f0-9-]+$/);
     expect(question.answerInputs).toBeDefined();
     expect(question.answerInputs!.length).toBeGreaterThan(0);
     expect(question.answerInputs!.some((input) => input.valueKey === 'lep')).toBe(true);
@@ -123,10 +125,32 @@ describe('handelskalkulation generator', () => {
   });
 
   it('generateVorwaertsKalkulationQuestion never produces rueckwaerts or differenz questions', () => {
+    const expectedVorwaertsKeys = [
+      'lep',
+      'rabatt',
+      'zep',
+      'skonto',
+      'bep',
+      'bp',
+      'handlungskosten',
+      'selbstkosten',
+      'gewinn',
+      'bvp',
+      'kundenskonto',
+      'zvp',
+      'kundenrabatt',
+      'nettovk',
+      'ust',
+      'bruttovk',
+    ];
+
     for (let i = 0; i < 20; i += 1) {
       const question = generateVorwaertsKalkulationQuestion();
+      const valueKeys = question.answerInputs?.map((input) => input.valueKey) ?? [];
+
       expect(question.module).toBe('handelskalkulationVorwaerts');
-      expect(question.answerInputs!.some((input) => input.valueKey === 'differenz')).toBe(false);
+      expect(valueKeys).toEqual(expectedVorwaertsKeys);
+      expect(valueKeys).not.toContain('differenz');
     }
   });
 

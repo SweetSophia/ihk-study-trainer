@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toCanonicalModuleId } from '../lib/moduleIds';
 import { motion } from 'framer-motion';
 import { 
   Trophy, 
@@ -28,13 +29,10 @@ interface ProgressDashboardProps {
 const MODULE_NAMES: Record<string, string> = {
   bandwidth: 'Übertragungszeit',
   imageCalc: 'Bildgröße',
-  'image-calc': 'Bildgröße',
   imageTransferCombo: 'Bild-Transfer',
-  'image-transfer-combo': 'Bild-Transfer',
   overhead: 'Overhead',
   subnetting: 'Subnetting',
   unitConversion: 'Einheiten',
-  'unit-conversion': 'Einheiten',
   binary: 'Binär',
   hex: 'Hexadezimal',
   hexBinary: 'Hex/Binär',
@@ -46,6 +44,8 @@ const MODULE_NAMES: Record<string, string> = {
   linux: 'Linux',
   cloud: 'Cloud',
   handelskalkulation: 'Kalkulation',
+  handelskalkulationVorwaerts: 'Vorwärtskalkulation',
+  handelskalkulationRueckwaerts: 'Rückwärtskalkulation',
   sql: 'SQL',
 };
 
@@ -177,6 +177,7 @@ export default function ProgressDashboard({
               const accuracy = p.questions_attempted > 0 
                 ? Math.round((p.questions_correct / p.questions_attempted) * 100)
                 : 0;
+              const canonicalModuleId = toCanonicalModuleId(p.module);
               
               return (
                 <div 
@@ -192,7 +193,7 @@ export default function ProgressDashboard({
                       <XCircle className="w-4 h-4 text-rose-400" />
                     )}
                     <span className="text-sm text-slate-300">
-                      {MODULE_NAMES[p.module] || p.module}
+                      {MODULE_NAMES[canonicalModuleId] || p.module}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">

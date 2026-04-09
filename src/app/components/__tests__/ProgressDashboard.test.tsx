@@ -96,6 +96,30 @@ describe('ProgressDashboard – MODULE_NAMES PR additions', () => {
     expect(screen.getByText('Kalkulation')).toBeInTheDocument();
   });
 
+  it('displays "Vorwärtskalkulation" for the canonical split module ID', async () => {
+    render(<ProgressDashboard progress={makeProgress('handelskalkulationVorwaerts')} streakDays={0} onPracticeMistakes={noOp} />);
+    await openDetails();
+    expect(screen.getByText('Vorwärtskalkulation')).toBeInTheDocument();
+  });
+
+  it('displays "Rückwärtskalkulation" for the canonical split module ID', async () => {
+    render(<ProgressDashboard progress={makeProgress('handelskalkulationRueckwaerts')} streakDays={0} onPracticeMistakes={noOp} />);
+    await openDetails();
+    expect(screen.getByText('Rückwärtskalkulation')).toBeInTheDocument();
+  });
+
+  it('displays "Vorwärtskalkulation" for the stored split module ID', async () => {
+    render(<ProgressDashboard progress={makeProgress('handelskalkulation-vorwaerts')} streakDays={0} onPracticeMistakes={noOp} />);
+    await openDetails();
+    expect(screen.getByText('Vorwärtskalkulation')).toBeInTheDocument();
+  });
+
+  it('displays "Rückwärtskalkulation" for the stored split module ID', async () => {
+    render(<ProgressDashboard progress={makeProgress('handelskalkulation-rueckwaerts')} streakDays={0} onPracticeMistakes={noOp} />);
+    await openDetails();
+    expect(screen.getByText('Rückwärtskalkulation')).toBeInTheDocument();
+  });
+
   it('displays "SQL" for the sql module ID', async () => {
     render(<ProgressDashboard progress={makeProgress('sql')} streakDays={0} onPracticeMistakes={noOp} />);
     await openDetails();

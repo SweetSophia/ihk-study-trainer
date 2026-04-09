@@ -650,7 +650,10 @@ function buildQuestion(
     type === 'vorwaerts' ? 'medium' : 'hard';
 
   return {
-    id: `${moduleId ?? 'handelskalkulation'}-${crypto.randomUUID().slice(0, 8)}`,
+    id:
+      `${moduleId ?? 'handelskalkulation'}-${
+        globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+      }`,
     theme: 'Wirtschaftsrechnen',
     module: moduleId ?? 'handelskalkulation',
     questionText: frage,
@@ -687,15 +690,25 @@ export function generateHandelskalkulationQuestion(): Question {
     return buildQuestion(type, given, calculated, schema);
   }
 
-  // DifferenzCalculation can fail to find valid values — wrap in try/catch and fallback
+  // DifferenzCalculation can fail to find valid values — only fallback for that known case.
+  let differenzResult;
   try {
-    const { given, calculated, forwardSteps, backwardSteps, schema } = generateDifferenzCalculation();
-    return buildQuestion(type, given, calculated, schema, { forwardSteps, backwardSteps });
+    differenzResult = generateDifferenzCalculation();
   } catch (error) {
-    console.warn('[handelskalkulation] DifferenzCalculation failed, falling back to vorwaerts', error);
-    const { given, calculated, schema } = generateVorwaertsCalculation();
-    return buildQuestion('vorwaerts', given, calculated, schema);
+    if (
+      error instanceof Error &&
+      error.message === 'Konnte keine gültige Differenzkalkulation erzeugen.'
+    ) {
+      console.warn('[handelskalkulation] DifferenzCalculation failed, falling back to vorwaerts', error);
+      const { given, calculated, schema } = generateVorwaertsCalculation();
+      return buildQuestion('vorwaerts', given, calculated, schema);
+    }
+
+    throw error;
   }
+
+  const { given, calculated, forwardSteps, backwardSteps, schema } = differenzResult;
+  return buildQuestion(type, given, calculated, schema, { forwardSteps, backwardSteps });
 }
 
 export { VORWAERTS_SCHEMA, RUECKWAERTS_SCHEMA };
