@@ -57,11 +57,18 @@ export function normalizeProgressModules<T extends ProgressLike>(
       );
     }
 
-    if (
-      row.last_session &&
-      (!existing.last_session || row.last_session > existing.last_session)
-    ) {
-      existing.last_session = row.last_session;
+    if (row.last_session) {
+      const rowTimestamp = Date.parse(row.last_session);
+      const existingTimestamp = existing.last_session
+        ? Date.parse(existing.last_session)
+        : Number.NEGATIVE_INFINITY;
+
+      if (
+        !Number.isNaN(rowTimestamp) &&
+        (Number.isNaN(existingTimestamp) || rowTimestamp > existingTimestamp)
+      ) {
+        existing.last_session = row.last_session;
+      }
     }
   }
 
