@@ -4,6 +4,7 @@ const LEGACY_TO_CANONICAL_MODULE_ID: Record<string, string> = {
   'image-transfer-combo': 'imageTransferCombo',
   'handelskalkulation-vorwaerts': 'handelskalkulationVorwaerts',
   'handelskalkulation-rueckwaerts': 'handelskalkulationRueckwaerts',
+  handelskalkulation: 'handelskalkulationVorwaerts',
 };
 
 const CANONICAL_TO_STORED_MODULE_ID: Record<string, string> = {

@@ -167,6 +167,36 @@ it('renders 18 base modules without SQL when not authenticated', () => {
     });
   });
 
+  describe('handelskalkulation module additions', () => {
+    it('calls onSelectModule with "handelskalkulationVorwaerts" when Vorwärtskalk. is clicked', async () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
+      const texts = screen.getAllByText('Vorwärtskalk.');
+      await userEvent.click(texts[0]);
+      expect(onSelectModule).toHaveBeenCalledWith('handelskalkulationVorwaerts');
+    });
+
+    it('calls onSelectModule with "handelskalkulationRueckwaerts" when Rückwärtskalk. is clicked', async () => {
+      render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);
+      const texts = screen.getAllByText('Rückwärtskalk.');
+      await userEvent.click(texts[0]);
+      expect(onSelectModule).toHaveBeenCalledWith('handelskalkulationRueckwaerts');
+    });
+
+    it('marks Vorwärtskalk. as active when currentModule is "handelskalkulationVorwaerts"', () => {
+      render(<ThemeSelector currentModule="handelskalkulationVorwaerts" onSelectModule={onSelectModule} isAuthenticated={true} />);
+      const texts = screen.getAllByText('Vorwärtskalk.');
+      const button = texts[0].closest('button');
+      expect(button).toHaveClass('bg-emerald-500/10');
+    });
+
+    it('marks Rückwärtskalk. as active when currentModule is "handelskalkulationRueckwaerts"', () => {
+      render(<ThemeSelector currentModule="handelskalkulationRueckwaerts" onSelectModule={onSelectModule} isAuthenticated={true} />);
+      const texts = screen.getAllByText('Rückwärtskalk.');
+      const button = texts[0].closest('button');
+      expect(button).toHaveClass('bg-emerald-500/10');
+    });
+  });
+
   describe('imageTransferCombo module addition', () => {
     it('renders the Bild-Transfer module button', () => {
       render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={true} />);

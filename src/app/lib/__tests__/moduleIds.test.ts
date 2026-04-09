@@ -19,6 +19,8 @@ describe('module ID compatibility helpers', () => {
     expect(toStoredProgressModuleId('imageCalc')).toBe('image-calc');
     expect(toStoredProgressModuleId('unitConversion')).toBe('unit-conversion');
     expect(toStoredProgressModuleId('imageTransferCombo')).toBe('image-transfer-combo');
+    expect(toStoredProgressModuleId('handelskalkulationVorwaerts')).toBe('handelskalkulation-vorwaerts');
+    expect(toStoredProgressModuleId('handelskalkulationRueckwaerts')).toBe('handelskalkulation-rueckwaerts');
   });
 
   it('merges legacy and canonical progress rows into one canonical module entry', () => {

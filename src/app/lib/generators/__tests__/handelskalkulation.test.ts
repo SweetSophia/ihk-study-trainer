@@ -4,6 +4,7 @@ import {
   generateDifferenzCalculation,
   generateHandelskalkulationQuestion,
   generateRueckwaertsCalculation,
+  generateVorwaertsCalculation,
   generateVorwaertsKalkulationQuestion,
   generateRueckwaertsKalkulationQuestion,
 } from '../handelskalkulation';
@@ -15,6 +16,19 @@ function expectMoneyClose(actual: number, expected: number) {
 describe('handelskalkulation generator', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('produces consistent vorwärts calculations', () => {
+    for (let i = 0; i < 25; i += 1) {
+      const { given, calculated } = generateVorwaertsCalculation();
+
+      expectMoneyClose(calculated.lep - calculated.rabatt, calculated.zep);
+      expectMoneyClose(calculated.zep - calculated.skonto, calculated.bep);
+      expectMoneyClose(calculated.bep + given.bezugskosten, calculated.bp);
+      expectMoneyClose(calculated.bp + calculated.handlungskosten, calculated.selbstkosten);
+      expectMoneyClose(calculated.selbstkosten + calculated.gewinn, calculated.bvp);
+      expectMoneyClose(calculated.nettovk + calculated.ust, calculated.bruttovk);
+    }
   });
 
   it('produces consistent rückwärts calculations without negative discount amounts', () => {

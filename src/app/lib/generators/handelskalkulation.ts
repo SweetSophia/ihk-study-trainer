@@ -470,6 +470,9 @@ function buildQuestion(
   backwardSteps?: Record<string, number>,
   moduleId?: string
 ): Question {
+  if (type === 'differenz' && (!forwardSteps || !backwardSteps)) {
+    throw new Error('buildQuestion: forwardSteps and backwardSteps are required for differenz type');
+  }
   const typeLabel = type === 'vorwaerts'
     ? 'Vorwärtskalkulation'
     : type === 'rueckwaerts'

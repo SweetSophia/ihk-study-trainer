@@ -16,7 +16,7 @@ import {
   updateProgress
 } from './lib/auth';
 import { validateQuestionAnswers } from './lib/answerValidation';
-import { toCanonicalModuleId } from './lib/moduleIds';
+import { normalizeProgressModules, toCanonicalModuleId } from './lib/moduleIds';
 
 // Import all generators
 import { generateBandwidthQuestion } from './lib/generators/bandwidth';
@@ -188,19 +188,7 @@ const GENERATORS: Record<string, () => Question> = {
       scenario: q.scenario,
     };
   },
-  handelskalkulation: () => {
-    const q = generateHandelskalkulationQuestion();
-    return {
-      id: `handelskalkulation-${Date.now()}`,
-      theme: q.theme,
-      module: 'handelskalkulation',
-      questionText: q.questionText,
-      expectedAnswers: q.expectedAnswers,
-      solutionSteps: q.solutionSteps,
-      difficulty: q.difficulty,
-      answerInputs: q.answerInputs,
-    };
-  },
+  handelskalkulation: generateHandelskalkulationQuestion,
   handelskalkulationVorwaerts: generateVorwaertsKalkulationQuestion,
   handelskalkulationRueckwaerts: generateRueckwaertsKalkulationQuestion,
 };
@@ -218,10 +206,11 @@ export default function Home() {
   const loadProgress = useCallback(async (hash: string) => {
     try {
       const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days?: number | null }[] = await getAllProgress(hash);
-      setProgress(userProgress);
+      const normalizedProgress = normalizeProgressModules(userProgress);
+      setProgress(normalizedProgress);
       
       // Calculate streak (simplified)
-      const maxStreak = Math.max(0, ...userProgress.map(p => p.streak_days ?? 0));
+      const maxStreak = Math.max(0, ...normalizedProgress.map(p => p.streak_days ?? 0));
       setStreakDays(maxStreak);
     } catch (error) {
       console.error('Error loading progress:', error);
