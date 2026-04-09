@@ -129,6 +129,8 @@ describe('handelskalkulation generator', () => {
       const question = generateVorwaertsKalkulationQuestion();
       expect(question.module).toBe('handelskalkulationVorwaerts');
       expect(question.answerInputs!.some((input) => input.valueKey === 'differenz')).toBe(false);
+      expect(question.answerInputs!.some((input) => input.valueKey.startsWith('backward_'))).toBe(false);
+      expect(question.answerInputs!.some((input) => input.valueKey.startsWith('forward_'))).toBe(false);
     }
   });
 
