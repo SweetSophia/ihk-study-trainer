@@ -32,7 +32,7 @@ export interface Question {
    * Optional direction hint for modules that support multiple question modes
    * (e.g., Linux: 'commandToDescription' vs 'descriptionToCommand')
    */
-  direction?: string;
+  direction?: 'commandToDescription' | 'descriptionToCommand';
   /**
    * Optional scenario text for modules that include situational context
    * (e.g., Cloud: describes the business/technical scenario for scenario-based questions)

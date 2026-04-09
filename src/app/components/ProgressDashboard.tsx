@@ -46,6 +46,10 @@ const MODULE_NAMES: Record<string, string> = {
   linux: 'Linux',
   cloud: 'Cloud',
   handelskalkulation: 'Kalkulation',
+  handelskalkulationVorwaerts: 'Vorwärtskalkulation',
+  handelskalkulationRueckwaerts: 'Rückwärtskalkulation',
+  'handelskalkulation-vorwaerts': 'Vorwärtskalkulation',
+  'handelskalkulation-rueckwaerts': 'Rückwärtskalkulation',
   sql: 'SQL',
 };
 

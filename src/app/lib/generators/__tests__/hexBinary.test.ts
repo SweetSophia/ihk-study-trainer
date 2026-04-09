@@ -78,13 +78,19 @@ describe('generateHexBinaryQuestion', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.6);
     const q = generateHexBinaryQuestion();
     const lastStep = q.solutionSteps[q.solutionSteps.length - 1];
-    expect(lastStep).toContain(q.expectedAnswers.binary);
+    expect('binary' in q.expectedAnswers).toBe(true);
+    if ('binary' in q.expectedAnswers) {
+      expect(lastStep).toContain(q.expectedAnswers.binary);
+    }
   });
 
   it('binary-to-hex solution ends with hex result', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.3);
     const q = generateHexBinaryQuestion();
     const lastStep = q.solutionSteps[q.solutionSteps.length - 1];
-    expect(lastStep).toContain(q.expectedAnswers.hex);
+    expect('hex' in q.expectedAnswers).toBe(true);
+    if ('hex' in q.expectedAnswers) {
+      expect(lastStep).toContain(q.expectedAnswers.hex);
+    }
   });
 });
