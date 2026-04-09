@@ -167,7 +167,6 @@ interface BaseKalkulationParams {
 }
 
 interface BaseKalkulationChain {
-  params: BaseKalkulationParams;
   lepNettoStep: ReturnType<typeof reverseMarkup>;
   rabattStep: ReturnType<typeof applyDeduction>;
   skontoStep: ReturnType<typeof applyDeduction>;
@@ -208,8 +207,15 @@ function computeKalkulationChain(params: BaseKalkulationParams): BaseKalkulation
   const ustStep = applyMarkup(kundenrabattStep.base, ustRate);
 
   return {
-    params, lepNettoStep, rabattStep, skontoStep, bp,
-    handlungskostenStep, gewinnStep, kundenskontoStep, kundenrabattStep, ustStep,
+    lepNettoStep,
+    rabattStep,
+    skontoStep,
+    bp,
+    handlungskostenStep,
+    gewinnStep,
+    kundenskontoStep,
+    kundenrabattStep,
+    ustStep,
   };
 }
 
