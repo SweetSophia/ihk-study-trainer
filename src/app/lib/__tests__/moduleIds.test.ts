@@ -13,6 +13,7 @@ describe('module ID compatibility helpers', () => {
     expect(toCanonicalModuleId('image-transfer-combo')).toBe('imageTransferCombo');
     expect(toCanonicalModuleId('handelskalkulation-vorwaerts')).toBe('handelskalkulationVorwaerts');
     expect(toCanonicalModuleId('handelskalkulation-rueckwaerts')).toBe('handelskalkulationRueckwaerts');
+    expect(toCanonicalModuleId('handelskalkulation')).toBe('handelskalkulationVorwaerts');
   });
 
   it('maps canonical IDs back to stored progress IDs for backward compatibility', () => {

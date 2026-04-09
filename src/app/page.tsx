@@ -37,6 +37,10 @@ import { generateLinuxQuestion } from './lib/generators/linux';
 import { generateCloudQuestion } from './lib/generators/cloud';
 import { generateHandelskalkulationQuestion, generateVorwaertsKalkulationQuestion, generateRueckwaertsKalkulationQuestion } from './lib/generators/handelskalkulation';
 
+function createQuestionId(module: string): string {
+  return `${module}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
 const GENERATORS: Record<string, () => Question> = {
   bandwidth: generateBandwidthQuestion,
   imageCalc: generateImageCalcQuestion,
@@ -47,7 +51,7 @@ const GENERATORS: Record<string, () => Question> = {
   binary: () => {
     const q = generateBinaryQuestion();
     return {
-      id: `binary-${Date.now()}`,
+      id: createQuestionId('binary'),
       theme: q.theme,
       module: 'binary',
       questionText: q.questionText,
@@ -59,7 +63,7 @@ const GENERATORS: Record<string, () => Question> = {
   hexBinary: () => {
     const q = generateHexBinaryQuestion();
     return {
-      id: `hexBinary-${Date.now()}`,
+      id: createQuestionId('hexBinary'),
       theme: q.theme,
       module: 'hexBinary',
       questionText: q.questionText,
@@ -71,7 +75,7 @@ const GENERATORS: Record<string, () => Question> = {
   hex: () => {
     const q = generateHexQuestion();
     return {
-      id: `hex-${Date.now()}`,
+      id: createQuestionId('hex'),
       theme: q.theme,
       module: 'hex',
       questionText: q.questionText,
@@ -83,7 +87,7 @@ const GENERATORS: Record<string, () => Question> = {
   subnetMask: () => {
     const q = generateSubnetMaskQuestion();
     return {
-      id: `subnetMask-${Date.now()}`,
+      id: createQuestionId('subnetMask'),
       theme: q.theme,
       module: 'subnetMask',
       questionText: q.questionText,
@@ -95,7 +99,7 @@ const GENERATORS: Record<string, () => Question> = {
   aggregation: () => {
     const q = generateAggregationQuestion();
     return {
-      id: `aggregation-${Date.now()}`,
+      id: createQuestionId('aggregation'),
       theme: q.theme,
       module: 'aggregation',
       questionText: q.questionText,
@@ -107,7 +111,7 @@ const GENERATORS: Record<string, () => Question> = {
   ports: () => {
     const q = generatePortQuestion();
     return {
-      id: `ports-${Date.now()}`,
+      id: createQuestionId('ports'),
       theme: q.theme,
       module: 'ports',
       questionText: q.questionText,
@@ -120,7 +124,7 @@ const GENERATORS: Record<string, () => Question> = {
   osi: () => {
     const q = generateOsiQuestion();
     return {
-      id: `osi-${Date.now()}`,
+      id: createQuestionId('osi'),
       theme: q.theme,
       module: 'osi',
       questionText: q.questionText,
@@ -142,7 +146,7 @@ const GENERATORS: Record<string, () => Question> = {
     }));
 
     return {
-      id: `cables-${Date.now()}`,
+      id: createQuestionId('cables'),
       theme: q.theme,
       module: 'cables',
       questionText: q.questionText,
@@ -163,7 +167,7 @@ const GENERATORS: Record<string, () => Question> = {
   linux: () => {
     const q = generateLinuxQuestion();
     return {
-      id: `linux-${Date.now()}`,
+      id: createQuestionId('linux'),
       theme: q.theme,
       module: 'linux',
       questionText: q.questionText,
@@ -177,7 +181,7 @@ const GENERATORS: Record<string, () => Question> = {
   cloud: () => {
     const q = generateCloudQuestion();
     return {
-      id: `cloud-${Date.now()}`,
+      id: createQuestionId('cloud'),
       theme: q.theme,
       module: 'cloud',
       questionText: q.questionText,

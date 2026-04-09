@@ -6,7 +6,6 @@ interface KalkulationStep {
   label: string;
   key: string;
   isPercentage?: boolean;
-  isResult?: boolean;
 }
 
 interface GeneratedKalkulation {
@@ -21,12 +20,12 @@ interface GeneratedDifferenz extends GeneratedKalkulation {
 }
 
 const VORWAERTS_SCHEMA: KalkulationStep[] = [
-  { label: 'Listeneinkaufspreis (LEP)', key: 'lep', isResult: true },
+  { label: 'Listeneinkaufspreis (LEP)', key: 'lep' },
   { label: '− Lieferantenrabatt', key: 'rabatt', isPercentage: true },
   { label: '= Zieleinkaufspreis (ZEP)', key: 'zep' },
   { label: '− Lieferskonto', key: 'skonto', isPercentage: true },
   { label: '= Bareinkaufspreis (BEP)', key: 'bep' },
-  { label: '+ Bezugskosten', key: 'bezugskosten', isResult: true },
+  { label: '+ Bezugskosten', key: 'bezugskosten' },
   { label: '= Bezugspreis (BP)', key: 'bp' },
   { label: '+ Handlungskosten', key: 'handlungskosten', isPercentage: true },
   { label: '= Selbstkosten', key: 'selbstkosten' },
@@ -52,7 +51,7 @@ const RUECKWAERTS_SCHEMA: KalkulationStep[] = [
   { label: '= Selbstkosten', key: 'selbstkosten' },
   { label: '− Handlungskosten', key: 'handlungskosten', isPercentage: true },
   { label: '= Bezugspreis (BP)', key: 'bp' },
-  { label: '− Bezugskosten', key: 'bezugskosten', isResult: true },
+  { label: '− Bezugskosten', key: 'bezugskosten' },
   { label: '= Bareinkaufspreis (BEP)', key: 'bep' },
   { label: '+ Lieferskonto', key: 'skonto', isPercentage: true },
   { label: '= Zieleinkaufspreis (ZEP)', key: 'zep' },
@@ -656,11 +655,13 @@ function buildQuestion(
   };
 }
 
+/** Generates a dedicated Vorwärtskalkulation question with medium difficulty. */
 export function generateVorwaertsKalkulationQuestion(): Question {
   const { given, calculated, schema } = generateVorwaertsCalculation();
   return buildQuestion('vorwaerts', given, calculated, schema, { moduleId: 'handelskalkulationVorwaerts' });
 }
 
+/** Generates a dedicated Rückwärtskalkulation question with hard difficulty. */
 export function generateRueckwaertsKalkulationQuestion(): Question {
   const { given, calculated, schema } = generateRueckwaertsCalculation();
   return buildQuestion('rueckwaerts', given, calculated, schema, { moduleId: 'handelskalkulationRueckwaerts' });
