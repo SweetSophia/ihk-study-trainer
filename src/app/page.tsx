@@ -38,7 +38,7 @@ import { generateCloudQuestion } from './lib/generators/cloud';
 import { generateHandelskalkulationQuestion, generateVorwaertsKalkulationQuestion, generateRueckwaertsKalkulationQuestion } from './lib/generators/handelskalkulation';
 
 function createQuestionId(module: string): string {
-  return `${module}-${crypto.randomUUID().slice(0, 8)}`;
+  return `${module}-${crypto.randomUUID()}`;
 }
 
 const GENERATORS: Record<string, () => Question> = {

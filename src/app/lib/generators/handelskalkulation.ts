@@ -687,15 +687,18 @@ export function generateHandelskalkulationQuestion(): Question {
     return buildQuestion(type, given, calculated, schema);
   }
 
-  // DifferenzCalculation can fail to find valid values — wrap in try/catch and fallback
+  // DifferenzCalculation can fail to find valid values — only catch generator failures.
+  let differenzResult;
   try {
-    const { given, calculated, forwardSteps, backwardSteps, schema } = generateDifferenzCalculation();
-    return buildQuestion(type, given, calculated, schema, { forwardSteps, backwardSteps });
+    differenzResult = generateDifferenzCalculation();
   } catch (error) {
     console.warn('[handelskalkulation] DifferenzCalculation failed, falling back to vorwaerts', error);
     const { given, calculated, schema } = generateVorwaertsCalculation();
     return buildQuestion('vorwaerts', given, calculated, schema);
   }
+
+  const { given, calculated, forwardSteps, backwardSteps, schema } = differenzResult;
+  return buildQuestion(type, given, calculated, schema, { forwardSteps, backwardSteps });
 }
 
 export { VORWAERTS_SCHEMA, RUECKWAERTS_SCHEMA };

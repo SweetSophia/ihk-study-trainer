@@ -27,6 +27,8 @@ describe('handelskalkulation generator', () => {
       expectMoneyClose(calculated.bep + given.bezugskosten, calculated.bp);
       expectMoneyClose(calculated.bp + calculated.handlungskosten, calculated.selbstkosten);
       expectMoneyClose(calculated.selbstkosten + calculated.gewinn, calculated.bvp);
+      expectMoneyClose(calculated.zvp + calculated.kundenrabatt, calculated.nettovk);
+      expectMoneyClose(calculated.bvp + calculated.kundenskonto, calculated.zvp);
       expectMoneyClose(calculated.nettovk + calculated.ust, calculated.bruttovk);
     }
   });

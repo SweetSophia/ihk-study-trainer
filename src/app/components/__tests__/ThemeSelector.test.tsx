@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // Mock framer-motion to avoid animation complexity in tests
@@ -42,6 +42,27 @@ import ThemeSelector from "../ThemeSelector";
 
 describe("ThemeSelector - SQL module addition", () => {
   const onSelectModule = vi.fn();
+
+  function getMobileGrid() {
+    const mobileSqlLabel = screen.getAllByText("SQL").find((node) =>
+      node.closest("div")?.className.includes("lg:hidden"),
+    );
+
+    if (!mobileSqlLabel) {
+      throw new Error("Mobile grid not found");
+    }
+
+    const grid = mobileSqlLabel.closest("div.grid");
+    if (!grid) {
+      throw new Error("Mobile grid container not found");
+    }
+
+    return grid;
+  }
+
+  function getMobileModuleButton(name: string) {
+    return within(getMobileGrid() as HTMLElement).getByRole("button", { name: new RegExp(name, "i") });
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -106,11 +127,7 @@ describe("ThemeSelector - SQL module addition", () => {
         />,
       );
 
-      // In the mobile strip, find the button by its accessible name containing "SQL"
-      // The mobile strip uses regular <button> elements
-      const sqlTexts = screen.getAllByText("SQL");
-      // Click the first occurrence (mobile strip button contains just the text and icon)
-      await userEvent.click(sqlTexts[0]);
+      await userEvent.click(getMobileModuleButton("SQL"));
 
       expect(onSelectModule).toHaveBeenCalledWith("sql");
     });
@@ -124,12 +141,7 @@ describe("ThemeSelector - SQL module addition", () => {
         />,
       );
 
-      // The active module button should have the emerald active classes
-      // We can check by finding buttons that contain "SQL" text and checking their class
-      const sqlTexts = screen.getAllByText("SQL");
-      // The parent button of the mobile strip SQL text should have the active class
-      const sqlButton = sqlTexts[0].closest("button");
-      expect(sqlButton).toHaveClass("bg-emerald-500/10");
+      expect(getMobileModuleButton("SQL")).toHaveClass("bg-emerald-500/10");
     });
 
     it("does not mark SQL module as active when currentModule is something else", () => {
@@ -141,9 +153,7 @@ describe("ThemeSelector - SQL module addition", () => {
         />,
       );
 
-      const sqlTexts = screen.getAllByText("SQL");
-      const sqlButton = sqlTexts[0].closest("button");
-      expect(sqlButton).not.toHaveClass("bg-emerald-500/10");
+      expect(getMobileModuleButton("SQL")).not.toHaveClass("bg-emerald-500/10");
     });
   });
 
@@ -174,6 +184,7 @@ describe("ThemeSelector - SQL module addition", () => {
         "Kabel",
         "Linux",
         "Cloud",
+        "Kalkulation",
         "Vorwärtskalk.",
         "Rückwärtskalk.",
         "SQL",
@@ -212,6 +223,7 @@ describe("ThemeSelector - SQL module addition", () => {
         "Kabel",
         "Linux",
         "Cloud",
+        "Kalkulation",
         "Vorwärtskalk.",
         "Rückwärtskalk.",
       ];
@@ -236,8 +248,7 @@ describe("ThemeSelector - SQL module addition", () => {
       );
 
       // Click SQL module
-      const sqlTexts = screen.getAllByText("SQL");
-      await userEvent.click(sqlTexts[0]);
+      await userEvent.click(getMobileModuleButton("SQL"));
       expect(onSelectModule).toHaveBeenLastCalledWith("sql");
     });
   });
@@ -252,8 +263,7 @@ describe("ThemeSelector - SQL module addition", () => {
         />,
       );
 
-      const sqlTexts = screen.getAllByText("SQL");
-      await userEvent.click(sqlTexts[0]);
+      await userEvent.click(getMobileModuleButton("SQL"));
 
       // Should pass 'sql' (the id), not 'SQL' (the display name)
       expect(onSelectModule).toHaveBeenCalledWith("sql");
