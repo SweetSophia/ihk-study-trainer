@@ -650,7 +650,10 @@ function buildQuestion(
     type === 'vorwaerts' ? 'medium' : 'hard';
 
   return {
-    id: `${moduleId ?? 'handelskalkulation'}-${crypto.randomUUID().slice(0, 8)}`,
+    id:
+      `${moduleId ?? 'handelskalkulation'}-${
+        globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+      }`,
     theme: 'Wirtschaftsrechnen',
     module: moduleId ?? 'handelskalkulation',
     questionText: frage,
