@@ -196,8 +196,15 @@ function computeKalkulationChain(params: BaseKalkulationParams): BaseKalkulation
   const { lepBrutto, ustRate, lieferRabatt, lieferskonto, bezugskosten,
     handlungsKosten, gewinnZuschlag, kundenSkonto, kundenRabatt } = params;
 
+  // lepNettoStep is kept in the chain for backward/differenz kalkulation
+  // (backward needs it to recover LEP netto in its final schema step).
+  // Vorwärtskalkulation does NOT use lepNettoStep — it applies
+  // rabatt/skonto directly to LEP brutto (see generateVorwaertsCalculation).
   const lepNettoStep = reverseMarkup(lepBrutto, ustRate);
-  const rabattStep = applyDeduction(lepNettoStep.base, lieferRabatt);
+
+  // Vorwärtskalkulation: Apply rabatt and skonto directly to LEP brutto.
+  // This is the correct IHK behavior — no VAT deduction at start.
+  const rabattStep = applyDeduction(lepBrutto, lieferRabatt);
   const skontoStep = applyDeduction(rabattStep.remaining, lieferskonto);
   const bp = skontoStep.remaining + bezugskosten;
   const handlungskostenStep = applyMarkup(bp, handlungsKosten);
@@ -226,7 +233,7 @@ export function generateVorwaertsCalculation(): GeneratedKalkulation {
   const chain = computeKalkulationChain(params);
 
   const calculated = toRoundedRecord({
-    lep: chain.lepNettoStep.base,
+    lep: lepBrutto,
     rabatt: chain.rabattStep.amount,
     zep: chain.rabattStep.remaining,
     skonto: chain.skontoStep.amount,
@@ -547,9 +554,8 @@ function buildQuestion(
     solutionSteps.push('=== VORWÄRTSKALKULATION (LEP → Brutto-VK) ===');
     solutionSteps.push(`Gegeben: LEP brutto = ${formatEuro(given.lepBrutto)}`);
     solutionSteps.push('');
-    solutionSteps.push(`LEP netto = ${formatEuro(given.lepBrutto)} / ${formatMarkupFactor(given.ustRate)} = ${formatEuro(forwardSteps.lep)}`);
-    solutionSteps.push(`Rabatt = ${formatEuro(forwardSteps.lep)} × ${given.lieferRabatt}% = ${formatEuro(forwardSteps.rabatt)}`);
-    solutionSteps.push(`ZEP = ${formatEuro(forwardSteps.lep)} − ${formatEuro(forwardSteps.rabatt)} = ${formatEuro(forwardSteps.zep)}`);
+    solutionSteps.push(`Rabatt = ${formatEuro(given.lepBrutto)} × ${given.lieferRabatt}% = ${formatEuro(forwardSteps.rabatt)}`);
+    solutionSteps.push(`ZEP = ${formatEuro(given.lepBrutto)} − ${formatEuro(forwardSteps.rabatt)} = ${formatEuro(forwardSteps.zep)}`);
     solutionSteps.push(`Skonto = ${formatEuro(forwardSteps.zep)} × ${given.lieferskonto}% = ${formatEuro(forwardSteps.skonto)}`);
     solutionSteps.push(`BEP = ${formatEuro(forwardSteps.zep)} − ${formatEuro(forwardSteps.skonto)} = ${formatEuro(forwardSteps.bep)}`);
     solutionSteps.push(`BP = ${formatEuro(forwardSteps.bep)} + ${formatEuro(forwardSteps.bezugskosten)} = ${formatEuro(forwardSteps.bp)}`);
@@ -608,9 +614,8 @@ function buildQuestion(
     if (type === 'vorwaerts') {
       solutionSteps.push(`Gegeben: LEP brutto = ${formatEuro(given.lepBrutto)}, Rabatt = ${given.lieferRabatt}%, Skonto = ${given.lieferskonto}%`);
       solutionSteps.push('');
-      solutionSteps.push(`LEP netto = ${formatEuro(given.lepBrutto)} / ${formatMarkupFactor(given.ustRate)} = ${formatEuro(calculated.lep as number)}`);
-      solutionSteps.push(`Rabatt = ${formatEuro(calculated.lep as number)} × ${given.lieferRabatt}% = ${formatEuro(calculated.rabatt as number)}`);
-      solutionSteps.push(`ZEP = ${formatEuro(calculated.lep as number)} − ${formatEuro(calculated.rabatt as number)} = ${formatEuro(calculated.zep as number)}`);
+      solutionSteps.push(`Rabatt = ${formatEuro(given.lepBrutto)} × ${given.lieferRabatt}% = ${formatEuro(calculated.rabatt as number)}`);
+      solutionSteps.push(`ZEP = ${formatEuro(given.lepBrutto)} − ${formatEuro(calculated.rabatt as number)} = ${formatEuro(calculated.zep as number)}`);
       solutionSteps.push(`Skonto = ${formatEuro(calculated.zep as number)} × ${given.lieferskonto}% = ${formatEuro(calculated.skonto as number)}`);
       solutionSteps.push(`BEP = ${formatEuro(calculated.zep as number)} − ${formatEuro(calculated.skonto as number)} = ${formatEuro(calculated.bep as number)}`);
       solutionSteps.push(`BP = ${formatEuro(calculated.bep as number)} + ${formatEuro(calculated.bezugskosten as number)} = ${formatEuro(calculated.bp as number)}`);
