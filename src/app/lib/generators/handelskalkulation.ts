@@ -273,6 +273,17 @@ export function generateRueckwaertsCalculation(): GeneratedKalkulation {
     handlungsKosten, gewinnZuschlag, kundenSkonto, kundenRabatt } = params;
   const chain = computeKalkulationChain(params);
 
+  // In backward kalkulation, LEP is recovered from the chain's lepNettoStep.
+  // Compute ZEP, BEP, Skonto, Rabatt, and BP from this backward-derived LEP.
+  // This ensures the backward direction is internally consistent:
+  // zep + rabatt = lep AND bep + skonto = zep AND bep + bezugskosten = bp (all based on lepNetto).
+  const lepNetto = chain.lepNettoStep.base;
+  const zepFromLep = round2(lepNetto * (1 - lieferRabatt / 100));
+  const rabattFromLep = round2(lepNetto - zepFromLep);
+  const bepFromZep = round2(zepFromLep * (1 - lieferskonto / 100));
+  const skontoFromZep = round2(zepFromLep - bepFromZep);
+  const bpFromBep = bepFromZep + bezugskosten;
+
   const calculated = toRoundedRecord({
     ust: chain.ustStep.amount,
     nettovk: chain.kundenrabattStep.base,
@@ -283,13 +294,13 @@ export function generateRueckwaertsCalculation(): GeneratedKalkulation {
     gewinn: chain.gewinnStep.amount,
     selbstkosten: chain.handlungskostenStep.total,
     handlungskosten: chain.handlungskostenStep.amount,
-    bp: chain.bp,
+    bp: bpFromBep,
     bezugskosten,
-    bep: chain.skontoStep.remaining,
-    skonto: chain.skontoStep.amount,
-    zep: chain.rabattStep.remaining,
-    rabatt: chain.rabattStep.amount,
-    lep: chain.lepNettoStep.base,
+    bep: bepFromZep,
+    skonto: skontoFromZep,
+    zep: zepFromLep,
+    rabatt: rabattFromLep,
+    lep: lepNetto,
   });
 
   const given: Record<string, number> = {
