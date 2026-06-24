@@ -1,4 +1,5 @@
 import { Question } from '../../types';
+import { type ModuleId } from '../modules';
 import { generateBandwidthQuestion } from './bandwidth';
 import { generateImageCalcQuestion } from './imageCalc';
 import { generateImageTransferComboQuestion } from './imageTransferCombo';
@@ -22,12 +23,20 @@ import {
 } from './handelskalkulation';
 
 /**
+ * Module IDs that have a registered generator. Excludes `'sql'` because
+ * the SQL module's exercises come from an AI server action, not a local
+ * generator. Deriving this from `ModuleId` (instead of hardcoding the
+ * 18 keys) means a missing generator becomes a compile error.
+ */
+export type RegistryModuleId = Exclude<ModuleId, 'sql'>;
+
+/**
  * Generate a unique question id with a stable module prefix.
  * The prefix lets tests assert on the id namespace and keeps logs grep-able.
  * Falls back to a timestamp + random suffix when `crypto.randomUUID` is
  * unavailable (older browsers, jsdom).
  */
-export function createQuestionId(module: string): string {
+export function createQuestionId(module: ModuleId): string {
   const uniqueId =
     globalThis.crypto?.randomUUID?.() ??
     `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -45,8 +54,12 @@ export function createQuestionId(module: string): string {
  * stamp a fresh id + module name live here so the underlying generators
  * stay pure: they return typed content, this layer adapts it to a
  * `Question` ready for the `StudyCard` component.
+ *
+ * The `Record<RegistryModuleId, …>` type forces every base module to
+ * have a generator and forbids stray keys — `tsc` is the source of
+ * truth for coverage.
  */
-export const GENERATORS: Record<string, () => Question> = {
+export const GENERATORS: Record<RegistryModuleId, () => Question> = {
   bandwidth: generateBandwidthQuestion,
   imageCalc: generateImageCalcQuestion,
   imageTransferCombo: generateImageTransferComboQuestion,
@@ -199,5 +212,11 @@ export const GENERATORS: Record<string, () => Question> = {
   handelskalkulationRueckwaerts: generateRueckwaertsKalkulationQuestion,
 };
 
-/** Every module ID that has a registered generator. Use to assert coverage. */
-export const GENERATOR_MODULE_IDS: readonly string[] = Object.keys(GENERATORS);
+/**
+ * Every module ID that has a registered generator. Useful for tests and
+ * for asserting coverage from the module list. Derived from the keyof the
+ * registry so it stays in sync with `Record<RegistryModuleId, …>`.
+ */
+export const GENERATOR_MODULE_IDS: readonly RegistryModuleId[] = Object.keys(
+  GENERATORS,
+) as readonly RegistryModuleId[];

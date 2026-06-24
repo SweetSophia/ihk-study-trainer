@@ -17,6 +17,7 @@ import {
 } from './lib/auth';
 import { validateQuestionAnswers } from './lib/answerValidation';
 import { toCanonicalModuleId } from './lib/moduleIds';
+import { isModuleId } from './lib/modules';
 import { GENERATORS } from './lib/generators/registry';
 
 export default function Home() {
@@ -128,11 +129,11 @@ export default function Home() {
   };
 
   const generateNewQuestion = (module: string) => {
-    const generator = GENERATORS[module];
-    if (generator) {
-      const question = generator();
-      setCurrentQuestion(question);
-    }
+    // isModuleId narrows `module` to ModuleId; the SQL exclusion keeps us
+    // out of the registry (SQL has its own trainer + AI server action).
+    if (!isModuleId(module) || module === 'sql') return;
+    const question = GENERATORS[module]();
+    setCurrentQuestion(question);
   };
 
   const handleCheckAnswer = useCallback((answers: Record<string, string>): boolean => {

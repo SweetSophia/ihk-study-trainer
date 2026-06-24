@@ -48,8 +48,13 @@ export interface ModuleDescriptor {
  * register it in `lib/generators/registry.ts`, (3) ensure DB rows use the
  * canonical id (or add a mapping in `lib/moduleIds.ts` for legacy stored
  * forms).
+ *
+ * `as const satisfies readonly ModuleDescriptor[]` preserves the literal
+ * id type (e.g. `'bandwidth'`) instead of widening to `string`. That lets
+ * `ModuleId` (below) be a precise union and gives the registry
+ * compile-time exhaustiveness.
  */
-export const BASE_MODULES: readonly ModuleDescriptor[] = [
+export const BASE_MODULES = [
   { id: 'bandwidth', name: 'Übertragungszeit', icon: ArrowLeftRight, description: 'Dateitransfer' },
   { id: 'imageCalc', name: 'Bildgröße', icon: ImageIcon, description: 'Speicher' },
   { id: 'imageTransferCombo', name: 'Bild-Transfer', icon: ImageIcon, description: 'Bild + Übertragung' },
@@ -69,7 +74,7 @@ export const BASE_MODULES: readonly ModuleDescriptor[] = [
   { id: 'handelskalkulation', name: 'Kalkulation', icon: Calculator, description: 'Gemischt' },
   { id: 'handelskalkulationVorwaerts', name: 'Vorwärtskalkulation', shortName: 'Vorwärtskalk.', icon: Calculator, description: 'LEP → Brutto-VK' },
   { id: 'handelskalkulationRueckwaerts', name: 'Rückwärtskalkulation', shortName: 'Rückwärtskalk.', icon: Calculator, description: 'Brutto-VK → LEP' },
-] as const;
+] as const satisfies readonly ModuleDescriptor[];
 
 /**
  * The SQL module requires authentication. The component layer adds it
@@ -77,27 +82,48 @@ export const BASE_MODULES: readonly ModuleDescriptor[] = [
  * has no entry in `lib/generators/registry.ts` — its exercises come
  * from an AI server action (`actions/generate-sql-exercise.ts`).
  */
-export const SQL_MODULE: ModuleDescriptor = {
+export const SQL_MODULE = {
   id: 'sql',
   name: 'SQL',
   icon: Database,
   description: 'Datenbankabfragen',
-};
+} as const satisfies ModuleDescriptor;
 
 /** Every module, including auth-gated ones. Derived from BASE_MODULES + SQL_MODULE. */
-export const ALL_MODULES: readonly ModuleDescriptor[] = [...BASE_MODULES, SQL_MODULE];
+export const ALL_MODULES = [
+  ...BASE_MODULES,
+  SQL_MODULE,
+] as const satisfies readonly ModuleDescriptor[];
+
+/**
+ * Literal union of every module id. Derived from `ALL_MODULES` so adding a
+ * module to `BASE_MODULES` (or `SQL_MODULE`) automatically extends the
+ * union — and TypeScript then forces `MODULE_NAMES` / `MODULE_DESCRIPTIONS`
+ * / `MODULE_ICONS` and the `GENERATORS` registry to stay in sync.
+ */
+export type ModuleId = (typeof ALL_MODULES)[number]['id'];
 
 /** Quick lookup: id → German name. Use this anywhere a label is needed. */
-export const MODULE_NAMES: Record<string, string> = Object.fromEntries(
+export const MODULE_NAMES: Record<ModuleId, string> = Object.fromEntries(
   ALL_MODULES.map((m) => [m.id, m.name]),
-);
+) as Record<ModuleId, string>;
 
 /** Quick lookup: id → description. */
-export const MODULE_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
+export const MODULE_DESCRIPTIONS: Record<ModuleId, string> = Object.fromEntries(
   ALL_MODULES.map((m) => [m.id, m.description]),
-);
+) as Record<ModuleId, string>;
 
 /** Quick lookup: id → Lucide icon component. */
-export const MODULE_ICONS: Record<string, LucideIcon> = Object.fromEntries(
+export const MODULE_ICONS: Record<ModuleId, LucideIcon> = Object.fromEntries(
   ALL_MODULES.map((m) => [m.id, m.icon]),
-);
+) as Record<ModuleId, LucideIcon>;
+
+/**
+ * Type guard: returns true when `value` is a registered module id.
+ * Use at boundaries (URL params, DB rows, RPC payloads) before indexing
+ * into `MODULE_NAMES` / `MODULE_DESCRIPTIONS` / `MODULE_ICONS` /
+ * `GENERATORS` so the rest of the code can rely on `ModuleId` narrowing.
+ */
+export function isModuleId(value: string): value is ModuleId {
+  return value in MODULE_NAMES;
+}

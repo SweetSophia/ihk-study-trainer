@@ -31,8 +31,11 @@ describe('modules registry', () => {
 
   it('SQL is the only auth-gated module and has a unique id', () => {
     expect(SQL_MODULE.id).toBe('sql');
-    const baseIds = new Set(BASE_MODULES.map((m) => m.id));
-    expect(baseIds.has('sql')).toBe(false);
+    // The 'sql' literal is provably absent from BASE_MODULES' id union
+    // (`(typeof BASE_MODULES)[number]['id']` excludes it). The cast is a
+    // defense-in-depth runtime check in case a future refactor widens
+    // the type without re-checking the auth-gating invariant.
+    expect(BASE_MODULES.some((m) => (m.id as string) === 'sql')).toBe(false);
   });
 
   it('ALL_MODULES is BASE_MODULES plus SQL_MODULE', () => {
