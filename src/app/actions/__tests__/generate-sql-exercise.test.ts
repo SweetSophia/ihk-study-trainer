@@ -9,11 +9,21 @@ vi.mock('@ai-sdk/groq', () => ({
   groq: vi.fn(() => 'mocked-groq-model'),
 }));
 
-// Mock auth functions
-const mockHashExists = vi.fn().mockResolvedValue(true);
-vi.mock('../../lib/auth', () => ({
-  hashExists: (...args: unknown[]) => mockHashExists(...args),
+// Mock auth functions — keep the real isValidAccessHash (so the action's
+// shape check still runs in these tests) and override only hashExists.
+// `vi.hoisted` is required because vi.mock factories are hoisted to the
+// top of the file, so the mock handle has to be hoisted with it.
+const { mockHashExists } = vi.hoisted(() => ({
+  mockHashExists: vi.fn(),
 }));
+vi.mock('../../lib/auth', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/auth')>('../../lib/auth');
+  return {
+    ...actual,
+    hashExists: mockHashExists,
+  };
+});
+mockHashExists.mockResolvedValue(true);
 
 import { generateText } from 'ai';
 import { groq } from '@ai-sdk/groq';
@@ -30,9 +40,11 @@ const fakeResult = (text: string): MockTextResult => ({ text }) as unknown as Mo
 type GenerateTextArgs = Parameters<typeof generateText>[0];
 
 // Deterministic test counter - avoids Date.now()/Math.random() in test hashes
-// Do NOT reset between tests; each test gets a unique hash to avoid rate limiting
+// Do NOT reset between tests; each test gets a unique hash to avoid rate limiting.
+// Format: 4-char "test" + 8 zero-padded digits = exactly 12 alphanumeric chars,
+// which is what isValidAccessHash() requires.
 let testCounter = 0;
-const nextHash = () => `test-hash-${testCounter++}`;
+const nextHash = () => `test${String(testCounter++).padStart(8, '0')}`;
 
 // Stub GROQ_API_KEY at file scope before any tests run
 beforeAll(() => {
@@ -210,5 +222,42 @@ describe('SqlExercise Zod schema validation', () => {
     expect(result).toHaveProperty('question');
     expect(result).toHaveProperty('solution_query');
     expect(result).toHaveProperty('difficulty');
+  });
+});
+
+describe('generateSqlExercise - access hash shape validation', () => {
+  // Each of these must reject BEFORE touching Supabase or Groq. We assert
+  // that by checking the mocks were never called.
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockHashExists.mockResolvedValue(true);
+  });
+
+  it('rejects a hash that is too short', async () => {
+    await expect(generateSqlExercise('short')).rejects.toThrow(/Ungültiger Zugangscode/i);
+    expect(mockHashExists).not.toHaveBeenCalled();
+    expect(mockGenerateText).not.toHaveBeenCalled();
+  });
+
+  it('rejects an empty string', async () => {
+    await expect(generateSqlExercise('')).rejects.toThrow(/Ungültiger Zugangscode/i);
+    expect(mockHashExists).not.toHaveBeenCalled();
+    expect(mockGenerateText).not.toHaveBeenCalled();
+  });
+
+  it('rejects a hash with non-alphanumeric characters', async () => {
+    // 11 alnum + 1 dash = 12 chars but fails the character-class check
+    await expect(generateSqlExercise('abcdef12345-')).rejects.toThrow(/Ungültiger Zugangscode/i);
+    expect(mockHashExists).not.toHaveBeenCalled();
+  });
+
+  it('rejects a hash that is too long', async () => {
+    await expect(generateSqlExercise('a'.repeat(13))).rejects.toThrow(/Ungültiger Zugangscode/i);
+    expect(mockHashExists).not.toHaveBeenCalled();
+  });
+
+  it('rejects a hash with whitespace', async () => {
+    await expect(generateSqlExercise('abcdef 12345')).rejects.toThrow(/Ungültiger Zugangscode/i);
+    expect(mockHashExists).not.toHaveBeenCalled();
   });
 });

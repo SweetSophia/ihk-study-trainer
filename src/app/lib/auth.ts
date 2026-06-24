@@ -48,6 +48,27 @@ export function generateAccessHash(): string {
   return hash;
 }
 
+/**
+ * Pattern for a valid access hash. Mirrors the `access_hash VARCHAR(12)`
+ * column in `database/schema.sql` — any change to the DB column must be
+ * reflected here. The hash IS the credential; treating it loosely would
+ * let attackers probe the auth path with arbitrary strings.
+ */
+const ACCESS_HASH_PATTERN = /^[A-Za-z0-9]{12}$/;
+
+/**
+ * Type guard: returns true when `value` is a syntactically valid access
+ * hash. Use at boundaries (server actions, URL params, RPC payloads)
+ * BEFORE forwarding the value to Supabase so we fail fast on bad input
+ * instead of leaking the error path to the caller.
+ *
+ * This does NOT verify the hash exists in the database — that's the job
+ * of `getUserByHash` / `hashExists` (which throw on RPC errors).
+ */
+export function isValidAccessHash(value: unknown): value is string {
+  return typeof value === 'string' && ACCESS_HASH_PATTERN.test(value);
+}
+
 /** Check if a hash already exists in the database */
 export async function hashExists(hash: string): Promise<boolean> {
   if (!isSupabaseConfigured) {
@@ -228,10 +249,13 @@ export async function recordQuestionAttempt(
       p_correct_answer: correctAnswer
     });
     if (error) {
-      console.error(`record_question RPC failed (hash=${accessHash}, module=${module}, type=${questionType}):`, error);
+      // Never log the access hash — it is the credential. Module + type
+      // are sufficient to identify which row failed for ops triage.
+      console.error(`record_question RPC failed (module=${module}, type=${questionType}):`, error);
     }
   } catch (err) {
-    console.error(`record_question RPC failed (hash=${accessHash}, module=${module}, type=${questionType}):`, err);
+    // Same: hash is the credential, never log it.
+    console.error(`record_question RPC failed (module=${module}, type=${questionType}):`, err);
   }
 }
 
