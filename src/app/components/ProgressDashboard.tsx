@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { toCanonicalModuleId } from '../lib/moduleIds';
+import { MODULE_NAMES } from '../lib/modules';
 import { motion } from 'framer-motion';
 import { 
   Trophy, 
@@ -25,29 +26,6 @@ interface ProgressDashboardProps {
   streakDays: number;
   onPracticeMistakes: () => void;
 }
-
-const MODULE_NAMES: Record<string, string> = {
-  bandwidth: 'Übertragungszeit',
-  imageCalc: 'Bildgröße',
-  imageTransferCombo: 'Bild-Transfer',
-  overhead: 'Overhead',
-  subnetting: 'Subnetting',
-  unitConversion: 'Einheiten',
-  binary: 'Binär',
-  hex: 'Hexadezimal',
-  hexBinary: 'Hex/Binär',
-  subnetMask: 'Subnetzmaske',
-  aggregation: 'Aggregation',
-  ports: 'Ports',
-  osi: 'OSI-Modell',
-  cables: 'Kabel',
-  linux: 'Linux',
-  cloud: 'Cloud',
-  handelskalkulation: 'Kalkulation',
-  handelskalkulationVorwaerts: 'Vorwärtskalkulation',
-  handelskalkulationRueckwaerts: 'Rückwärtskalkulation',
-  sql: 'SQL',
-};
 
 export default function ProgressDashboard({ 
   progress, 

@@ -1,35 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { 
-  Calculator, Image as ImageIcon, Network, ArrowLeftRight,
-  Binary, Hexagon, Shield, Layers, Cable, Server, Globe, Settings, Database, Terminal, Cloud, Repeat
-} from 'lucide-react';
-
-const BASE_MODULES = [
-  { id: 'bandwidth', name: 'Übertragungszeit', icon: ArrowLeftRight, description: 'Dateitransfer' },
-  { id: 'imageCalc', name: 'Bildgröße', icon: ImageIcon, description: 'Speicher' },
-  { id: 'imageTransferCombo', name: 'Bild-Transfer', icon: ImageIcon, description: 'Bild + Übertragung' },
-  { id: 'overhead', name: 'Overhead', icon: Calculator, description: 'Protokoll' },
-  { id: 'subnetting', name: 'Subnetting', icon: Network, description: 'IP-Subnetze' },
-  { id: 'unitConversion', name: 'Einheiten', icon: Settings, description: 'Umrechnung' },
-  { id: 'binary', name: 'Binär', icon: Binary, description: 'Binär/Dezimal' },
-  { id: 'hex', name: 'Hex', icon: Hexagon, description: 'Hex/Dezimal' },
-  { id: 'hexBinary', name: 'Hex/Binär', icon: Repeat, description: 'Hex/Binär' },
-  { id: 'subnetMask', name: 'Subnetzmaske', icon: Shield, description: 'CIDR→Maske' },
-  { id: 'aggregation', name: 'Aggregation', icon: Layers, description: 'Summarization' },
-  { id: 'ports', name: 'Ports', icon: Server, description: 'Port/Protokoll' },
-  { id: 'osi', name: 'OSI', icon: Globe, description: 'OSI-Schichten' },
-  { id: 'cables', name: 'Kabel', icon: Cable, description: 'Kabelauswahl' },
-  { id: 'linux', name: 'Linux', icon: Terminal, description: 'Linux-Befehle' },
-  { id: 'cloud', name: 'Cloud', icon: Cloud, description: 'Cloud Computing' },
-  { id: 'handelskalkulation', name: 'Kalkulation', icon: Calculator, description: 'Gemischt' },
-  { id: 'handelskalkulationVorwaerts', name: 'Vorwärtskalk.', icon: Calculator, description: 'LEP → Brutto-VK' },
-  { id: 'handelskalkulationRueckwaerts', name: 'Rückwärtskalk.', icon: Calculator, description: 'Brutto-VK → LEP' },
-];
-
-// SQL module requires authentication
-const SQL_MODULE = { id: 'sql', name: 'SQL', icon: Database, description: 'Datenbankabfragen' };
+import { BASE_MODULES, SQL_MODULE, type ModuleDescriptor } from '../lib/modules';
 
 interface ThemeSelectorProps {
   currentModule: string | null;
@@ -38,13 +10,15 @@ interface ThemeSelectorProps {
 }
 
 export default function ThemeSelector({ currentModule, onSelectModule, isAuthenticated }: ThemeSelectorProps) {
-  const MODULES = isAuthenticated ? [...BASE_MODULES, SQL_MODULE] : BASE_MODULES;
+  const modules: readonly ModuleDescriptor[] = isAuthenticated
+    ? [...BASE_MODULES, SQL_MODULE]
+    : BASE_MODULES;
 
   return (
     <>
       {/* Mobile: wrapped grid of topic cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 lg:hidden">
-        {MODULES.map((module) => {
+        {modules.map((module) => {
           const Icon = module.icon;
           const isActive = currentModule === module.id;
           return (
@@ -58,7 +32,7 @@ export default function ThemeSelector({ currentModule, onSelectModule, isAuthent
               }`}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm font-medium truncate">{module.name}</span>
+              <span className="text-sm font-medium truncate">{module.shortName ?? module.name}</span>
             </button>
           );
         })}
@@ -66,7 +40,7 @@ export default function ThemeSelector({ currentModule, onSelectModule, isAuthent
 
       {/* Desktop: vertical grid cards */}
       <div className="hidden lg:grid grid-cols-2 gap-3">
-        {MODULES.map((module, index) => {
+        {modules.map((module, index) => {
           const Icon = module.icon;
           const isActive = currentModule === module.id;
           return (
@@ -86,7 +60,7 @@ export default function ThemeSelector({ currentModule, onSelectModule, isAuthent
                 <Icon className="w-6 h-6" />
               </div>
               <p className={`font-semibold text-sm ${isActive ? 'text-emerald-300' : 'text-slate-200'}`}>
-                {module.name}
+                {module.shortName ?? module.name}
               </p>
               <p className="text-xs text-slate-500 mt-0.5">{module.description}</p>
             </motion.button>

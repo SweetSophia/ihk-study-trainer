@@ -12,7 +12,9 @@ vi.mock('framer-motion', () => ({
   },
 }));
 
-// Mock lucide-react icons used by ProgressDashboard
+// Mock lucide-react icons used by ProgressDashboard (and the module icons
+// transitively pulled in via `lib/modules`, which is the new source of truth
+// for MODULE_NAMES)
 vi.mock('lucide-react', () => ({
   Trophy: () => <svg data-testid="icon-trophy" />,
   Target: () => <svg data-testid="icon-target" />,
@@ -22,6 +24,22 @@ vi.mock('lucide-react', () => ({
   BarChart3: () => <svg data-testid="icon-bar-chart" />,
   CheckCircle: () => <svg data-testid="icon-check-circle" />,
   XCircle: () => <svg data-testid="icon-x-circle" />,
+  Calculator: () => <svg data-testid="icon-calculator" />,
+  Image: () => <svg data-testid="icon-image" />,
+  Network: () => <svg data-testid="icon-network" />,
+  ArrowLeftRight: () => <svg data-testid="icon-arrow-left-right" />,
+  Binary: () => <svg data-testid="icon-binary" />,
+  Hexagon: () => <svg data-testid="icon-hexagon" />,
+  Repeat: () => <svg data-testid="icon-repeat" />,
+  Shield: () => <svg data-testid="icon-shield" />,
+  Layers: () => <svg data-testid="icon-layers" />,
+  Cable: () => <svg data-testid="icon-cable" />,
+  Server: () => <svg data-testid="icon-server" />,
+  Globe: () => <svg data-testid="icon-globe" />,
+  Settings: () => <svg data-testid="icon-settings" />,
+  Database: () => <svg data-testid="icon-database" />,
+  Terminal: () => <svg data-testid="icon-terminal" />,
+  Cloud: () => <svg data-testid="icon-cloud" />,
 }));
 
 import ProgressDashboard from '../ProgressDashboard';
