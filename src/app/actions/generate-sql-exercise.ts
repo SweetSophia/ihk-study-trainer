@@ -30,6 +30,9 @@ function getErrorMessage(error: unknown, fallback: string): string {
 const rateLimitWindowMs = 60 * 1000; // 1 minute
 const rateLimitMaxCalls = 5; // max 5 calls per minute per accessHash
 
+// Buckets are bounded by active real-user count: shape/format and
+// not-in-DB failures reject BEFORE the rate-limit lookup, so an attacker
+// probing with garbage hashes cannot grow this Map.
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
 function checkRateLimit(accessHash: string): { allowed: boolean; retryAfterMs?: number } {
@@ -127,7 +130,7 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
   //    structural check (12 chars, [A-Za-z0-9]); existence in the DB
   //    is checked in step 2.
   if (!isValidAccessHash(accessHash)) {
-    throw new Error('Unauthorized: Ungültiger Zugangscode.');
+    throw new Error('Unauthorized: Bitte melde dich an.');
   }
 
   // 2. Validate accessHash exists in DB (throws on error with descriptive message)

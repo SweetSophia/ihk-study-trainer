@@ -14,28 +14,50 @@ import type { NextConfig } from "next";
 // value conservative (2 years, subdomains, preload-ready). HSTS is
 // harmless over plain HTTP — browsers ignore it.
 
+const isDev = process.env.NODE_ENV === 'development';
+
+// Derive the Supabase host(s) to allow in connect-src. Cloud Supabase uses
+// *.supabase.co; self-hosted / local CLI dev (http://localhost:54321)
+// override via NEXT_PUBLIC_SUPABASE_URL.
+function deriveSupabaseHosts(envUrl: string | undefined): string[] {
+  if (!envUrl) return ['https://*.supabase.co', 'wss://*.supabase.co'];
+  try {
+    const { host, protocol } = new URL(envUrl);
+    const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+    return [`${protocol}//${host}`, `${wsProtocol}//${host}`];
+  } catch {
+    return ['https://*.supabase.co', 'wss://*.supabase.co'];
+  }
+}
+
+const supabaseHosts = deriveSupabaseHosts(process.env.NEXT_PUBLIC_SUPABASE_URL);
+
 const ContentSecurityPolicy = [
   "default-src 'self'",
-  // Next.js dev needs 'unsafe-inline' + 'unsafe-eval' for the HMR runtime;
-  // framer-motion + Tailwind v4 inject inline styles. Tighten with nonces
-  // in a follow-up if needed.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  // 'unsafe-eval' is dev-only (Next HMR). Production pre-compiles bundles;
+  // framer-motion + Tailwind v4 inject inline styles, not eval. Removing
+  // 'unsafe-eval' from prod tightens XSS defense.
+  // 'unsafe-inline' stays (removing it needs nonces — out of scope here).
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   // PGlite generates its data as a Blob; 'self' + 'data:' cover
-  // self-hosted + inline-image use cases. Allow https: so future image
-  // generation (PRs in IMPROVEMENT_PLAN.md) can serve CDN URLs.
-  "img-src 'self' data: blob: https:",
+  // self-hosted + inline-image use cases. Speculative future image-gen
+  // (IMPROVEMENT_PLAN.md) must add a specific CDN origin when it lands —
+  // do NOT reintroduce a wildcard.
+  "img-src 'self' data: blob:",
   "font-src 'self' data:",
   // Supabase (REST + realtime WebSocket) and Groq (OpenAI-compatible API).
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com",
+  // Supabase hosts derive from NEXT_PUBLIC_SUPABASE_URL so self-hosted /
+  // local CLI dev (http://localhost:54321) works without editing this file.
+  `connect-src 'self' ${supabaseHosts.join(' ')} https://api.groq.com`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
-  // Block until a user enables a script-blocking browser mitigation.
-  // Defense in depth against speculative-execution side channels.
+  // Prevent mixed-content downgrades (HTTP subresources on HTTPS pages).
+  // UAs ignore this directive on plain-HTTP origins, so local dev is fine.
   "upgrade-insecure-requests",
-].join("; ");
+].join('; ');
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: ContentSecurityPolicy },
@@ -50,7 +72,8 @@ const securityHeaders = [
   // so a compromised dependency can't quietly request them.
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    value:
+      "camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()",
   },
 ];
 

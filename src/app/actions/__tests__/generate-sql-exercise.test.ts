@@ -234,30 +234,33 @@ describe('generateSqlExercise - access hash shape validation', () => {
   });
 
   it('rejects a hash that is too short', async () => {
-    await expect(generateSqlExercise('short')).rejects.toThrow(/Ungültiger Zugangscode/i);
+    await expect(generateSqlExercise('short')).rejects.toThrow(/Bitte melde dich an/i);
     expect(mockHashExists).not.toHaveBeenCalled();
     expect(mockGenerateText).not.toHaveBeenCalled();
   });
 
   it('rejects an empty string', async () => {
-    await expect(generateSqlExercise('')).rejects.toThrow(/Ungültiger Zugangscode/i);
+    await expect(generateSqlExercise('')).rejects.toThrow(/Bitte melde dich an/i);
     expect(mockHashExists).not.toHaveBeenCalled();
     expect(mockGenerateText).not.toHaveBeenCalled();
   });
 
   it('rejects a hash with non-alphanumeric characters', async () => {
     // 11 alnum + 1 dash = 12 chars but fails the character-class check
-    await expect(generateSqlExercise('abcdef12345-')).rejects.toThrow(/Ungültiger Zugangscode/i);
+    await expect(generateSqlExercise('abcdef12345-')).rejects.toThrow(/Bitte melde dich an/i);
     expect(mockHashExists).not.toHaveBeenCalled();
+    expect(mockGenerateText).not.toHaveBeenCalled();
   });
 
   it('rejects a hash that is too long', async () => {
-    await expect(generateSqlExercise('a'.repeat(13))).rejects.toThrow(/Ungültiger Zugangscode/i);
+    await expect(generateSqlExercise('a'.repeat(13))).rejects.toThrow(/Bitte melde dich an/i);
     expect(mockHashExists).not.toHaveBeenCalled();
+    expect(mockGenerateText).not.toHaveBeenCalled();
   });
 
   it('rejects a hash with whitespace', async () => {
-    await expect(generateSqlExercise('abcdef 12345')).rejects.toThrow(/Ungültiger Zugangscode/i);
+    await expect(generateSqlExercise('abcdef 12345')).rejects.toThrow(/Bitte melde dich an/i);
     expect(mockHashExists).not.toHaveBeenCalled();
+    expect(mockGenerateText).not.toHaveBeenCalled();
   });
 });
