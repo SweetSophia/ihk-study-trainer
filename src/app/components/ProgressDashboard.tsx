@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { toCanonicalModuleId } from '../lib/moduleIds';
-import { MODULE_NAMES } from '../lib/modules';
+import { MODULE_NAMES, isModuleId } from '../lib/modules';
 import { motion } from 'framer-motion';
 import { 
   Trophy, 
@@ -171,7 +171,7 @@ export default function ProgressDashboard({
                       <XCircle className="w-4 h-4 text-rose-400" />
                     )}
                     <span className="text-sm text-slate-300">
-                      {MODULE_NAMES[canonicalModuleId] || p.module}
+                      {isModuleId(canonicalModuleId) ? MODULE_NAMES[canonicalModuleId] : p.module}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
