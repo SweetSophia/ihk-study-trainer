@@ -109,6 +109,10 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
       (question.answerInputs?.length === 1 && !question.answerInputs[0].valueOptions))
   );
 
+  const linuxTerminalConfig = isLinuxTerminal && question?.answerInputs
+    ? question.answerInputs[0]
+    : null;
+
   const answerKeys = question
     ? Object.keys(question.expectedAnswers).filter((k) => k !== 'unit')
     : [];
@@ -136,17 +140,10 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
     // Linux terminal passes a string directly to avoid stale state
     // Regular buttons pass a MouseEvent which we ignore
     const inputValue = typeof inputValueOrEvent === 'string' ? inputValueOrEvent : undefined;
-    // If inputValue is provided (Linux terminal), use it directly to avoid stale state
-    // Otherwise fall back to the answers state (for regular inputs)
-    const isLinux = question
-      ? question.module === 'linux' &&
-        (question.direction === 'descriptionToCommand' ||
-          (question.answerInputs?.length === 1 && !question.answerInputs[0].valueOptions))
-      : false;
-    const linuxKey = isLinux && question?.answerInputs ? question.answerInputs[0].valueKey : null;
+    const linuxKey = linuxTerminalConfig?.valueKey;
 
     const answersToCheck =
-      inputValue !== undefined && isLinux && linuxKey
+      inputValue !== undefined && linuxKey
         ? { ...answers, [linuxKey]: inputValue }
         : answers;
     const correct = onCheckAnswer(answersToCheck);
@@ -185,6 +182,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
     if (!question) return;
     const isTextEntryTarget = (target: EventTarget | null) => {
       if (!(target instanceof HTMLElement)) return false;
+      if (target.isContentEditable) return true;
       if (target instanceof HTMLTextAreaElement) return true;
       if (target instanceof HTMLSelectElement) return false; // selects don't accept free text
       if (target instanceof HTMLInputElement) {
@@ -203,6 +201,12 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
       return false;
     };
 
+    const ownsEnterKey = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      if (target.isContentEditable) return true;
+      return !!target.closest('button,a,select,textarea,[role="button"],[role="link"],[role="combobox"]');
+    };
+
     const handler = (e: KeyboardEvent) => {
       // Don't fire while the user holds a modifier (browser shortcuts).
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -213,6 +217,9 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
         // forwards the value via onSubmit. Skip our handler there to avoid
         // double-checking with a stale `answers` state.
         if (isLinuxTerminal) return;
+        // If focus is already on an interactive control that owns Enter
+        // (button, link, select, textarea), let the browser/control handle it.
+        if (ownsEnterKey(target)) return;
         if (!checked && allAnswered) {
           e.preventDefault();
           handleCheck();
@@ -234,7 +241,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
     return () => window.removeEventListener('keydown', handler);
     // We re-attach when these change so the closure sees fresh state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checked, allAnswered, isLinuxTerminal, questionId]);
+  }, [checked, allAnswered, isLinuxTerminal, questionId, answers]);
 
   // -----------------------------------------------------------------
   // Welcome state (no question selected yet)
@@ -419,8 +426,6 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
   // auto-focus hook and keyboard-shortcut effect can read it safely.
   // The local `question` here is non-null because we're past the early
   // return, so we use the same expression without the null guard.
-  const linuxTerminalConfig = isLinuxTerminal ? question.answerInputs![0] : null;
-
   // Shared class string for text/number inputs
   const inputClass = (extra = '') =>
     `w-full px-4 py-3 bg-slate-950 border rounded-lg text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${
@@ -659,7 +664,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
           type="button"
           onClick={handleNext}
           className="flex items-center gap-2 px-5 py-2.5 border border-slate-700 hover:border-slate-600 text-slate-400 hover:text-slate-200 rounded-lg transition-colors ml-auto"
-          title="Frage überspringen (N)"
+          title="Frage überspringen"
         >
           <RotateCcw className="w-4 h-4" />
           Überspringen

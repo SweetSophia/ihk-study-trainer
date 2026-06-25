@@ -214,7 +214,7 @@ describe('ProgressDashboard – showDetails persistence (PR 4)', () => {
     expect(screen.getByText('Details anzeigen')).toBeInTheDocument();
   });
 
-  it('starts expanded when localStorage has "true"', () => {
+  it('starts expanded when localStorage has "true"', async () => {
     window.localStorage.setItem('ihk_progress_show_details', 'true');
     render(
       <ProgressDashboard
@@ -223,7 +223,7 @@ describe('ProgressDashboard – showDetails persistence (PR 4)', () => {
         onPracticeMistakes={noOp}
       />
     );
-    expect(screen.getByText('Details ausblenden')).toBeInTheDocument();
+    expect(await screen.findByText('Details ausblenden')).toBeInTheDocument();
   });
 
   it('persists the expanded state to localStorage when toggled', async () => {
@@ -236,6 +236,7 @@ describe('ProgressDashboard – showDetails persistence (PR 4)', () => {
     );
     await userEvent.click(screen.getByText('Details anzeigen'));
     expect(window.localStorage.getItem('ihk_progress_show_details')).toBe('true');
+    expect(screen.getByText('Details ausblenden')).toBeInTheDocument();
   });
 
   it('persists the collapsed state to localStorage when toggled back', async () => {
@@ -247,7 +248,8 @@ describe('ProgressDashboard – showDetails persistence (PR 4)', () => {
         onPracticeMistakes={noOp}
       />
     );
-    await userEvent.click(screen.getByText('Details ausblenden'));
+    await userEvent.click(await screen.findByText('Details ausblenden'));
     expect(window.localStorage.getItem('ihk_progress_show_details')).toBe('false');
+    expect(screen.getByText('Details anzeigen')).toBeInTheDocument();
   });
 });

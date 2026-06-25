@@ -168,25 +168,28 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     }
   };
 
-  /** Pasted input — auto-extract the hash from surrounding noise and
-   *  surface a brief confirmation so the user knows it landed. */
+  /** Pasted input — intercept the raw clipboard text, extract a valid hash
+   *  from surrounding noise, and write the cleaned value into this controlled
+   *  input. That keeps the counter/validation tied to normalized codes only. */
   const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
     const pasted = e.clipboardData.getData('text');
     const normalized = normalizePastedHash(pasted);
-    // Use rAF + setTimeout so we apply AFTER React's default paste behavior
-    // (which would otherwise put the full clipboard text into the input
-    // and break our length-counter). We let the paste propagate, then
-    // overwrite the input value with the cleaned hash on the next tick.
     e.preventDefault();
     if (!normalized) {
       setError('Eingefügter Text enthält keinen gültigen Code.');
+      setPasteHint(false);
       return;
     }
     setInputHash(normalized);
     setError('');
     setPasteHint(true);
-    setTimeout(() => setPasteHint(false), 3000);
   };
+
+  useEffect(() => {
+    if (!pasteHint) return;
+    const timer = window.setTimeout(() => setPasteHint(false), 3000);
+    return () => window.clearTimeout(timer);
+  }, [pasteHint]);
 
   if (!isOpen) return null;
 
@@ -401,8 +404,8 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                       </>
                     ) : (
                       <>
-                        Noch {HASH_LENGTH - loginValidation.length} Zeichen
-                        {loginValidation.length === 1 ? '' : ''} fehlen.
+                        Noch {HASH_LENGTH - loginValidation.length} Zeichen{' '}
+                        {HASH_LENGTH - loginValidation.length === 1 ? 'fehlt.' : 'fehlen.'}
                       </>
                     )}
                   </p>
