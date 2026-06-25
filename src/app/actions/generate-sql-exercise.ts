@@ -2,8 +2,10 @@
 
 import { generateText } from 'ai';
 import { groq } from '@ai-sdk/groq';
+import { after } from 'next/server';
 import { z } from 'zod';
 import { hashExists, isValidAccessHash } from '../lib/auth';
+import { checkRateLimit, RATE_LIMIT_WINDOW_MS } from '../lib/rateLimit';
 
 // ---------------------------------------------------------------------------
 // Type guard for error objects
@@ -21,35 +23,6 @@ function getErrorMessage(error: unknown, fallback: string): string {
   if (isErrorWithMessage(error)) return error.message;
   if (typeof error === 'string') return error;
   return fallback;
-}
-
-// ---------------------------------------------------------------------------
-// Rate limiting — in-memory store (per-instance, reset on cold start)
-// For multi-instance production, replace with Redis/KV
-// ---------------------------------------------------------------------------
-const rateLimitWindowMs = 60 * 1000; // 1 minute
-const rateLimitMaxCalls = 5; // max 5 calls per minute per accessHash
-
-// Buckets are bounded by active real-user count: shape/format and
-// not-in-DB failures reject BEFORE the rate-limit lookup, so an attacker
-// probing with garbage hashes cannot grow this Map.
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(accessHash: string): { allowed: boolean; retryAfterMs?: number } {
-  const now = Date.now();
-  const entry = rateLimitStore.get(accessHash);
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitStore.set(accessHash, { count: 1, resetAt: now + rateLimitWindowMs });
-    return { allowed: true };
-  }
-
-  if (entry.count >= rateLimitMaxCalls) {
-    return { allowed: false, retryAfterMs: entry.resetAt - now };
-  }
-
-  entry.count++;
-  return { allowed: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -144,10 +117,28 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
     throw new Error(message);
   }
 
-  // 3. Check rate limit
-  const { allowed, retryAfterMs } = checkRateLimit(accessHash);
-  if (!allowed) {
-    const retryAfterSec = Math.ceil((retryAfterMs ?? rateLimitWindowMs) / 1000);
+  // 3. Check rate limit (Upstash Redis in prod, In-Memory-Fallback in dev).
+  //    Buckets are bounded by real-user count: shape/format and not-in-DB
+  //    failures reject BEFORE this lookup, so probing with garbage hashes
+  //    cannot grow the store.
+  const rl = await checkRateLimit(accessHash);
+  // Upstash erzeugt für Analytics ein Background-Promise. Callback-Form
+  // (statt Promise direkt) bewahrt AsyncLocalStorageContext. `.catch`
+  // schluckt Analytics-Fehler, damit sie nicht als unhandled rejection
+  // landen — und wir loggen bewusst nur err.name, nicht err.message
+  // (Upstash packt die REST-URL in die Message, die wie ein Secret zu
+  // behandeln ist).
+  if (rl.pending) {
+    after(() =>
+      rl.pending!.catch((err: unknown) =>
+        console.error('[rateLimit] analytics pending failed:', {
+          name: err instanceof Error ? err.name : 'Error',
+        })
+      )
+    );
+  }
+  if (!rl.allowed) {
+    const retryAfterSec = Math.ceil((rl.retryAfterMs ?? RATE_LIMIT_WINDOW_MS) / 1000);
     throw new Error(`rate limit: Bitte warte ${retryAfterSec}s.`);
   }
 

@@ -97,13 +97,28 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=dein_supabase_key
 
 # Für das SQL-Modul (KI-Generierung der Aufgaben)
 GROQ_API_KEY=dein_groq_api_key
+
+# Rate-Limit für die SQL Server Action (empfohlen in Produktion).
+# Ohne diese Vars läuft ein In-Memory-Limiter, der pro Vercel-Instance
+# getrennt zählt — also nicht multi-instance-sicher.
+UPSTASH_REDIS_REST_URL=https://...upstash.io
+UPSTASH_REDIS_REST_TOKEN=dein_upstash_token
+
+# Pepper fürs HMAC des accessHash vor dem Upstash-Identifer. Ohne diesen
+# würde der Hash (und damit das Login-Credential) roh im Upstash-Keyspace
+# und im Analytics-Dashboard landen. 32+ Bytes zufälliges base64 reichen.
+# Rotation invalidiert nur die Rate-Limit-Buckets, NICHT die User-Accounts.
+# Pflicht in Production (sonst startet der Server-Action-Helper nicht).
+RATE_LIMIT_PEPPER=$(openssl rand -base64 32)
 ```
 
 ### Hinweise zur lokalen Nutzung
 
 - **Ohne Supabase-Konfiguration** nutzt die App lokale Fallback-Speicherung für Fortschritt/Anmeldung.
 - **Ohne `GROQ_API_KEY`** ist das SQL-Modul nicht funktionsfähig.
-- Für Produktionsbetrieb sollte Supabase korrekt eingerichtet sein.
+- **Ohne Upstash-Env-Vars** läuft der Rate-Limiter In-Memory (nur für lokales Dev praktikabel; auf Vercel ist er dann nicht multi-instance-sicher und es erscheint eine Warnung im Log).
+- **Ohne `RATE_LIMIT_PEPPER`** wirft der Rate-Limiter in Production einen Fehler beim ersten Request; im Dev wird `dev:<hash>` als Identifier verwendet (kollidiert nie mit Production-HMACs).
+- Für Produktionsbetrieb sollten Supabase, Upstash und der Pepper korrekt eingerichtet sein.
 
 ## Datenbank-Setup
 
