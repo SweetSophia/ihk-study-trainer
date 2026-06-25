@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { toCanonicalModuleId } from '../lib/moduleIds';
 import { MODULE_NAMES, isModuleId } from '../lib/modules';
 import { motion } from 'framer-motion';
@@ -27,12 +27,54 @@ interface ProgressDashboardProps {
   onPracticeMistakes: () => void;
 }
 
+/** localStorage key for the persistent "Details anzeigen" toggle. */
+const SHOW_DETAILS_KEY = 'ihk_progress_show_details';
+const SHOW_DETAILS_CHANGE_EVENT = 'ihk_progress_show_details_change';
+
+function readShowDetails(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(SHOW_DETAILS_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function writeShowDetails(value: boolean) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(SHOW_DETAILS_KEY, value ? 'true' : 'false');
+    window.dispatchEvent(new Event(SHOW_DETAILS_CHANGE_EVENT));
+  } catch {
+    // localStorage may be disabled (private mode, quota) — fail silently.
+  }
+}
+
+function subscribeShowDetails(onStoreChange: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener('storage', onStoreChange);
+  window.addEventListener(SHOW_DETAILS_CHANGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener('storage', onStoreChange);
+    window.removeEventListener(SHOW_DETAILS_CHANGE_EVENT, onStoreChange);
+  };
+}
+
 export default function ProgressDashboard({ 
   progress, 
   streakDays, 
   onPracticeMistakes 
 }: ProgressDashboardProps) {
-  const [showDetails, setShowDetails] = useState(false);
+  // SSR-safe localStorage binding: `false` is the server snapshot, then
+  // useSyncExternalStore reads the browser value after hydration without a
+  // manual setState-in-effect race.
+  const showDetails = useSyncExternalStore(
+    subscribeShowDetails,
+    readShowDetails,
+    () => false,
+  );
+
+  const toggleShowDetails = () => writeShowDetails(!showDetails);
 
   const totalAttempted = progress.reduce((sum, p) => sum + p.questions_attempted, 0);
   const totalCorrect = progress.reduce((sum, p) => sum + p.questions_correct, 0);
@@ -129,7 +171,7 @@ export default function ProgressDashboard({
         </button>
 
         <button
-          onClick={() => setShowDetails(!showDetails)}
+          onClick={toggleShowDetails}
           className="flex items-center gap-2 px-4 py-2.5 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-lg transition-colors"
         >
           <TrendingUp className="w-4 h-4" />
