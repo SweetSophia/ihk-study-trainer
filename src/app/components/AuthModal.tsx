@@ -1,14 +1,64 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ClipboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, AlertTriangle, LogIn, Key } from 'lucide-react';
+import {
+  X,
+  Copy,
+  Check,
+  AlertTriangle,
+  LogIn,
+  Key,
+  ClipboardPaste,
+  CircleAlert,
+  CircleCheck,
+} from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogin: (hash: string) => Promise<{ success: boolean; error?: string }>;
   onRegister: () => Promise<string | null>;
+}
+
+/** Access hash format: 12 alphanumeric chars, case-sensitive. */
+const HASH_LENGTH = 12;
+const HASH_FORMAT = /^[A-Za-z0-9]+$/;
+
+/** Extract only the characters that match the access-hash format from
+ *  arbitrary clipboard content (handles pasted whitespace, newlines,
+ *  surrounding "Here is my code: …" prose, leading BOM, etc.).
+ *
+ *  Strategy: match a 12-char alphanumeric run that's bounded by
+ *  non-alphanumerics (or start/end of string). This handles both
+ *  "ab12cd34ef56" by itself and
+ *  "Hier dein Code: ab12cd34ef56 — viel Erfolg" gracefully: the colon
+ *  and em-dash delimit the code, so we don't accidentally pick up
+ *  neighboring words like "HierdeinCode".
+ *  If no such bounded run exists, fall back to the first HASH_LENGTH
+ *  alphanumeric chars (best-effort). */
+function normalizePastedHash(raw: string): string {
+  const boundedRe = new RegExp(
+    `(?:^|[^A-Za-z0-9])([A-Za-z0-9]{${HASH_LENGTH}})(?:[^A-Za-z0-9]|$)`,
+  );
+  const bounded = raw.match(boundedRe);
+  if (bounded) return bounded[1];
+  const cleaned = raw.replace(/[^A-Za-z0-9]/g, '');
+  return cleaned.slice(0, HASH_LENGTH);
+}
+
+function validateHashShape(raw: string): {
+  trimmed: string;
+  length: number;
+  lengthOk: boolean;
+  formatOk: boolean;
+  isValid: boolean;
+} {
+  const trimmed = raw.trim();
+  const length = trimmed.length;
+  const formatOk = length === 0 || HASH_FORMAT.test(trimmed);
+  const lengthOk = length === HASH_LENGTH;
+  return { trimmed, length, lengthOk, formatOk, isValid: lengthOk && formatOk };
 }
 
 export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalProps) {
@@ -18,6 +68,8 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  /** True for ~3s after a paste, so the "Eingefügt" hint is visible. */
+  const [pasteHint, setPasteHint] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -26,6 +78,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
       setInputHash('');
       setError('');
       setCopied(false);
+      setPasteHint(false);
     }
   }, [isOpen]);
 
@@ -48,22 +101,29 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
   };
 
   const handleLogin = async () => {
-    const trimmedHash = inputHash.trim();
-
-    if (!trimmedHash || trimmedHash.length !== 12) {
+    const { trimmed, isValid } = validateHashShape(inputHash);
+    if (!trimmed) {
       setError('Bitte gib einen gültigen 12-stelligen Code ein.');
+      return;
+    }
+    if (!isValid) {
+      // Most common cause: pasted text contained more than just the code,
+      // or a wrong character snuck in. Guide the user to the inline
+      // feedback below the input.
+      setError(
+        trimmed.length !== HASH_LENGTH
+          ? `Der Code muss genau ${HASH_LENGTH} Zeichen haben (aktuell: ${trimmed.length}).`
+          : 'Der Code enthält ungültige Zeichen. Erlaubt: A–Z, a–z, 0–9.',
+      );
       return;
     }
     setError('');
     setLoading(true);
     try {
-      const result = await onLogin(inputHash.trim());
+      const result = await onLogin(trimmed);
       if (result.success) {
-        // Login succeeded in page.tsx (user set, modal closed there).
-        // Just reset local loading state; the modal will close via page.tsx state.
         setInputHash(''); // Clear the input for next time
       } else {
-        // Login failed – show error message
         setError(result.error || 'Anmeldung fehlgeschlagen.');
       }
     } catch {
@@ -79,7 +139,6 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     try {
       const result = await onLogin(hash);
       if (result.success) {
-        // Login succeeded in page.tsx. Modal will close via page.tsx state.
         setHash(''); // Clear registered hash after successful login
       } else {
         setError(result.error || 'Anmeldung fehlgeschlagen.');
@@ -109,7 +168,37 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     }
   };
 
+  /** Pasted input — auto-extract the hash from surrounding noise and
+   *  surface a brief confirmation so the user knows it landed. */
+  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData('text');
+    const normalized = normalizePastedHash(pasted);
+    // Use rAF + setTimeout so we apply AFTER React's default paste behavior
+    // (which would otherwise put the full clipboard text into the input
+    // and break our length-counter). We let the paste propagate, then
+    // overwrite the input value with the cleaned hash on the next tick.
+    e.preventDefault();
+    if (!normalized) {
+      setError('Eingefügter Text enthält keinen gültigen Code.');
+      return;
+    }
+    setInputHash(normalized);
+    setError('');
+    setPasteHint(true);
+    setTimeout(() => setPasteHint(false), 3000);
+  };
+
   if (!isOpen) return null;
+
+  // For the login view: derived validation state for inline feedback.
+  const loginValidation = validateHashShape(inputHash);
+  const loginHintClass = !loginValidation.length
+    ? 'text-slate-500'
+    : loginValidation.isValid
+      ? 'text-emerald-400'
+      : loginValidation.formatOk
+        ? 'text-amber-400'
+        : 'text-rose-400';
 
   return (
     <AnimatePresence>
@@ -140,6 +229,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
             <button
               onClick={onClose}
               className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+              aria-label="Schließen"
             >
               <X className="w-5 h-5" />
             </button>
@@ -213,6 +303,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                     <button
                       onClick={copyToClipboard}
                       className="px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors"
+                      aria-label="Code in die Zwischenablage kopieren"
                     >
                       {copied ? (
                         <Check className="w-5 h-5 text-emerald-400" />
@@ -221,6 +312,9 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                       )}
                     </button>
                   </div>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Tipp: Mit dem Button oben kopieren und sicher notieren.
+                  </p>
                 </div>
 
                 <button
@@ -236,25 +330,100 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
             {mode === 'login' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">
-                    Zugangscode
+                  <label
+                    htmlFor="access-hash-input"
+                    className="flex items-center justify-between text-sm font-medium text-slate-400 mb-2"
+                  >
+                    <span>Zugangscode</span>
+                    <span className={`text-xs font-mono ${loginHintClass}`}>
+                      {loginValidation.length}/{HASH_LENGTH}
+                    </span>
                   </label>
-                  <input
-                    type="text"
-                    value={inputHash}
-                    onChange={(e) => setInputHash(e.target.value)}
-                    maxLength={12}
-                    disabled={loading}
-                    placeholder="Ab12cD34eF56"
-                    autoCapitalize="off"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono text-lg tracking-wider placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all disabled:opacity-50"
-                  />
-                  <p className="mt-2 text-xs text-slate-500">
-                    12-stelliger alphanumerischer Code – Groß-/Kleinschreibung beachten
+                  <div className="relative">
+                    <input
+                      id="access-hash-input"
+                      type="text"
+                      value={inputHash}
+                      onChange={(e) => {
+                        // Allow only alphanumeric characters as the user
+                        // types — paste is normalized separately above.
+                        const next = e.target.value
+                          .replace(/[^A-Za-z0-9]/g, '')
+                          .slice(0, HASH_LENGTH);
+                        setInputHash(next);
+                        // Clear any prior error once the user is editing.
+                        if (error) setError('');
+                      }}
+                      onPaste={handlePaste}
+                      maxLength={HASH_LENGTH}
+                      disabled={loading}
+                      placeholder="Ab12cD34eF56"
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      aria-invalid={error ? 'true' : undefined}
+                      aria-describedby="access-hash-hint"
+                      className={`w-full px-4 py-3 pr-11 bg-slate-950 border rounded-lg text-slate-100 font-mono text-lg tracking-wider placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all disabled:opacity-50 ${
+                        error
+                          ? 'border-rose-500/50 focus:border-rose-500/50 focus:ring-rose-500/40'
+                          : loginValidation.isValid
+                            ? 'border-emerald-500/50 focus:border-emerald-500/50'
+                            : 'border-slate-800 focus:border-emerald-500/50'
+                      }`}
+                    />
+                    {/* Inline status icon — only renders once something's
+                        in the input, so the placeholder isn't cluttered. */}
+                    {loginValidation.length > 0 && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        {loginValidation.isValid ? (
+                          <CircleCheck className="w-5 h-5 text-emerald-400" />
+                        ) : !loginValidation.formatOk ? (
+                          <CircleAlert className="w-5 h-5 text-rose-400" />
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  <p
+                    id="access-hash-hint"
+                    className={`mt-2 text-xs flex items-center gap-1.5 transition-colors ${loginHintClass}`}
+                  >
+                    {loginValidation.length === 0 ? (
+                      <>12-stelliger alphanumerischer Code – Groß-/Kleinschreibung beachten</>
+                    ) : loginValidation.isValid ? (
+                      <>
+                        <CircleCheck className="w-3 h-3" />
+                        Format OK – bereit zum Anmelden.
+                      </>
+                    ) : !loginValidation.formatOk ? (
+                      <>
+                        <CircleAlert className="w-3 h-3" />
+                        Ungültige Zeichen. Erlaubt: A–Z, a–z, 0–9.
+                      </>
+                    ) : (
+                      <>
+                        Noch {HASH_LENGTH - loginValidation.length} Zeichen
+                        {loginValidation.length === 1 ? '' : ''} fehlen.
+                      </>
+                    )}
                   </p>
                 </div>
+
+                {/* Paste confirmation — visible briefly after a paste. */}
+                <AnimatePresence>
+                  {pasteHint && (
+                    <motion.div
+                      key="paste-hint"
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.18 }}
+                      className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-sm text-emerald-300"
+                    >
+                      <ClipboardPaste className="w-4 h-4" />
+                      Code aus Zwischenablage übernommen.
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {error && (
                   <div className="p-3 bg-rose-950/30 border border-rose-500/30 rounded-lg">
@@ -264,8 +433,8 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
 
                 <button
                   onClick={handleLogin}
-                  disabled={loading}
-                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-800 disabled:text-emerald-200 text-slate-950 font-semibold rounded-lg transition-colors"
+                  disabled={loading || !loginValidation.isValid}
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-lg transition-colors"
                 >
                   {loading ? 'Anmeldung läuft...' : 'Anmelden'}
                 </button>

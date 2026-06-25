@@ -49,6 +49,10 @@ const noOp = vi.fn();
 describe('ProgressDashboard – MODULE_NAMES PR additions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // ProgressDashboard now persists `showDetails` to localStorage. Tests
+    // share a single jsdom context, so clear the key before each render
+    // to keep the button's initial text deterministic.
+    window.localStorage.clear();
   });
 
   function makeProgress(module: string) {
@@ -154,6 +158,9 @@ describe('ProgressDashboard – MODULE_NAMES PR additions', () => {
 describe('ProgressDashboard – "gestartet" counter (PR change: removed hard-coded "von 12")', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // See the first describe block — localStorage carries between renders
+    // in the same jsdom context, so reset for isolation.
+    window.localStorage.clear();
   });
 
   it('shows "gestartet" without a hard-coded total count', () => {
@@ -187,5 +194,60 @@ describe('ProgressDashboard – "gestartet" counter (PR change: removed hard-cod
     // 2 out of 3 modules were started (bandwidth and sql)
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('gestartet')).toBeInTheDocument();
+  });
+});
+
+describe('ProgressDashboard – showDetails persistence (PR 4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+  });
+
+  it('starts collapsed when localStorage is empty', () => {
+    render(
+      <ProgressDashboard
+        progress={[{ module: 'bandwidth', questions_attempted: 1, questions_correct: 1 }]}
+        streakDays={0}
+        onPracticeMistakes={noOp}
+      />
+    );
+    expect(screen.getByText('Details anzeigen')).toBeInTheDocument();
+  });
+
+  it('starts expanded when localStorage has "true"', () => {
+    window.localStorage.setItem('ihk_progress_show_details', 'true');
+    render(
+      <ProgressDashboard
+        progress={[{ module: 'bandwidth', questions_attempted: 1, questions_correct: 1 }]}
+        streakDays={0}
+        onPracticeMistakes={noOp}
+      />
+    );
+    expect(screen.getByText('Details ausblenden')).toBeInTheDocument();
+  });
+
+  it('persists the expanded state to localStorage when toggled', async () => {
+    render(
+      <ProgressDashboard
+        progress={[{ module: 'bandwidth', questions_attempted: 1, questions_correct: 1 }]}
+        streakDays={0}
+        onPracticeMistakes={noOp}
+      />
+    );
+    await userEvent.click(screen.getByText('Details anzeigen'));
+    expect(window.localStorage.getItem('ihk_progress_show_details')).toBe('true');
+  });
+
+  it('persists the collapsed state to localStorage when toggled back', async () => {
+    window.localStorage.setItem('ihk_progress_show_details', 'true');
+    render(
+      <ProgressDashboard
+        progress={[{ module: 'bandwidth', questions_attempted: 1, questions_correct: 1 }]}
+        streakDays={0}
+        onPracticeMistakes={noOp}
+      />
+    );
+    await userEvent.click(screen.getByText('Details ausblenden'));
+    expect(window.localStorage.getItem('ihk_progress_show_details')).toBe('false');
   });
 });

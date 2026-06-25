@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toCanonicalModuleId } from '../lib/moduleIds';
 import { MODULE_NAMES, isModuleId } from '../lib/modules';
 import { motion } from 'framer-motion';
@@ -27,12 +27,41 @@ interface ProgressDashboardProps {
   onPracticeMistakes: () => void;
 }
 
+/** localStorage key for the persistent "Details anzeigen" toggle. */
+const SHOW_DETAILS_KEY = 'ihk_progress_show_details';
+
+function readShowDetails(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(SHOW_DETAILS_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function writeShowDetails(value: boolean) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(SHOW_DETAILS_KEY, value ? 'true' : 'false');
+  } catch {
+    // localStorage may be disabled (private mode, quota) — fail silently.
+  }
+}
+
 export default function ProgressDashboard({ 
   progress, 
   streakDays, 
   onPracticeMistakes 
 }: ProgressDashboardProps) {
-  const [showDetails, setShowDetails] = useState(false);
+  // Lazy init so the first render uses the persisted value when present
+  // and avoids a flash of the collapsed state for users who last left it
+  // open. The fallback `false` keeps SSR / first-paint behavior identical
+  // to before.
+  const [showDetails, setShowDetails] = useState<boolean>(() => readShowDetails());
+
+  useEffect(() => {
+    writeShowDetails(showDetails);
+  }, [showDetails]);
 
   const totalAttempted = progress.reduce((sum, p) => sum + p.questions_attempted, 0);
   const totalCorrect = progress.reduce((sum, p) => sum + p.questions_correct, 0);
