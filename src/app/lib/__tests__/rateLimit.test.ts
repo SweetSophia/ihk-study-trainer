@@ -1,4 +1,4 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 // Mock Upstash modules BEFORE the SUT is imported. The SUT's
 // getUpstashLimiter() reads env at first call; if neither
@@ -13,17 +13,12 @@ vi.mock('@upstash/ratelimit', () => {
     return { limit: mockLimit };
   }
   // Static methods used by getUpstashLimiter() (rateLimit.ts:72-78).
-  Object.assign(RatelimitCtor, {
-    fixedWindow: vi.fn(() => 'fixedWindow-config'),
-    slidingWindow: vi.fn(() => 'slidingWindow-config'),
-    tokenBucket: vi.fn(() => 'tokenBucket-config'),
-  });
+  const fixedWindow = vi.fn(() => 'fixedWindow-config');
+  const slidingWindow = vi.fn(() => 'slidingWindow-config');
+  const tokenBucket = vi.fn(() => 'tokenBucket-config');
+  Object.assign(RatelimitCtor, { fixedWindow, slidingWindow, tokenBucket });
   const mock = vi.fn(RatelimitCtor);
-  Object.assign(mock, {
-    fixedWindow: RatelimitCtor.fixedWindow,
-    slidingWindow: RatelimitCtor.slidingWindow,
-    tokenBucket: RatelimitCtor.tokenBucket,
-  });
+  Object.assign(mock, { fixedWindow, slidingWindow, tokenBucket });
   return { Ratelimit: mock };
 });
 
