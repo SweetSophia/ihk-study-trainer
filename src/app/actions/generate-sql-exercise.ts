@@ -3,7 +3,7 @@
 import { generateText } from 'ai';
 import { groq } from '@ai-sdk/groq';
 import { z } from 'zod';
-import { hashExists } from '../lib/auth';
+import { hashExists, isValidAccessHash } from '../lib/auth';
 
 // ---------------------------------------------------------------------------
 // Type guard for error objects
@@ -30,6 +30,9 @@ function getErrorMessage(error: unknown, fallback: string): string {
 const rateLimitWindowMs = 60 * 1000; // 1 minute
 const rateLimitMaxCalls = 5; // max 5 calls per minute per accessHash
 
+// Buckets are bounded by active real-user count: shape/format and
+// not-in-DB failures reject BEFORE the rate-limit lookup, so an attacker
+// probing with garbage hashes cannot grow this Map.
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
 function checkRateLimit(accessHash: string): { allowed: boolean; retryAfterMs?: number } {
@@ -121,7 +124,16 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
     throw new Error('GROQ_API_KEY ist nicht konfiguriert. Bitte wende dich an den Administrator.');
   }
 
-  // 1. Validate accessHash exists in DB (throws on error with descriptive message)
+  // 1. Validate the hash shape BEFORE hitting Supabase. The hash is the
+  //    credential — accepting arbitrary strings would let attackers probe
+  //    the auth path with arbitrary input. isValidAccessHash is a
+  //    structural check (12 chars, [A-Za-z0-9]); existence in the DB
+  //    is checked in step 2.
+  if (!isValidAccessHash(accessHash)) {
+    throw new Error('Unauthorized: Bitte melde dich an.');
+  }
+
+  // 2. Validate accessHash exists in DB (throws on error with descriptive message)
   try {
     const valid = await hashExists(accessHash);
     if (!valid) {
@@ -132,14 +144,14 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
     throw new Error(message);
   }
 
-  // 2. Check rate limit
+  // 3. Check rate limit
   const { allowed, retryAfterMs } = checkRateLimit(accessHash);
   if (!allowed) {
     const retryAfterSec = Math.ceil((retryAfterMs ?? rateLimitWindowMs) / 1000);
     throw new Error(`rate limit: Bitte warte ${retryAfterSec}s.`);
   }
 
-  // 3. Generate exercise with retry logic
+  // 4. Generate exercise with retry logic
   const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
   const randomConcept = SQL_CONCEPTS[Math.floor(Math.random() * SQL_CONCEPTS.length)];
 
