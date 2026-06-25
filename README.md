@@ -97,13 +97,20 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=dein_supabase_key
 
 # Für das SQL-Modul (KI-Generierung der Aufgaben)
 GROQ_API_KEY=dein_groq_api_key
+
+# Rate-Limit für die SQL Server Action (empfohlen in Produktion).
+# Ohne diese Vars läuft ein In-Memory-Limiter, der pro Vercel-Instance
+# getrennt zählt — also nicht multi-instance-sicher.
+UPSTASH_REDIS_REST_URL=https://...upstash.io
+UPSTASH_REDIS_REST_TOKEN=dein_upstash_token
 ```
 
 ### Hinweise zur lokalen Nutzung
 
 - **Ohne Supabase-Konfiguration** nutzt die App lokale Fallback-Speicherung für Fortschritt/Anmeldung.
 - **Ohne `GROQ_API_KEY`** ist das SQL-Modul nicht funktionsfähig.
-- Für Produktionsbetrieb sollte Supabase korrekt eingerichtet sein.
+- **Ohne Upstash-Env-Vars** läuft der Rate-Limiter In-Memory (nur für lokales Dev praktikabel; auf Vercel ist er dann nicht multi-instance-sicher und es erscheint eine Warnung im Log).
+- Für Produktionsbetrieb sollten Supabase und Upstash korrekt eingerichtet sein.
 
 ## Datenbank-Setup
 

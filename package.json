@@ -14,6 +14,8 @@
     "@ai-sdk/groq": "^3.0.31",
     "@electric-sql/pglite": "^0.4.2",
     "@supabase/supabase-js": "^2.100.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "ai": "^6.0.141",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.0.1",
