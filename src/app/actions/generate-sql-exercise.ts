@@ -122,9 +122,21 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
   //    failures reject BEFORE this lookup, so probing with garbage hashes
   //    cannot grow the store.
   const rl = await checkRateLimit(accessHash);
-  // Upstash erzeugt für Analytics ein Background-Promise — auf Node-Runtime
-  // per `after()` terminieren, damit der Response nicht blockiert.
-  if (rl.pending) after(rl.pending);
+  // Upstash erzeugt für Analytics ein Background-Promise. Callback-Form
+  // (statt Promise direkt) bewahrt AsyncLocalStorageContext. `.catch`
+  // schluckt Analytics-Fehler, damit sie nicht als unhandled rejection
+  // landen — und wir loggen bewusst nur err.name, nicht err.message
+  // (Upstash packt die REST-URL in die Message, die wie ein Secret zu
+  // behandeln ist).
+  if (rl.pending) {
+    after(() =>
+      rl.pending!.catch((err: unknown) =>
+        console.error('[rateLimit] analytics pending failed:', {
+          name: err instanceof Error ? err.name : 'Error',
+        })
+      )
+    );
+  }
   if (!rl.allowed) {
     const retryAfterSec = Math.ceil((rl.retryAfterMs ?? RATE_LIMIT_WINDOW_MS) / 1000);
     throw new Error(`rate limit: Bitte warte ${retryAfterSec}s.`);

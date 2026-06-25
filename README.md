@@ -103,6 +103,13 @@ GROQ_API_KEY=dein_groq_api_key
 # getrennt zählt — also nicht multi-instance-sicher.
 UPSTASH_REDIS_REST_URL=https://...upstash.io
 UPSTASH_REDIS_REST_TOKEN=dein_upstash_token
+
+# Pepper fürs HMAC des accessHash vor dem Upstash-Identifer. Ohne diesen
+# würde der Hash (und damit das Login-Credential) roh im Upstash-Keyspace
+# und im Analytics-Dashboard landen. 32+ Bytes zufälliges base64 reichen.
+# Rotation invalidiert nur die Rate-Limit-Buckets, NICHT die User-Accounts.
+# Pflicht in Production (sonst startet der Server-Action-Helper nicht).
+RATE_LIMIT_PEPPER=$(openssl rand -base64 32)
 ```
 
 ### Hinweise zur lokalen Nutzung
@@ -110,7 +117,8 @@ UPSTASH_REDIS_REST_TOKEN=dein_upstash_token
 - **Ohne Supabase-Konfiguration** nutzt die App lokale Fallback-Speicherung für Fortschritt/Anmeldung.
 - **Ohne `GROQ_API_KEY`** ist das SQL-Modul nicht funktionsfähig.
 - **Ohne Upstash-Env-Vars** läuft der Rate-Limiter In-Memory (nur für lokales Dev praktikabel; auf Vercel ist er dann nicht multi-instance-sicher und es erscheint eine Warnung im Log).
-- Für Produktionsbetrieb sollten Supabase und Upstash korrekt eingerichtet sein.
+- **Ohne `RATE_LIMIT_PEPPER`** wirft der Rate-Limiter in Production einen Fehler beim ersten Request; im Dev wird `dev:<hash>` als Identifier verwendet (kollidiert nie mit Production-HMACs).
+- Für Produktionsbetrieb sollten Supabase, Upstash und der Pepper korrekt eingerichtet sein.
 
 ## Datenbank-Setup
 

@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
@@ -6,7 +7,16 @@ import { Redis } from '@upstash/redis';
 // (5 Calls pro Minute pro accessHash), aber jetzt produktionstauglich.
 // ---------------------------------------------------------------------------
 export const RATE_LIMIT_MAX = 5;
-export const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+export const RATE_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOW_SECONDS * 1000;
+
+// Fail-closed: nach N Upstash-Fehlern innerhalb des Fensters wird auf
+// fail-closed geschaltet, damit ein DoS / Ausfall den Limiter nicht
+// dauerhaft aushebelt (sonst hätten wir die alte Bypass-Lücke nur verlagert).
+const FAILURE_THRESHOLD = 5;
+const FAILURE_WINDOW_MS = 30_000;
+
+export type RateLimitMode = 'upstash' | 'memory' | 'upstash-degraded';
 
 export type RateLimitResult = {
   allowed: boolean;
@@ -17,10 +27,34 @@ export type RateLimitResult = {
   /** Convenience für Caller; nur gesetzt wenn !allowed. */
   retryAfterMs?: number;
   reason?: 'timeout' | 'cacheBlock' | 'denyList';
-  /** Upstash-Analytics-Backgroundwork; Caller sollte das per after() / waitUntil() terminieren. */
+  /** Upstash-Analytics-Backgroundwork. Caller sollte das per after() terminieren. */
   pending?: Promise<unknown>;
-  mode: 'upstash' | 'memory';
+  mode: RateLimitMode;
 };
+
+// ---------------------------------------------------------------------------
+// Identifier-Hashing: der accessHash IST die einzige Credential. Roh an
+// Upstash geben → landet im Redis-Keyspace UND im Analytics-Dashboard.
+// Jeder mit Dashboard-Read-Access könnte so User-Logins übernehmen.
+// Daher HMAC mit einer prozessspezifischen Pepper-Variable.
+//
+// Dev: ohne Pepper fallback `dev:<id>` (kollidiert nie mit prod-digests).
+// Prod: ohne Pepper ist ein Hard-Fail.
+// ---------------------------------------------------------------------------
+const RATE_LIMIT_PEPPER = process.env.RATE_LIMIT_PEPPER;
+
+export function hashIdentifier(id: string): string {
+  if (!RATE_LIMIT_PEPPER) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'RATE_LIMIT_PEPPER muss in Production gesetzt sein (sonst landet ' +
+          'der accessHash roh im Upstash-Dashboard).'
+      );
+    }
+    return `dev:${id}`;
+  }
+  return createHmac('sha256', RATE_LIMIT_PEPPER).update(id).digest('hex');
+}
 
 // ---------------------------------------------------------------------------
 // Upstash-Limiter (lazy init). Wird nur erzeugt, wenn beide Env-Vars da sind.
@@ -35,7 +69,7 @@ function getUpstashLimiter(): Ratelimit | null {
 
   _upstash = new Ratelimit({
     redis: Redis.fromEnv(),
-    limiter: Ratelimit.fixedWindow(RATE_LIMIT_MAX, '60 s'),
+    limiter: Ratelimit.fixedWindow(RATE_LIMIT_MAX, `${RATE_LIMIT_WINDOW_SECONDS} s`),
     analytics: true,
     prefix: 'rl:ihk',
     // Default 5s ist für eine Server-Action viel zu lang — lieber fail-fast.
@@ -48,8 +82,7 @@ function getUpstashLimiter(): Ratelimit | null {
 // ---------------------------------------------------------------------------
 // In-Memory-Fallback (Dev ohne Env / bewusst gewählte Notbremse).
 // ACHTUNG: Pro Vercel-Instance getrennt — auf Edge / Serverless NICHT
-// multi-instance-sicher. Genau das, was der vorige Kommentar am alten
-// Map schon angemerkt hat; jetzt wenigstens laut signalisiert.
+// multi-instance-sicher.
 // ---------------------------------------------------------------------------
 type MemEntry = { count: number; resetAt: number };
 const mem = new Map<string, MemEntry>();
@@ -58,12 +91,13 @@ function checkMemory(id: string): RateLimitResult {
   const now = Date.now();
   const entry = mem.get(id);
   if (!entry || now > entry.resetAt) {
-    mem.set(id, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    const resetAt = now + RATE_LIMIT_WINDOW_MS;
+    mem.set(id, { count: 1, resetAt });
     return {
       allowed: true,
       limit: RATE_LIMIT_MAX,
       remaining: RATE_LIMIT_MAX - 1,
-      resetMs: mem.get(id)!.resetAt,
+      resetMs: resetAt,
       mode: 'memory',
     };
   }
@@ -87,28 +121,61 @@ function checkMemory(id: string): RateLimitResult {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Failure-Streak-Tracking (per Node-Prozess). Auf Vercel-Warm-Instance lebt
+// das Counter mehrere Stunden; Cold-Start resettet es bewusst — ein einzelner
+// frischer Prozess darf fail-open laufen, ein dauerhafter Upstash-Ausfall
+// soll aber fail-closed werden.
+// ---------------------------------------------------------------------------
+let failures = 0;
+let firstFailureAt = 0;
+let warnedMissingUpstash = false;
+
+function recordUpstashFailure(): boolean /* failClosed */ {
+  const now = Date.now();
+  if (now - firstFailureAt > FAILURE_WINDOW_MS) {
+    firstFailureAt = now;
+    failures = 1;
+    return false;
+  }
+  failures++;
+  return failures >= FAILURE_THRESHOLD;
+}
+
+/** Test-only hook: setzt State zurück. */
+export function __resetRateLimitForTests(): void {
+  warnedMissingUpstash = false;
+  failures = 0;
+  firstFailureAt = 0;
+  mem.clear();
+}
+
 /**
- * Prüft, ob `identifier` (bei uns der accessHash) im aktuellen Fenster
- * noch einen Call frei hat. Upstash, wenn env gesetzt, sonst In-Memory.
+ * Prüft, ob `identifier` (bei uns der accessHash) im aktuellen Fenster noch
+ * einen Call frei hat. Upstash, wenn env gesetzt, sonst In-Memory.
  *
- * Fail-open: Bei Upstash-Fehlern (Timeout, Netz) wird der Request
- * durchgelassen — Rate-Limit soll nicht selbst zur Downtime führen.
- * Der Fehler wird geloggt.
+ * Fail-closed nach FAILURE_THRESHOLD Upstash-Fehlern in FAILURE_WINDOW_MS.
  */
 export async function checkRateLimit(identifier: string): Promise<RateLimitResult> {
   const limiter = getUpstashLimiter();
   if (!limiter) {
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' && !warnedMissingUpstash) {
       console.warn(
         '[rateLimit] UPSTASH_REDIS_REST_URL/TOKEN fehlen — fallback In-Memory. ' +
           'Auf Vercel ist der Limiter dann NICHT multi-instance-sicher.'
       );
+      warnedMissingUpstash = true;
     }
-    return checkMemory(identifier);
+    return checkMemory(hashIdentifier(identifier));
   }
 
+  const hashedId = hashIdentifier(identifier);
+
   try {
-    const r = await limiter.limit(identifier);
+    const r = await limiter.limit(hashedId);
+    // Erfolg — Failure-Streak resetten.
+    failures = 0;
+    firstFailureAt = 0;
     return {
       allowed: r.success,
       limit: r.limit,
@@ -120,13 +187,33 @@ export async function checkRateLimit(identifier: string): Promise<RateLimitResul
       mode: 'upstash',
     };
   } catch (err) {
-    console.error('[rateLimit] Upstash-Call fehlgeschlagen, fail-open:', err);
+    const failClosed = recordUpstashFailure();
+    // URL-Redaktion: @upstash/redis inkludiert die REST-URL in err.message
+    // (URL + Token sind die Credentials). Wir loggen deshalb nur Name +
+    // ggf. Status, niemals die Message.
+    const e = err as { name?: string; status?: number };
+    console.error('[rateLimit] Upstash-Call fehlgeschlagen:', {
+      name: e?.name ?? 'Error',
+      status: typeof e?.status === 'number' ? e.status : undefined,
+      failures,
+      failClosed,
+    });
+    if (failClosed) {
+      return {
+        allowed: false,
+        limit: RATE_LIMIT_MAX,
+        remaining: 0,
+        resetMs: Date.now() + RATE_LIMIT_WINDOW_MS,
+        retryAfterMs: RATE_LIMIT_WINDOW_MS,
+        mode: 'upstash-degraded',
+      };
+    }
     return {
       allowed: true,
       limit: RATE_LIMIT_MAX,
       remaining: RATE_LIMIT_MAX,
       resetMs: Date.now() + RATE_LIMIT_WINDOW_MS,
-      mode: 'upstash',
+      mode: 'upstash-degraded',
     };
   }
 }
