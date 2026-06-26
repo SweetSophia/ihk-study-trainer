@@ -34,7 +34,7 @@ describe('generateSubnettingQuestion', () => {
 
     SUBNETTING_CIDRS.forEach((cidr, index) => {
       vi.spyOn(Math, 'random')
-        .mockReturnValueOnce((index + 0.1) / cidrCount)
+        .mockReturnValueOnce((index + 0.5) / cidrCount)
         .mockReturnValueOnce(0)
         .mockReturnValueOnce(0)
         .mockReturnValueOnce(0);
@@ -43,7 +43,6 @@ describe('generateSubnettingQuestion', () => {
 
       expect(question.questionText).toContain(`/${cidr}`);
       expect(question.expectedAnswers.usableHosts).toBe(MAX_HOSTS_PER_CIDR[cidr]);
-      vi.restoreAllMocks();
     });
   });
 });

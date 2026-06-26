@@ -3,14 +3,18 @@ import { Question } from '../../types';
 export const SUBNETTING_CIDRS = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30] as const;
 type SubnettingCidr = typeof SUBNETTING_CIDRS[number];
 
-export const MAX_HOSTS_PER_CIDR: Record<SubnettingCidr, number> = Object.freeze(
-  Object.fromEntries(
-    SUBNETTING_CIDRS.map((cidr) => [cidr, (1 << (32 - cidr)) - 2]),
-  ) as Record<SubnettingCidr, number>,
-);
+export const MAX_HOSTS_PER_CIDR: Readonly<Record<SubnettingCidr, number>> =
+  Object.freeze(
+    SUBNETTING_CIDRS.reduce(
+      (acc, cidr) => ({ ...acc, [cidr]: (1 << (32 - cidr)) - 2 }),
+      {} as Record<SubnettingCidr, number>,
+    ),
+  );
 
 function ipToLong(ip: string): number {
-  return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
+  return ip
+    .split('.')
+    .reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
 }
 
 function longToIp(long: number): string {
