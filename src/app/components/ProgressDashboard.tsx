@@ -1,8 +1,12 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { toCanonicalModuleId } from '../lib/moduleIds';
 import { MODULE_NAMES, isModuleId } from '../lib/modules';
+import {
+  fireStreakConfetti,
+  isStreakMilestone,
+} from '../lib/celebrations';
 import { motion } from 'framer-motion';
 import { 
   Trophy, 
@@ -75,6 +79,15 @@ export default function ProgressDashboard({
   );
 
   const toggleShowDetails = () => writeShowDetails(!showDetails);
+
+  // Celebrate streak milestones (1, 3, 7, 14, 30, 100 days). The "once per
+  // session" guard lives inside `fireStreakConfetti` (sessionStorage) so the
+  // effect can stay simple and reactive to `streakDays`.
+  useEffect(() => {
+    if (isStreakMilestone(streakDays)) {
+      void fireStreakConfetti(streakDays);
+    }
+  }, [streakDays]);
 
   const totalAttempted = progress.reduce((sum, p) => sum + p.questions_attempted, 0);
   const totalCorrect = progress.reduce((sum, p) => sum + p.questions_correct, 0);
