@@ -49,6 +49,18 @@ vi.mock('../LinuxTerminal', () => ({
   default: () => <div data-testid="linux-terminal" />,
 }));
 
+// Mock the celebration helpers — we want to assert *that* they get called
+// (or not), not exercise the confetti canvas itself.
+const mockFireFirstCorrectConfetti = vi.fn().mockResolvedValue(undefined);
+const mockFireStreakConfetti = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../lib/celebrations', () => ({
+  fireFirstCorrectConfetti: (...args: unknown[]) =>
+    mockFireFirstCorrectConfetti(...args),
+  fireStreakConfetti: (...args: unknown[]) => mockFireStreakConfetti(...args),
+  isStreakMilestone: (days: number) => [1, 3, 7, 14, 30, 100].includes(days),
+  STREAK_MILESTONES: [1, 3, 7, 14, 30, 100],
+}));
+
 import StudyCard from '../StudyCard';
 
 const noCheckAnswer = vi.fn().mockReturnValue(true);
@@ -246,6 +258,84 @@ describe('StudyCard – active question', () => {
     inputs[0].focus();
     fireEvent.keyDown(inputs[0], { key: 'n' });
     expect(onNextQuestion).not.toHaveBeenCalled();
+  });
+
+  it('fires first-correct confetti when an answer is marked correct', async () => {
+    mockFireFirstCorrectConfetti.mockClear();
+    const question = makeQuestion();
+    const onCheckAnswer = vi.fn().mockReturnValue(true);
+    render(
+      <StudyCard
+        question={question}
+        onCheckAnswer={onCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    const inputs = screen.getAllByRole('textbox') as HTMLInputElement[];
+    fireEvent.change(inputs[0], { target: { value: '1024' } });
+    fireEvent.change(inputs[1], { target: { value: '768' } });
+    await userEvent.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+
+    // The component delegates the "fire only once per session" decision to the
+    // helper (via its internal sessionStorage guard, covered in
+    // celebrations.test.ts). Here we only assert that the component invokes the
+    // helper whenever an answer becomes correct.
+    expect(mockFireFirstCorrectConfetti).toHaveBeenCalled();
+  });
+
+  it('invokes the confetti helper again when the next question is answered correctly', async () => {
+    mockFireFirstCorrectConfetti.mockClear();
+    const onCheckAnswer = vi.fn().mockReturnValue(true);
+    const { rerender } = render(
+      <StudyCard
+        question={makeQuestion()}
+        onCheckAnswer={onCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    const answerAndCheck = async () => {
+      const inputs = screen.getAllByRole('textbox') as HTMLInputElement[];
+      fireEvent.change(inputs[0], { target: { value: '1024' } });
+      fireEvent.change(inputs[1], { target: { value: '768' } });
+      await userEvent.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+    };
+
+    await answerAndCheck();
+    const callsAfterFirst = mockFireFirstCorrectConfetti.mock.calls.length;
+
+    // Next question, also answered correctly.
+    rerender(
+      <StudyCard
+        question={makeQuestion({ id: 'test-q-2' })}
+        onCheckAnswer={onCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+    await answerAndCheck();
+
+    expect(mockFireFirstCorrectConfetti.mock.calls.length).toBeGreaterThan(callsAfterFirst);
+  });
+
+  it('does NOT fire confetti on an incorrect answer', async () => {
+    mockFireFirstCorrectConfetti.mockClear();
+    const question = makeQuestion();
+    const onCheckAnswer = vi.fn().mockReturnValue(false);
+    render(
+      <StudyCard
+        question={question}
+        onCheckAnswer={onCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    const inputs = screen.getAllByRole('textbox') as HTMLInputElement[];
+    fireEvent.change(inputs[0], { target: { value: '1' } });
+    fireEvent.change(inputs[1], { target: { value: '1' } });
+    await userEvent.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+
+    expect(mockFireFirstCorrectConfetti).not.toHaveBeenCalled();
   });
 });
 

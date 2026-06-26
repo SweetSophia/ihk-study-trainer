@@ -42,6 +42,18 @@ vi.mock('lucide-react', () => ({
   Cloud: () => <svg data-testid="icon-cloud" />,
 }));
 
+// Mock celebration helpers so we can assert they are invoked (or not) without
+// exercising the canvas-confetti runtime in unit tests.
+const mockFireFirstCorrectConfetti = vi.fn().mockResolvedValue(undefined);
+const mockFireStreakConfetti = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../lib/celebrations', () => ({
+  fireFirstCorrectConfetti: (...args: unknown[]) =>
+    mockFireFirstCorrectConfetti(...args),
+  fireStreakConfetti: (...args: unknown[]) => mockFireStreakConfetti(...args),
+  isStreakMilestone: (days: number) => [1, 3, 7, 14, 30, 100].includes(days),
+  STREAK_MILESTONES: [1, 3, 7, 14, 30, 100],
+}));
+
 import ProgressDashboard from '../ProgressDashboard';
 
 const noOp = vi.fn();
@@ -252,4 +264,146 @@ describe('ProgressDashboard – showDetails persistence (PR 4)', () => {
     expect(window.localStorage.getItem('ihk_progress_show_details')).toBe('false');
     expect(screen.getByText('Details anzeigen')).toBeInTheDocument();
   });
+});
+
+describe('ProgressDashboard – streak milestone confetti', () => {
+
+  beforeEach(() => {
+
+    vi.clearAllMocks();
+
+    window.localStorage.clear();
+
+    mockFireStreakConfetti.mockClear();
+
+    mockFireFirstCorrectConfetti.mockClear();
+
+  });
+
+  
+
+  function makeProgress() {
+
+    return [{ module: 'bandwidth', questions_attempted: 5, questions_correct: 3 }];
+
+  }
+
+  
+
+  it('fires streak confetti when streakDays is a milestone', () => {
+
+    render(
+
+      <ProgressDashboard
+
+        progress={makeProgress()}
+
+        streakDays={7}
+
+        onPracticeMistakes={noOp}
+
+      />,
+
+    );
+
+    expect(mockFireStreakConfetti).toHaveBeenCalledWith(7);
+
+  });
+
+  
+
+  it('does NOT fire streak confetti on a non-milestone day', () => {
+
+    render(
+
+      <ProgressDashboard
+
+        progress={makeProgress()}
+
+        streakDays={5}
+
+        onPracticeMistakes={noOp}
+
+      />,
+
+    );
+
+    expect(mockFireStreakConfetti).not.toHaveBeenCalled();
+
+  });
+
+  
+
+  it('does NOT fire streak confetti on day 0', () => {
+
+    render(
+
+      <ProgressDashboard
+
+        progress={makeProgress()}
+
+        streakDays={0}
+
+        onPracticeMistakes={noOp}
+
+      />,
+
+    );
+
+    expect(mockFireStreakConfetti).not.toHaveBeenCalled();
+
+  });
+
+  
+
+  it('fires for every documented milestone', () => {
+
+    for (const days of [1, 3, 7, 14, 30, 100]) {
+
+      mockFireStreakConfetti.mockClear();
+
+      const { unmount } = render(
+
+        <ProgressDashboard
+
+          progress={makeProgress()}
+
+          streakDays={days}
+
+          onPracticeMistakes={noOp}
+
+        />,
+
+      );
+
+      expect(mockFireStreakConfetti).toHaveBeenCalledWith(days);
+
+      unmount();
+
+    }
+
+  });
+
+  
+
+  it('never fires the first-correct helper (this component only handles streaks)', () => {
+
+    render(
+
+      <ProgressDashboard
+
+        progress={makeProgress()}
+
+        streakDays={7}
+
+        onPracticeMistakes={noOp}
+
+      />,
+
+    );
+
+    expect(mockFireFirstCorrectConfetti).not.toHaveBeenCalled();
+
+  });
+
 });
