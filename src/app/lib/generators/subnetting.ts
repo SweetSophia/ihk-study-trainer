@@ -1,5 +1,14 @@
 import { Question } from '../../types';
 
+export const SUBNETTING_CIDRS = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30] as const;
+type SubnettingCidr = typeof SUBNETTING_CIDRS[number];
+
+export const MAX_HOSTS_PER_CIDR: Record<SubnettingCidr, number> = Object.freeze(
+  Object.fromEntries(
+    SUBNETTING_CIDRS.map((cidr) => [cidr, (1 << (32 - cidr)) - 2]),
+  ) as Record<SubnettingCidr, number>,
+);
+
 function ipToLong(ip: string): number {
   return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
 }
@@ -22,9 +31,8 @@ function maskToDotted(mask: number): string {
 }
 
 export function generateSubnettingQuestion(): Question {
-  // Random CIDR between /17 and /29
-  const cidrs = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
-  const cidr = cidrs[Math.floor(Math.random() * cidrs.length)];
+  // Random CIDR between /17 and /30
+  const cidr = SUBNETTING_CIDRS[Math.floor(Math.random() * SUBNETTING_CIDRS.length)];
   
   // Random IP in 10.x.x.x range
   const ip2 = Math.floor(Math.random() * 256);
@@ -39,7 +47,7 @@ export function generateSubnettingQuestion(): Question {
   const broadcast = (networkId | ~mask) >>> 0;
   const hostMin = (networkId + 1) >>> 0;
   const hostMax = (broadcast - 1) >>> 0;
-  const usableHosts = Math.pow(2, 32 - cidr) - 2;
+  const usableHosts = MAX_HOSTS_PER_CIDR[cidr];
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
     cidr < 20 ? 'hard' :

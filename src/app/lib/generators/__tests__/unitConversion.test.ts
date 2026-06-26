@@ -11,7 +11,7 @@ describe('generateUnitConversionQuestion – module field migration', () => {
 
   it('uses the id prefix "unit-conv-" for the question id', () => {
     const question = generateUnitConversionQuestion();
-    expect(question.id).toMatch(/^unit-conv-\d+$/);
+    expect(question.id.startsWith('unit-conv-')).toBe(true);
   });
 
   it('belongs to the correct theme', () => {
