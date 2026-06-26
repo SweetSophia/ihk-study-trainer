@@ -173,4 +173,104 @@ describe('celebrations', () => {
       expect(mockConfetti).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('concurrency / in-memory dedup (Gemini #1, Kilo #2-3)', () => {
+    it('fires confetti exactly once across N concurrent fireFirstCorrectConfetti calls', async () => {
+      await Promise.all([
+        fireFirstCorrectConfetti(),
+        fireFirstCorrectConfetti(),
+        fireFirstCorrectConfetti(),
+        fireFirstCorrectConfetti(),
+      ]);
+
+      expect(mockConfetti).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires confetti exactly once across N concurrent fireStreakConfetti calls for the same milestone', async () => {
+      await Promise.all([
+        fireStreakConfetti(7),
+        fireStreakConfetti(7),
+        fireStreakConfetti(7),
+      ]);
+
+      expect(mockConfetti).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires once per distinct milestone when concurrent calls target different days', async () => {
+      await Promise.all([
+        fireStreakConfetti(7),
+        fireStreakConfetti(14),
+        fireStreakConfetti(30),
+      ]);
+
+      expect(mockConfetti).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('failure recovery (Kilo #1 / Gemini #3)', () => {
+    it('rolls back the first-correct guard when the confetti call throws so a retry fires', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockConfetti.mockImplementationOnce(() => {
+        throw new Error('synthetic canvas error');
+      });
+
+      await fireFirstCorrectConfetti();
+      expect(mockConfetti).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to load or fire confetti:',
+        expect.any(Error),
+      );
+
+      // Subsequent call should fire — in-memory flag was rolled back.
+      mockConfetti.mockReset();
+      await fireFirstCorrectConfetti();
+      expect(mockConfetti).toHaveBeenCalledTimes(1);
+    });
+
+    it('rolls back the streak-milestone guard when confetti throws', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockConfetti.mockImplementationOnce(() => {
+        throw new Error('synthetic canvas error');
+      });
+
+      await fireStreakConfetti(7);
+      expect(mockConfetti).toHaveBeenCalledTimes(1);
+
+      // The in-memory Set was rolled back, so this call should fire.
+      mockConfetti.mockReset();
+      await fireStreakConfetti(7);
+      expect(mockConfetti).toHaveBeenCalledTimes(1);
+      // Suppress unused-var warning while keeping the spy evidence above.
+      void consoleErrorSpy;
+    });
+  });
+
+  describe('in-memory fallback when sessionStorage is unavailable (Gemini #1)', () => {
+    it('still dedups confetti when sessionStorage.setItem throws', async () => {
+      const originalSetItem = window.sessionStorage.setItem;
+      window.sessionStorage.setItem = vi.fn(() => {
+        throw new Error('quota exceeded');
+      });
+
+      await fireFirstCorrectConfetti();
+      await fireFirstCorrectConfetti();
+      await fireFirstCorrectConfetti();
+
+      expect(mockConfetti).toHaveBeenCalledTimes(1);
+      window.sessionStorage.setItem = originalSetItem;
+    });
+
+    it('still dedups streak confetti when sessionStorage.setItem throws', async () => {
+      const originalSetItem = window.sessionStorage.setItem;
+      window.sessionStorage.setItem = vi.fn(() => {
+        throw new Error('quota exceeded');
+      });
+
+      await fireStreakConfetti(14);
+      await fireStreakConfetti(14);
+
+      expect(mockConfetti).toHaveBeenCalledTimes(1);
+      window.sessionStorage.setItem = originalSetItem;
+    });
+  });
 });
