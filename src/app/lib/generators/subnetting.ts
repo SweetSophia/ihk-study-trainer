@@ -3,13 +3,16 @@ import { Question } from '../../types';
 export const SUBNETTING_CIDRS = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30] as const;
 type SubnettingCidr = typeof SUBNETTING_CIDRS[number];
 
-export const MAX_HOSTS_PER_CIDR: Readonly<Record<SubnettingCidr, number>> =
-  Object.freeze(
-    SUBNETTING_CIDRS.reduce(
-      (acc, cidr) => ({ ...acc, [cidr]: (1 << (32 - cidr)) - 2 }),
-      {} as Record<SubnettingCidr, number>,
-    ),
-  );
+// Vollständigkeit der Map wird zur Laufzeit durch `subnetting.test.ts` (`for every supported CIDR`)
+// und per Code-Review sichergestellt — TypeScript's `Record<SubnettingCidr, number>`-Annotation
+// mit `fromEntries`/`reduce`-Build würde Excess-Keys prüfen, aber keine fehlenden Keys
+// erkennen. JS signed-32-int-Overflow wäre erst ab `1 << 31` ein Risiko; die Range ist
+// heute [2, 15], sicher.
+export const MAX_HOSTS_PER_CIDR: Readonly<Record<SubnettingCidr, number>> = Object.freeze(
+  Object.fromEntries(
+    SUBNETTING_CIDRS.map((cidr) => [cidr, (1 << (32 - cidr)) - 2] as const),
+  ) as Record<SubnettingCidr, number>,
+);
 
 function ipToLong(ip: string): number {
   return ip
