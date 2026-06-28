@@ -28,6 +28,11 @@ vi.mock('framer-motion', () => ({
         {children}
       </p>
     ),
+    section: ({ children, className, ...rest }: HTMLAttributes<HTMLElement>) => (
+      <section className={className} {...rest}>
+        {children}
+      </section>
+    ),
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
@@ -41,6 +46,9 @@ vi.mock('lucide-react', () => ({
   RotateCcw: () => <svg data-testid="icon-rotatecc" />,
   Sparkles: () => <svg data-testid="icon-sparkles" />,
   Keyboard: () => <svg data-testid="icon-keyboard" />,
+  // SubnettingVisualizer also uses these icons when its module renders.
+  Network: () => <svg data-testid="icon-network" />,
+  Eye: () => <svg data-testid="icon-eye" />,
 }));
 
 // Mock the Linux terminal — we don't want to exercise its full keyboard
@@ -408,5 +416,69 @@ describe('StudyCard – stepped solution reveal', () => {
     const answersPanel = labelEl.parentElement!.parentElement!;
     expect(within(answersPanel).getByText('1024')).toBeInTheDocument();
     expect(within(answersPanel).getByText('768')).toBeInTheDocument();
+  });
+});
+
+describe('StudyCard – subnetting visualizer gating', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+  });
+
+  function makeSubnettingQuestion(): Question {
+    return {
+      id: 'sub-test-1',
+      theme: 'Netzwerkarchitektur & Overhead',
+      module: 'subnetting',
+      questionText: 'Gegeben: IP-Adresse 10.5.3.4/24\nBerechne: Network ID, Broadcast, …',
+      expectedAnswers: {
+        networkId: '10.5.3.0',
+        broadcast: '10.5.3.255',
+        hostMin: '10.5.3.1',
+        hostMax: '10.5.3.254',
+        subnetMask: '255.255.255.0',
+        usableHosts: 254,
+      },
+      solutionSteps: ['Schritt 1: …'],
+      difficulty: 'easy',
+    };
+  }
+
+  it('renders the subnetting visualizer for subnetting questions', () => {
+    render(
+      <StudyCard
+        question={makeSubnettingQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+    expect(screen.getByTestId('subnetting-visualizer')).toBeInTheDocument();
+  });
+
+  it('renders the parsed IP and CIDR header inside the visualizer', () => {
+    render(
+      <StudyCard
+        question={makeSubnettingQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+    const visualizer = screen.getByTestId('subnetting-visualizer');
+    expect(within(visualizer).getByTestId('viz-given-ip')).toHaveTextContent('10.5.3.4');
+    expect(within(visualizer).getByTestId('viz-cidr')).toHaveTextContent('/24');
+    expect(within(visualizer).getByTestId('viz-network-id')).toHaveTextContent('10.5.3.0');
+    expect(within(visualizer).getByTestId('viz-broadcast')).toHaveTextContent('10.5.3.255');
+    expect(within(visualizer).getByTestId('viz-usable-hosts')).toHaveTextContent('254');
+  });
+
+  it('does NOT render the subnetting visualizer for non-subnetting questions', () => {
+    render(
+      <StudyCard
+        question={makeQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+    expect(screen.queryByTestId('subnetting-visualizer')).toBeNull();
   });
 });
