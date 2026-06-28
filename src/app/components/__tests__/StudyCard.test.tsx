@@ -152,7 +152,7 @@ describe('StudyCard – welcome screen (no question)', () => {
     );
     await userEvent.click(screen.getByText('Was ist neu?'));
     // Should now reveal the most recent changelog entry.
-    expect(screen.getByText(/Hexa \/ Binaer Aufgaben/)).toBeInTheDocument();
+    expect(screen.getByText(/Confetti, UX, Upstash/)).toBeInTheDocument();
   });
 });
 
