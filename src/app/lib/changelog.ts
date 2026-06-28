@@ -6,11 +6,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
-
+  {
+    date: '28/06/2026',
+    summary: 'Confetti, UX, Upstash, Security, Subnetting',
+    highlight: true,
+    tag: 'Aktuell',
+  },
   { 
     date: '08/04/2026',
     summary: 'Hexa / Binaer Aufgaben, Code fixes', 
-    highlight: true,
     tag: 'Neu',
   },
   {
