@@ -214,6 +214,25 @@ describe('SubnettingVisualizer — rendering', () => {
     expect(rangeBar).toBeInTheDocument();
   });
 
+  it('uses exponentiation for /0 address counts instead of bit-shift overflow', () => {
+    const question = makeSubnettingQuestion({
+      questionText: 'Gegeben: IP-Adresse 0.0.0.0/0\nBerechne: ...',
+      expectedAnswers: {
+        networkId: '0.0.0.0',
+        broadcast: '255.255.255.255',
+        hostMin: '0.0.0.1',
+        hostMax: '255.255.255.254',
+        subnetMask: '0.0.0.0',
+        usableHosts: 4294967294,
+      },
+    });
+
+    render(<SubnettingVisualizer question={question} />);
+
+    expect(screen.getByText(/4\.294\.967\.296 Adressen/)).toBeInTheDocument();
+    expect(screen.getByText(/4\.294\.967\.294 nutzbar/)).toBeInTheDocument();
+  });
+
   it('shows the same detail values regardless of IP/CIDR parsing outcome', () => {
     const withText = makeSubnettingQuestion();
     const withoutText = makeSubnettingQuestion({

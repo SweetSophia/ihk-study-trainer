@@ -484,8 +484,9 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
         </p>
       </div>
 
-      {/* Module-specific visuals. Currently: subnetting visualizer. */}
-      {question.module === 'subnetting' && (
+      {/* Module-specific visuals. The subnetting visualizer contains answer
+          values, so it only appears after submitting or opening the solution. */}
+      {question.module === 'subnetting' && (checked || showSolution) && (
         <div className="px-6 pb-2">
           <SubnettingVisualizer question={question} />
         </div>

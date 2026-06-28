@@ -39,9 +39,8 @@ export function parseIpAndCidr(text: string): ParsedSubnetInput | null {
   if (!match) return null;
   const octets = [match[1], match[2], match[3], match[4]].map((s) => {
     const n = Number(s);
-    return Number.isFinite(n) ? Math.trunc(n) : NaN;
+    return Number.isFinite(n) ? n : NaN;
   });
-  if (octets.length !== 4) return null;
   if (octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
   const cidr = Number(match[5]);
   if (!Number.isInteger(cidr) || cidr < 0 || cidr > 32) return null;
@@ -123,7 +122,7 @@ export default function SubnettingVisualizer({ question }: SubnettingVisualizerP
   const hostMax = String(question.expectedAnswers.hostMax ?? '');
   const usableHosts = Number(question.expectedAnswers.usableHosts ?? 0);
   const totalAddresses =
-    parsed.cidr === null ? null : 1 << (32 - parsed.cidr);
+    parsed.cidr === null ? null : 2 ** (32 - parsed.cidr);
 
   return (
     <motion.section
@@ -498,7 +497,7 @@ function RangeBar({
       {totalAddresses !== null && (
         <text
           x={320}
-          y={5}
+          y={12}
           fontSize="9"
           textAnchor="end"
           fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"

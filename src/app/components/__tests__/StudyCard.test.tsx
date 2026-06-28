@@ -444,7 +444,7 @@ describe('StudyCard – subnetting visualizer gating', () => {
     };
   }
 
-  it('renders the subnetting visualizer for subnetting questions', () => {
+  it('does not reveal the subnetting visualizer before submit or solution reveal', () => {
     render(
       <StudyCard
         question={makeSubnettingQuestion()}
@@ -452,10 +452,11 @@ describe('StudyCard – subnetting visualizer gating', () => {
         onNextQuestion={noNextQuestion}
       />,
     );
-    expect(screen.getByTestId('subnetting-visualizer')).toBeInTheDocument();
+    expect(screen.queryByTestId('subnetting-visualizer')).toBeNull();
   });
 
-  it('renders the parsed IP and CIDR header inside the visualizer', () => {
+  it('renders the parsed IP, CIDR, and expected values after opening the solution', async () => {
+    const user = userEvent.setup();
     render(
       <StudyCard
         question={makeSubnettingQuestion()}
@@ -463,6 +464,9 @@ describe('StudyCard – subnetting visualizer gating', () => {
         onNextQuestion={noNextQuestion}
       />,
     );
+
+    await user.click(screen.getByRole('button', { name: /Lösung anzeigen/i }));
+
     const visualizer = screen.getByTestId('subnetting-visualizer');
     expect(within(visualizer).getByTestId('viz-given-ip')).toHaveTextContent('10.5.3.4');
     expect(within(visualizer).getByTestId('viz-cidr')).toHaveTextContent('/24');
