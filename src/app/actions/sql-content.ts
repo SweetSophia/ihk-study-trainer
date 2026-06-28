@@ -45,8 +45,8 @@ export const SQL_CONCEPTS = [
   'MIN und MAX Aggregation',
   'NOT EXISTS Anti-Join',
   'UNION zwischen kompatiblen Abfragen',
-  'ALTER TABLE ADD COLUMN',
-  'CREATE INDEX für häufige Filter',
+  'Fensterfunktion ROW_NUMBER() für Ranglisten',
+  'Informationen aus information_schema abfragen',
   'FOREIGN KEY Beziehung prüfen',
   'DATE_TRUNC für Monatsauswertung',
 ] as const;

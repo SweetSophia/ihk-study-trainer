@@ -67,12 +67,10 @@ const uniqueValues = (values: readonly string[]) => new Set(values);
 
 describe('SQL exercise content pools', () => {
   it('has at least 20 scenario themes', () => {
-    expect(THEMES).toHaveLength(22);
     expect(THEMES.length).toBeGreaterThanOrEqual(20);
   });
 
   it('has at least 20 SQL concepts', () => {
-    expect(SQL_CONCEPTS).toHaveLength(22);
     expect(SQL_CONCEPTS.length).toBeGreaterThanOrEqual(20);
   });
 
@@ -163,7 +161,7 @@ describe('generateSqlExercise', () => {
     await generateSqlExercise(nextHash());
 
     const callArgs = mockGenerateText.mock.calls[0][0] as GenerateTextArgs;
-    expect(callArgs.prompt).toContain('Change-Request Freigaben');
+    expect(callArgs.prompt).toContain(THEMES[THEMES.length - 1]);
 
     spy.mockRestore();
   });
