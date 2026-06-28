@@ -6,6 +6,7 @@ import { after } from 'next/server';
 import { z } from 'zod';
 import { hashExists, isValidAccessHash } from '../lib/auth';
 import { checkRateLimit, RATE_LIMIT_WINDOW_MS } from '../lib/rateLimit';
+import { SQL_CONCEPTS, THEMES } from './sql-content';
 
 // ---------------------------------------------------------------------------
 // Type guard for error objects
@@ -24,31 +25,6 @@ function getErrorMessage(error: unknown, fallback: string): string {
   if (typeof error === 'string') return error;
   return fallback;
 }
-
-// ---------------------------------------------------------------------------
-// Themes & Concepts
-// ---------------------------------------------------------------------------
-const THEMES = [
-  'Network Infrastructure Asset Inventory',
-  'Cyber Security Incident Logging',
-  'Active Directory Benutzerverwaltung',
-  'IT-Helpdesk Ticket System',
-  'Server Monitoring & Auslastung',
-  'Software Lizenzverwaltung',
-];
-
-const SQL_CONCEPTS = [
-  'SELECT mit WHERE Bedingung und ORDER BY',
-  'INNER JOIN zwischen zwei Tabellen',
-  'GROUP BY mit HAVING Klausel',
-  'INSERT INTO mit mehreren Werten',
-  'UPDATE mit Bedingung',
-  'DELETE mit WHERE Klausel',
-  'COUNT, SUM, AVG Aggregation',
-  'Subquery mit IN Operator',
-  'LEFT JOIN mit IS NULL Prüfung',
-  'DISTINCT und LIMIT',
-];
 
 // ---------------------------------------------------------------------------
 // Zod Schema
