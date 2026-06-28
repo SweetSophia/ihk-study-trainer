@@ -13,6 +13,7 @@ import {
   Keyboard,
 } from 'lucide-react';
 import { Question } from '../types';
+import { fireFirstCorrectConfetti } from '../lib/celebrations';
 import { CHANGELOG_ENTRIES } from '../lib/changelog';
 import LinuxTerminal from './LinuxTerminal';
 
@@ -87,6 +88,15 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
   useEffect(() => {
     setChangelogDismissed(readChangelogDismissed());
   }, []);
+
+  // Celebrate the first correct answer of the session. The "once per session"
+  // guard lives inside `fireFirstCorrectConfetti` (sessionStorage) so a refresh
+  // within the same tab doesn't double-trigger.
+  useEffect(() => {
+    if (isCorrect === true) {
+      void fireFirstCorrectConfetti();
+    }
+  }, [isCorrect]);
 
   // Reset the transient answer state whenever the question changes so the
   // card looks fresh and the previous feedback doesn't bleed through.
