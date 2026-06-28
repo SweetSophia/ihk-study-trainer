@@ -27,7 +27,8 @@ mockHashExists.mockResolvedValue(true);
 
 import { generateText } from 'ai';
 import { groq } from '@ai-sdk/groq';
-import { generateSqlExercise, SqlExercise } from '../generate-sql-exercise';
+import { SQL_CONCEPTS, THEMES } from '../sql-content';
+import { generateSqlExercise, type SqlExercise } from '../generate-sql-exercise';
 
 const mockGenerateText = vi.mocked(generateText);
 const mockGroq = vi.mocked(groq);
@@ -61,6 +62,25 @@ INSERT INTO devices VALUES (2, 'Switch-01', 'switch');`,
   solution_query: "SELECT * FROM devices WHERE type = 'router';",
   difficulty: 'easy',
 };
+
+const uniqueValues = (values: readonly string[]) => new Set(values);
+
+describe('SQL exercise content pools', () => {
+  it('has at least 20 scenario themes', () => {
+    expect(THEMES).toHaveLength(22);
+    expect(THEMES.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it('has at least 20 SQL concepts', () => {
+    expect(SQL_CONCEPTS).toHaveLength(22);
+    expect(SQL_CONCEPTS.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it('does not contain duplicate themes or concepts', () => {
+    expect(uniqueValues(THEMES).size).toBe(THEMES.length);
+    expect(uniqueValues(SQL_CONCEPTS).size).toBe(SQL_CONCEPTS.length);
+  });
+});
 
 describe('generateSqlExercise', () => {
   beforeEach(() => {
@@ -136,14 +156,14 @@ describe('generateSqlExercise', () => {
   });
 
   it('selects a different theme when Math.random returns a high value', async () => {
-    // Math.random() returning 0.999 with Math.floor(0.999 * 6) = 5 (last theme)
+    // Math.random() returning 0.999 selects the last theme.
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0.999);
     mockGenerateText.mockResolvedValueOnce(fakeResult(JSON.stringify(validExercise)));
 
     await generateSqlExercise(nextHash());
 
     const callArgs = mockGenerateText.mock.calls[0][0] as GenerateTextArgs;
-    expect(callArgs.prompt).toContain('Software Lizenzverwaltung');
+    expect(callArgs.prompt).toContain('Change-Request Freigaben');
 
     spy.mockRestore();
   });
