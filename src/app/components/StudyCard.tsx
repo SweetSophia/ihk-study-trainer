@@ -16,6 +16,7 @@ import { Question } from '../types';
 import { fireFirstCorrectConfetti } from '../lib/celebrations';
 import { CHANGELOG_ENTRIES } from '../lib/changelog';
 import LinuxTerminal from './LinuxTerminal';
+import SubnettingVisualizer from './SubnettingVisualizer';
 
 interface StudyCardProps {
   question: Question | null;
@@ -482,6 +483,14 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
           {question.questionText}
         </p>
       </div>
+
+      {/* Module-specific visuals. The subnetting visualizer contains answer
+          values, so it only appears after submitting or opening the solution. */}
+      {question.module === 'subnetting' && (checked || showSolution) && (
+        <div className="px-6 pb-2">
+          <SubnettingVisualizer question={question} />
+        </div>
+      )}
 
       {/* Answer Inputs */}
       <div className="px-6 pb-4 space-y-4">

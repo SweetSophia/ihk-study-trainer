@@ -28,8 +28,16 @@ vi.mock('framer-motion', () => ({
         {children}
       </p>
     ),
+    section: ({ children, className, ...rest }: HTMLAttributes<HTMLElement>) => (
+      <section className={className} {...rest}>
+        {children}
+      </section>
+    ),
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  // SubnettingVisualizer (rendered inside StudyCard) uses this to skip the
+  // entrance animation when the user has prefers-reduced-motion enabled.
+  useReducedMotion: () => false,
 }));
 
 // Mock lucide-react — render tiny stand-ins.
@@ -41,6 +49,9 @@ vi.mock('lucide-react', () => ({
   RotateCcw: () => <svg data-testid="icon-rotatecc" />,
   Sparkles: () => <svg data-testid="icon-sparkles" />,
   Keyboard: () => <svg data-testid="icon-keyboard" />,
+  // SubnettingVisualizer also uses these icons when its module renders.
+  Network: () => <svg data-testid="icon-network" />,
+  Eye: () => <svg data-testid="icon-eye" />,
 }));
 
 // Mock the Linux terminal — we don't want to exercise its full keyboard
@@ -408,5 +419,111 @@ describe('StudyCard – stepped solution reveal', () => {
     const answersPanel = labelEl.parentElement!.parentElement!;
     expect(within(answersPanel).getByText('1024')).toBeInTheDocument();
     expect(within(answersPanel).getByText('768')).toBeInTheDocument();
+  });
+});
+
+describe('StudyCard – subnetting visualizer gating', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+  });
+
+  function makeSubnettingQuestion(): Question {
+    return {
+      id: 'sub-test-1',
+      theme: 'Netzwerkarchitektur & Overhead',
+      module: 'subnetting',
+      questionText: 'Gegeben: IP-Adresse 10.5.3.4/24\nBerechne: Network ID, Broadcast, …',
+      expectedAnswers: {
+        networkId: '10.5.3.0',
+        broadcast: '10.5.3.255',
+        hostMin: '10.5.3.1',
+        hostMax: '10.5.3.254',
+        subnetMask: '255.255.255.0',
+        usableHosts: 254,
+      },
+      solutionSteps: ['Schritt 1: …'],
+      difficulty: 'easy',
+    };
+  }
+
+  it('does not reveal the subnetting visualizer before submit or solution reveal', () => {
+    render(
+      <StudyCard
+        question={makeSubnettingQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+    expect(screen.queryByTestId('subnetting-visualizer')).toBeNull();
+  });
+
+  it('renders the parsed IP, CIDR, and expected values after opening the solution', async () => {
+    const user = userEvent.setup();
+    render(
+      <StudyCard
+        question={makeSubnettingQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /Lösung anzeigen/i }));
+
+    const visualizer = screen.getByTestId('subnetting-visualizer');
+    expect(within(visualizer).getByTestId('viz-given-ip')).toHaveTextContent('10.5.3.4');
+    expect(within(visualizer).getByTestId('viz-cidr')).toHaveTextContent('/24');
+    expect(within(visualizer).getByTestId('viz-network-id')).toHaveTextContent('10.5.3.0');
+    expect(within(visualizer).getByTestId('viz-broadcast')).toHaveTextContent('10.5.3.255');
+    expect(within(visualizer).getByTestId('viz-usable-hosts')).toHaveTextContent('254');
+  });
+
+  // Regression guard: the gate is `(checked || showSolution)`. The showSolution
+  // branch is covered above; this one locks in the post-submit (`checked`)
+  // branch so a future refactor that drops `checked` from the condition fails
+  // CI instead of silently leaking answers before the user submits.
+  it('renders the subnetting visualizer after submitting an answer', async () => {
+    const user = userEvent.setup();
+    render(
+      <StudyCard
+        question={makeSubnettingQuestion()}
+        onCheckAnswer={vi.fn().mockReturnValue(true)}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    // The subnetting question has 6 expectedAnswer fields (no answerInputs).
+    // Fill every one so the "Antwort prüfen" button enables.
+    const networkIdInput = screen.getByPlaceholderText(/networkId eingeben/i);
+    const broadcastInput = screen.getByPlaceholderText(/broadcast eingeben/i);
+    const hostMinInput = screen.getByPlaceholderText(/hostMin eingeben/i);
+    const hostMaxInput = screen.getByPlaceholderText(/hostMax eingeben/i);
+    const subnetMaskInput = screen.getByPlaceholderText(/subnetMask eingeben/i);
+    const usableHostsInput = screen.getByPlaceholderText(/usableHosts eingeben/i);
+
+    await user.type(networkIdInput, '10.5.3.0');
+    await user.type(broadcastInput, '10.5.3.255');
+    await user.type(hostMinInput, '10.5.3.1');
+    await user.type(hostMaxInput, '10.5.3.254');
+    await user.type(subnetMaskInput, '255.255.255.0');
+    await user.type(usableHostsInput, '254');
+
+    await user.click(screen.getByRole('button', { name: /Antwort prüfen/i }));
+
+    const visualizer = screen.getByTestId('subnetting-visualizer');
+    expect(within(visualizer).getByTestId('viz-given-ip')).toHaveTextContent('10.5.3.4');
+    expect(within(visualizer).getByTestId('viz-cidr')).toHaveTextContent('/24');
+    expect(within(visualizer).getByTestId('viz-usable-hosts')).toHaveTextContent('254');
+  });
+
+  it('does NOT render the subnetting visualizer for non-subnetting questions', () => {
+    render(
+      <StudyCard
+        question={makeQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+    expect(screen.queryByTestId('subnetting-visualizer')).toBeNull();
   });
 });
