@@ -10,7 +10,8 @@ import {
 
 describe('modules registry', () => {
   it('contains all 20 base modules', () => {
-    // 20 = the 18 existing modules + the RAID calculator added in feat/raid.
+    // 20 = the 19 existing modules (17 original + 2 handelskalkulation
+    // sub-modes) + the RAID calculator added in feat/raid.
     // Bump this number when adding a new entry.
     expect(BASE_MODULES).toHaveLength(20);
   });

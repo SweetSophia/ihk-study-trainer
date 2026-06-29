@@ -136,16 +136,6 @@ function formatCapacity(valueGb: number): { value: number; unit: 'GB' | 'TB' } {
 }
 
 /**
- * Generate a RAID scenario question.
- *
- * Asks the user for:
- *   - usable capacity (numeric + unit dropdown)
- *   - fault tolerance (dropdown, integer disk failures)
- *
- * Always emits an `answerInputs` config so the StudyCard renders value+unit
- * inputs and the existing unit-aware validator handles the comparison.
- */
-/**
  * Generate a RAID scenario question for the calculator module.
  *
  * Mirrors the pattern of other wrapped generators (`osi`, `cables`, …):
@@ -163,44 +153,46 @@ export interface RaidQuestion {
 }
 
 export function generateRaidQuestion(): RaidQuestion {
-  let level: RaidLevel;
-  let disks: number;
-  let diskSizeGb: number;
+  let level: RaidLevel = 'RAID 0';
+  let disks = 2;
+  let diskSizeGb = 1000;
 
   // Re-roll whenever the picked combination violates a constraint, so the
   // final output always satisfies the level's invariants.
-  let spec: RaidSpec;
-  let result: ReturnType<typeof calculateRaid>;
+  let spec: RaidSpec = RAID_SPECS[level];
+  let result: ReturnType<typeof calculateRaid> = calculateRaid(level, disks, diskSizeGb);
   for (let attempt = 0; attempt < 20; attempt++) {
-    level = pickRandomLevel();
-    spec = RAID_SPECS[level];
-    disks = pickDiskCount(spec);
-    diskSizeGb = pickDiskSizeGb();
+    const candidateLevel = pickRandomLevel();
+    const candidateSpec = RAID_SPECS[candidateLevel];
+    const candidateDisks = pickDiskCount(candidateSpec);
+    const candidateDiskSizeGb = pickDiskSizeGb();
     try {
-      result = calculateRaid(level, disks, diskSizeGb);
+      const candidateResult = calculateRaid(
+        candidateLevel,
+        candidateDisks,
+        candidateDiskSizeGb,
+      );
+      level = candidateLevel;
+      spec = candidateSpec;
+      disks = candidateDisks;
+      diskSizeGb = candidateDiskSizeGb;
+      result = candidateResult;
       break;
     } catch {
       // pickDiskCount + calculateRaid should make this unreachable; guard
-      // anyway so an unexpected violation can never crash the generator.
+      // anyway so an unexpected violation can never crash the generator. The
+      // initialized RAID 0 fallback above remains valid if all attempts fail.
     }
   }
-  // Final fallback (should never throw given the loop above)
-  level = pickRandomLevel();
-  spec = RAID_SPECS[level];
-  disks = pickDiskCount(spec);
-  diskSizeGb = pickDiskSizeGb();
-  result = calculateRaid(level, disks, diskSizeGb);
 
   const { value, unit } = formatCapacity(result.usableCapacityGb);
   const expectedValue =
     unit === 'TB' ? value.toFixed(2).replace(/\.00$/, '') : String(value);
 
   const choiceText =
-    level === 'RAID 0'
-      ? `${disks} Festplatten à ${diskSizeGb} GB`
-      : level === 'RAID 10'
-        ? `${disks} Festplatten à ${diskSizeGb} GB (gerade Anzahl)`
-        : `${disks} Festplatten à ${diskSizeGb} GB`;
+    level === 'RAID 10'
+      ? `${disks} Festplatten à ${diskSizeGb} GB (gerade Anzahl)`
+      : `${disks} Festplatten à ${diskSizeGb} GB`;
 
   const raid: RaidConfig = {
     level,

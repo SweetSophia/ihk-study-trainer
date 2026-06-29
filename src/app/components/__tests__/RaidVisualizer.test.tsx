@@ -424,7 +424,7 @@ describe('RaidVisualizer — accessibility', () => {
   it('marks the wrapper section with a German aria-label', () => {
     render(<RaidVisualizer raid={makeRaid()} />);
 
-    const section = screen.getByLabelText('RAID-Konfiguration Visualisierung');
+    const section = screen.getByLabelText('Visualisierung der RAID-Konfiguration');
     expect(section.tagName.toLowerCase()).toBe('section');
   });
 
@@ -436,7 +436,7 @@ describe('RaidVisualizer — accessibility', () => {
     );
 
     expect(
-      screen.getByLabelText('Festplatte 1: 1000 GB (reine Daten)'),
+      screen.getByLabelText('Festplatte 1: 1000 GB (Datenträger)'),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('Festplatte 3: 1000 GB (Parität)'),
@@ -453,11 +453,10 @@ describe('RaidVisualizer — accessibility', () => {
   it('includes a text-based legend so the colour code is not conveyed by colour alone', () => {
     render(<RaidVisualizer raid={makeRaid({ level: 'RAID 5' })} />);
 
-    // Both the data and parity legend entries are present. "Datenträger"
-    // appears only in the legend (the tiles use the shorter "reine Daten"
-    // aria-label), but "Parität" appears in the legend AND on each parity
-    // tile — so we assert presence rather than count for parity.
-    expect(screen.getByText('Datenträger')).toBeInTheDocument();
+    // Both the data and parity legend entries are present. The same
+    // terminology is used for visible labels and aria-labels so screen-reader
+    // and sighted users get the same vocabulary.
+    expect(screen.getAllByText('Datenträger').length).toBeGreaterThanOrEqual(1);
     const parityLabels = screen.getAllByText('Parität');
     expect(parityLabels.length).toBeGreaterThanOrEqual(1);
   });

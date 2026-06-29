@@ -73,7 +73,7 @@ export function formatUsableCapacity(raid: RaidConfig): string {
  * as a constant table means the visual copy is grep-able from tests.
  */
 const DISK_ROLE_LABEL: Record<DiskRole, string> = {
-  data: 'reine Daten',
+  data: 'Datenträger',
   parity: 'Parität',
 };
 
@@ -116,7 +116,7 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
       initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      aria-label="RAID-Konfiguration Visualisierung"
+      aria-label="Visualisierung der RAID-Konfiguration"
       data-testid="raid-visualizer"
       className="rounded-xl border border-slate-800 bg-slate-950/50 overflow-hidden"
     >
@@ -156,7 +156,7 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
           data-testid="raid-disk-grid"
         >
           {disks.map((disk, i) => (
-            <motion.span
+            <motion.div
               key={disk.index}
               initial={prefersReducedMotion ? false : { opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -199,7 +199,7 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
               <span className="text-[10px] text-slate-500 font-mono">
                 {disk.diskSizeGb} GB
               </span>
-            </motion.span>
+            </motion.div>
           ))}
         </div>
 

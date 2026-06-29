@@ -33,9 +33,7 @@ vi.mock('framer-motion', () => ({
         {children}
       </section>
     ),
-    // RaidVisualizer uses motion.span for each disk tile; SubnettingVisualizer
-    // doesn't, but adding it here keeps the mock table complete so adding a
-    // new span-based motion element in any future visualizer doesn't crash.
+    // Kept for future visualizers that may use span-based motion elements.
     span: ({ children, className, ...rest }: HTMLAttributes<HTMLSpanElement>) => (
       <span className={className} {...rest}>
         {children}
