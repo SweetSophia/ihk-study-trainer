@@ -102,28 +102,24 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
 
   // Reset the transient answer state whenever the question changes so the
   // card looks fresh and the previous feedback doesn't bleed through.
+  // For drag-order exercises we also seed `answers.order` with the initial
+  // shuffled items so `allAnswered` is immediately true and the "Antwort
+  // prüfen" button enables. DragOrderExercise then keeps `answers.order`
+  // in sync on every reorder.
   const questionId = question?.id ?? null;
   useEffect(() => {
-    setAnswers({});
+    const seed: Record<string, string> = question?.dragOrder
+      ? { order: question.dragOrder.items.join(',') }
+      : {};
+    setAnswers(seed);
     setShowSolution(false);
     setIsCorrect(null);
     setChecked(false);
     setRevealedSteps(1);
-  }, [questionId]);
+  }, [questionId, question?.dragOrder]);
 
-  // For drag-order exercises, seed `answers.order` with the initial shuffled
-  // items so `allAnswered` is immediately true and the "Antwort prüfen" button
-  // enables. The DragOrderExercise keeps `answers.order` in sync on every
-  // reorder.
-  useEffect(() => {
-    if (question?.dragOrder && !answers.order) {
-      setAnswers({ order: question.dragOrder.items.join(',') });
-    }
-  }, [question?.dragOrder, answers.order]);
-
-  // Stable callback for DragOrderExercise. Wrapped in useCallback so the
-  // child's `useEffect(..., [onOrderChange])` doesn't re-fire on every parent
-  // re-render (which would cause an infinite setAnswers loop).
+  // Stable callback for DragOrderExercise. Kept stable so future child
+  // effects can safely include it in their dep array.
   const handleDragOrderChange = useCallback(
     (ordered: string[]) => {
       setAnswers((prev) => ({ ...prev, order: ordered.join(',') }));

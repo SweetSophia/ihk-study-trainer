@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { render, screen, within, fireEvent, act } from '@testing-library/react';
 
 import DragOrderExercise from '../DragOrderExercise';
 
@@ -11,22 +11,41 @@ import DragOrderExercise from '../DragOrderExercise';
 // shape, callbacks, and visual state.
 // ---------------------------------------------------------------------------
 
+// Module-level handle the tests use to fire `onDragEnd` directly. The real
+// dnd-kit sensors are imported (via importActual) so useSensor/useSensors
+// work, but DndContext is stubbed to a plain div so its handler is reachable
+// from tests without dragging a pointer or simulating keyboard sensors.
+type DragEndHandler = ((event: unknown) => void) | undefined;
+let lastOnDragEnd: DragEndHandler = undefined;
+
 vi.mock('@dnd-kit/core', async () => {
   const actual = await vi.importActual<typeof import('@dnd-kit/core')>('@dnd-kit/core');
   return {
     ...actual,
-    // Render a plain div; the `onDragEnd` handler is still wired so we can
-    // simulate a drag by calling it directly through a test helper.
     DndContext: ({ children, onDragEnd }: {
       children?: ReactNode;
       onDragEnd?: (event: unknown) => void;
-    } & HTMLAttributes<HTMLDivElement>) => (
-      <div data-testid="dnd-context" data-on-drag-end={onDragEnd ? 'present' : 'absent'}>
-        {children}
-      </div>
-    ),
+    } & HTMLAttributes<HTMLDivElement>) => {
+      lastOnDragEnd = onDragEnd;
+      return (
+        <div data-testid="dnd-context" data-on-drag-end={onDragEnd ? 'present' : 'absent'}>
+          {children}
+        </div>
+      );
+    },
   };
 });
+
+/**
+ * Helper: simulate a `DndContext` `onDragEnd` event with the given
+ * active and over ids. Matches the shape DragOrderExercise reads.
+ */
+function fireDragEnd(activeId: string, overId: string | null) {
+  if (!lastOnDragEnd) throw new Error('DndContext onDragEnd was not registered');
+  act(() => {
+    lastOnDragEnd!({ active: { id: activeId }, over: overId ? { id: overId } : null });
+  });
+}
 
 const SAMPLE_ITEMS = [
   'Alpha / Aaa',
@@ -92,6 +111,50 @@ describe('DragOrderExercise', () => {
     render(<DragOrderExercise items={SAMPLE_ITEMS} onOrderChange={() => {}} disabled />);
 
     expect(screen.getAllByRole('button', { name: /Element verschieben/ })[0]).toBeDisabled();
+  });
+
+  it('exposes onDragEnd through DndContext so the seam is reachable', () => {
+    render(<DragOrderExercise items={SAMPLE_ITEMS} onOrderChange={() => {}} />);
+    expect(screen.getByTestId('dnd-context')).toHaveAttribute('data-on-drag-end', 'present');
+  });
+
+  it('applies arrayMove and forwards the new order on a real drag', () => {
+    const onOrderChange = vi.fn();
+    render(<DragOrderExercise items={SAMPLE_ITEMS} onOrderChange={onOrderChange} />);
+
+    // Move "Alpha" (index 0) down past "Bravo" (index 1) → ends up at index 1.
+    fireDragEnd('Alpha / Aaa', 'Bravo / Bbb');
+
+    expect(onOrderChange).toHaveBeenCalledTimes(1);
+    expect(onOrderChange).toHaveBeenCalledWith([
+      'Bravo / Bbb',
+      'Alpha / Aaa',
+      'Charlie / Ccc',
+      'Delta / Ddd',
+    ]);
+
+    // The visible list reflects the new order.
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent(/Bravo/);
+    expect(items[1]).toHaveTextContent(/Alpha/);
+  });
+
+  it('does nothing on a same-index drag (no-op)', () => {
+    const onOrderChange = vi.fn();
+    render(<DragOrderExercise items={SAMPLE_ITEMS} onOrderChange={onOrderChange} />);
+
+    fireDragEnd('Alpha / Aaa', 'Alpha / Aaa');
+
+    expect(onOrderChange).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when `over` is null (drag cancelled outside any item)', () => {
+    const onOrderChange = vi.fn();
+    render(<DragOrderExercise items={SAMPLE_ITEMS} onOrderChange={onOrderChange} />);
+
+    fireDragEnd('Alpha / Aaa', null);
+
+    expect(onOrderChange).not.toHaveBeenCalled();
   });
 
   it('marks each item as correct/wrong/idle when checkedCorrectOrder is provided', () => {

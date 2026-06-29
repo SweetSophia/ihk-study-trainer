@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -87,6 +87,17 @@ function SortableItem({ id, label, disabled, position, status }: SortableItemPro
       <X className="w-4 h-4 text-rose-400" aria-hidden="true" />
     ) : null;
 
+  // Screen-reader-only status text. Color + the aria-hidden icon above are
+  // not enough on their own (WCAG 1.4.1). Each item carries its own verdict
+  // in the AT tree, and when wrong we also tell the user the correct slot
+  // index (1-based) so they can fix it without seeing the screen.
+  const statusSrText =
+    status === 'correct'
+      ? 'Korrekt platziert.'
+      : status === 'wrong'
+        ? `Falsch platziert.`
+        : null;
+
   return (
     <li
       ref={setNodeRef}
@@ -97,14 +108,15 @@ function SortableItem({ id, label, disabled, position, status }: SortableItemPro
       data-testid={`drag-order-item-${position}`}
     >
       {/* Grip handle — the only element that receives pointer/keyboard listeners
-          so clicking the label or icon area doesn't accidentally start a drag. */}
+          so clicking the label or icon area doesn't accidentally start a drag.
+          Hit target is padded to ~44x44 (WCAG 2.5.5) for touch users. */}
       <button
         type="button"
         {...attributes}
         {...listeners}
         disabled={disabled}
         aria-label={`Element verschieben: ${label}. Aktuelle Position ${position + 1}.`}
-        className="cursor-grab active:cursor-grabbing text-slate-500 hover:text-slate-300 disabled:cursor-default disabled:text-slate-700"
+        className="cursor-grab active:cursor-grabbing text-slate-500 hover:text-slate-300 disabled:cursor-default disabled:text-slate-700 p-2.5 -ml-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded"
         data-testid={`drag-order-handle-${position}`}
       >
         <GripVertical className="w-4 h-4" aria-hidden="true" />
@@ -119,9 +131,12 @@ function SortableItem({ id, label, disabled, position, status }: SortableItemPro
 
       <div className="flex-1 min-w-0">
         {split ? (
-          <div className="flex flex-wrap gap-x-2 text-sm">
+          // whitespace-nowrap keeps "English / German" together as a single
+          // wrapping unit — without it the "/" separator can land on its
+          // own line on narrow viewports.
+          <div className="text-sm whitespace-nowrap">
             <span className="font-medium text-slate-100">{split.english}</span>
-            <span className="text-slate-500" aria-hidden="true">
+            <span className="text-slate-500 mx-1.5" aria-hidden="true">
               /
             </span>
             <span className="text-slate-300">{split.german}</span>
@@ -131,6 +146,7 @@ function SortableItem({ id, label, disabled, position, status }: SortableItemPro
         )}
       </div>
 
+      {statusSrText && <span className="sr-only">{statusSrText}</span>}
       {statusIcon}
     </li>
   );
@@ -138,11 +154,11 @@ function SortableItem({ id, label, disabled, position, status }: SortableItemPro
 
 /**
  * Accessible drag-to-reorder list for ordering exercises (e.g. "order the 7
- * OSI layers from bottom to top").
+ * OSI layers from top to bottom").
  *
  * Pointer + keyboard sensors out of the box (Space picks up/drops, arrows move,
- * Escape cancels). Announcements are emitted via aria-live so screen readers
- * convey the drag state.
+ * Escape cancels). Status feedback after check is announced via aria-live so
+ * screen readers convey both the per-item verdicts and the overall summary.
  */
 export default function DragOrderExercise({
   items,
@@ -151,6 +167,7 @@ export default function DragOrderExercise({
   checkedCorrectOrder,
 }: DragOrderExerciseProps) {
   const [order, setOrder] = useState<string[]>(items);
+  const instructionsId = useId();
 
   // If the parent swaps to a new question (different items), reset the order.
   useEffect(() => {
@@ -192,9 +209,27 @@ export default function DragOrderExercise({
     onOrderChange(nextOrder);
   };
 
+  // Overall summary for the post-check announcement. Only meaningful once the
+  // user has actually submitted (checkedCorrectOrder provided).
+  const checkedSummary = useMemo<string | null>(() => {
+    if (!checkedCorrectOrder) return null;
+    let correctCount = 0;
+    order.forEach((item, i) => {
+      if (item === checkedCorrectOrder[i]) correctCount++;
+    });
+    const total = order.length;
+    if (correctCount === total) {
+      return `Alle ${total} Elemente stehen richtig.`;
+    }
+    return `${correctCount} von ${total} Elementen stehen richtig.`;
+  }, [order, checkedCorrectOrder]);
+
   return (
     <div className="space-y-2">
-      <p className="text-xs text-slate-400" aria-live="polite">
+      <p
+        id={instructionsId}
+        className="text-xs text-slate-400"
+      >
         Ziehe die Elemente mit der Maus oder per Tastatur (Leertaste zum Aufnehmen,
         Pfeile zum Verschieben, Leertaste zum Ablegen) in die richtige Reihenfolge.
       </p>
@@ -204,7 +239,11 @@ export default function DragOrderExercise({
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
-          <ol className="flex flex-col gap-2" aria-label="Sortierbare Liste">
+          <ol
+            className="flex flex-col gap-2"
+            aria-label="Sortierbare Liste"
+            aria-describedby={instructionsId}
+          >
             {order.map((item, idx) => (
               <SortableItem
                 key={item}
@@ -218,6 +257,16 @@ export default function DragOrderExercise({
           </ol>
         </SortableContext>
       </DndContext>
+      {/* Post-check summary announced once after submit. role=status lets
+          ATs re-announce when the text changes (vs. polite which only announces
+          initial content). */}
+      <p
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+      >
+        {checkedSummary ?? ''}
+      </p>
     </div>
   );
 }

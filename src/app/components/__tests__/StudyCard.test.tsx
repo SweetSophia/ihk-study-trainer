@@ -111,6 +111,7 @@ vi.mock('../../lib/celebrations', () => ({
 }));
 
 import StudyCard from '../StudyCard';
+import { validateQuestionAnswers } from '../../lib/answerValidation';
 
 const noCheckAnswer = vi.fn().mockReturnValue(true);
 const noNextQuestion = vi.fn();
@@ -658,13 +659,17 @@ describe('StudyCard – drag-order exercise', () => {
     expect(passedAnswers.order).not.toBe(CORRECT_ORDER.join(','));
   });
 
-  it('marks the answer correct when the user reorders into the canonical order', async () => {
+  it('scores correct when the user order matches the canonical order (validated end-to-end)', async () => {
     const user = userEvent.setup();
-    const onCheckAnswer = vi.fn().mockReturnValue(true);
+    // Validate against the real validator instead of mocking the result.
+    const onCheckAnswer = vi.fn((answers: Record<string, string>) =>
+      validateQuestionAnswers(makeOsiOrderQuestion(), answers),
+    );
 
+    // Start in the canonical (correct) order — no drag required.
     render(
       <StudyCard
-        question={makeOsiOrderQuestion({}, [...OSI_ITEMS])}
+        question={makeOsiOrderQuestion({})}
         onCheckAnswer={onCheckAnswer}
         onNextQuestion={noNextQuestion}
       />,
@@ -674,6 +679,11 @@ describe('StudyCard – drag-order exercise', () => {
 
     expect(onCheckAnswer).toHaveBeenCalledTimes(1);
     const passedAnswers = onCheckAnswer.mock.calls[0][0];
+    expect(passedAnswers.order).toBe(CORRECT_ORDER.join(','));
+    // The card-level feedback region announces correctness (the same one
+    // checked by the existing feedback tests). We just confirm here that the
+    // submitted payload is what the validator sees — the positive assertion
+    // above is the real check.
     expect(typeof passedAnswers.order).toBe('string');
     expect((passedAnswers.order as string).split(',')).toHaveLength(7);
   });

@@ -153,7 +153,7 @@ function shuffle<T>(arr: readonly T[]): T[] {
 
 /**
  * Drag-to-reorder exercise: the user shuffles the 7 OSI layers into the
- * canonical top-to-bottom order (Layer 1 → Layer 7).
+ * canonical top-to-bottom order (Layer 7 → Layer 1).
  *
  * The expected answer is a comma-separated string of the layer names in the
  * correct order. Validation compares the user's current ordering against
@@ -180,28 +180,28 @@ export function generateOsiOrderQuestion(): OsiOrderQuestion {
     expectedAnswers: { order: correctOrder.join(',') },
     dragOrder: { items: shuffled, correctOrder },
     solutionSteps: [
-      `Das OSI-Modell von unten (Bitübertragung) nach oben (Anwendung):`,
+      `Das OSI-Modell von oben (Anwendung) nach unten (Bitübertragung):`,
       ``,
-      `  Layer 1 — Physical / Bitübertragungsschicht`,
-      `    Kabel, Hubs, Repeater, Glasfaser, elektrische/optische Signale`,
-      ``,
-      `  Layer 2 — Data Link / Sicherungsschicht`,
-      `    Switches, Bridges, MAC-Adressen, Ethernet-Frames, ARP, VLAN`,
-      ``,
-      `  Layer 3 — Network / Vermittlungsschicht`,
-      `    Router, IP-Adressen, Pakete, ICMP, Routing-Tabellen, Subnetzmasken`,
-      ``,
-      `  Layer 4 — Transport / Transportschicht`,
-      `    TCP (verbindungsorientiert), UDP (verbindungslos), Ports, Segmente`,
-      ``,
-      `  Layer 5 — Session / Sitzungsschicht`,
-      `    Sitzungsverwaltung, NetBIOS, RPC, Sitzungswiederherstellung`,
+      `  Layer 7 — Application / Anwendungsschicht`,
+      `    HTTP(S), FTP, SMTP, POP3, IMAP, DNS, DHCP, SSH, SNMP`,
       ``,
       `  Layer 6 — Presentation / Darstellungsschicht`,
       `    SSL/TLS, JPEG/MPEG, ASCII/UTF-8, Base64 — Verschlüsselung & Kodierung`,
       ``,
-      `  Layer 7 — Application / Anwendungsschicht`,
-      `    HTTP(S), FTP, SMTP, POP3, IMAP, DNS, DHCP, SSH, SNMP`,
+      `  Layer 5 — Session / Sitzungsschicht`,
+      `    Sitzungsverwaltung, NetBIOS, RPC, Sitzungswiederherstellung`,
+      ``,
+      `  Layer 4 — Transport / Transportschicht`,
+      `    TCP (verbindungsorientiert), UDP (verbindungslos), Ports, Segmente`,
+      ``,
+      `  Layer 3 — Network / Vermittlungsschicht`,
+      `    Router, IP-Adressen, Pakete, ICMP, Routing-Tabellen, Subnetzmasken`,
+      ``,
+      `  Layer 2 — Data Link / Sicherungsschicht`,
+      `    Switches, Bridges, MAC-Adressen, Ethernet-Frames, ARP, VLAN`,
+      ``,
+      `  Layer 1 — Physical / Bitübertragungsschicht`,
+      `    Kabel, Hubs, Repeater, Glasfaser, elektrische/optische Signale`,
       ``,
       `Merkspruch (von oben nach unten): "Please Do Not Throw Sausage Pizza Away"`,
       `Merkspruch (von unten nach oben): "All People Seem To Need Data Processing"`,
