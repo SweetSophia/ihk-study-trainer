@@ -160,17 +160,10 @@ function shuffle<T>(arr: readonly T[]): T[] {
  * this string case-insensitively (handled by `validateQuestionAnswers`).
  */
 export function generateOsiOrderQuestion(): OsiOrderQuestion {
-  // Canonical order: Layer 1 (Physical) at the top, Layer 7 (Application) at the bottom.
-  // The card display shows "English / German" so the student sees both names.
-  const correctOrder = [
-    OSI_LAYER_NAMES[1],
-    OSI_LAYER_NAMES[2],
-    OSI_LAYER_NAMES[3],
-    OSI_LAYER_NAMES[4],
-    OSI_LAYER_NAMES[5],
-    OSI_LAYER_NAMES[6],
-    OSI_LAYER_NAMES[7],
-  ];
+  // Canonical order: Layer 7 (Application) at the top, Layer 1 (Physical) at the
+  // bottom. This matches the standard pedagogical representation of the OSI
+  // model. The card display shows "English / German" so the student sees both names.
+  const correctOrder = Array.from({ length: 7 }, (_, i) => OSI_LAYER_NAMES[7 - i]);
 
   // Shuffle for the initial display. Regenerate if (extremely unlikely) the
   // shuffle happens to land on the already-correct order — a "drag nothing"
@@ -183,7 +176,7 @@ export function generateOsiOrderQuestion(): OsiOrderQuestion {
   return {
     theme: 'TCP/IP-Referenzmodell & Protokolle',
     questionText:
-      'Sortiere die 7 OSI-Schichten in die richtige Reihenfolge — von Layer 1 (Physical, ganz oben) bis Layer 7 (Application, ganz unten).',
+      'Sortiere die 7 OSI-Schichten in die richtige Reihenfolge — von Layer 7 (Application, ganz oben) bis Layer 1 (Physical, ganz unten).',
     expectedAnswers: { order: correctOrder.join(',') },
     dragOrder: { items: shuffled, correctOrder },
     solutionSteps: [

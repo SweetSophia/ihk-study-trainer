@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 
@@ -64,12 +64,13 @@ describe('DragOrderExercise', () => {
     expect(screen.getByText('Bbb')).toBeInTheDocument();
   });
 
-  it('calls onOrderChange whenever the order changes', () => {
+  it('does NOT call onOrderChange on mount (only on actual reorders)', () => {
     const onOrderChange = vi.fn();
     render(<DragOrderExercise items={SAMPLE_ITEMS} onOrderChange={onOrderChange} />);
 
-    // The component fires onOrderChange on mount with the initial order.
-    expect(onOrderChange).toHaveBeenLastCalledWith(SAMPLE_ITEMS);
+    // onOrderChange is called only inside handleDragEnd, never on mount.
+    // The parent seeds the initial order via its own state.
+    expect(onOrderChange).not.toHaveBeenCalled();
   });
 
   it('renders a grab handle with a German aria-label per item', () => {
@@ -142,6 +143,3 @@ describe('DragOrderExercise', () => {
     expect(onOrderChange.mock.calls.length).toBe(initialCallCount);
   });
 });
-
-// Suppress unused import warning from ButtonHTMLAttributes in some TS configs.
-void (null as unknown as ButtonHTMLAttributes<HTMLButtonElement>);

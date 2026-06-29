@@ -581,19 +581,23 @@ describe('StudyCard – drag-order exercise', () => {
     'Application / Anwendungsschicht',
   ];
 
+  // Canonical order: Layer 7 (Application) at the top, Layer 1 (Physical) at
+  // the bottom — matches standard OSI pedagogy.
+  const CORRECT_ORDER = [...OSI_ITEMS].reverse();
+
   function makeOsiOrderQuestion(
     overrides: Partial<Question> = {},
-    items: string[] = [...OSI_ITEMS].reverse(),
+    items: string[] = CORRECT_ORDER,
   ): Question {
     return {
       id: 'osi-order-1',
       theme: 'TCP/IP-Referenzmodell & Protokolle',
       module: 'osi',
       questionText: 'Sortiere die 7 OSI-Schichten in die richtige Reihenfolge.',
-      expectedAnswers: { order: OSI_ITEMS.join(',') },
-      solutionSteps: ['Layer 1 — Physical ...', 'Layer 7 — Application ...'],
+      expectedAnswers: { order: CORRECT_ORDER.join(',') },
+      solutionSteps: ['Layer 7 — Application ...', 'Layer 1 — Physical ...'],
       difficulty: 'medium',
-      dragOrder: { items, correctOrder: OSI_ITEMS },
+      dragOrder: { items, correctOrder: CORRECT_ORDER },
       ...overrides,
     };
   }
@@ -633,11 +637,11 @@ describe('StudyCard – drag-order exercise', () => {
     const user = userEvent.setup();
     const onCheckAnswer = vi.fn().mockReturnValue(false);
 
-    // Start with the wrong order (reversed). If the user doesn't drag, the
-    // answer should be marked incorrect.
+    // Start with the wrong order (Layer 1 first instead of Layer 7 first).
+    // If the user doesn't drag, the answer should be marked incorrect.
     render(
       <StudyCard
-        question={makeOsiOrderQuestion({}, [...OSI_ITEMS].reverse())}
+        question={makeOsiOrderQuestion({}, [...OSI_ITEMS])}
         onCheckAnswer={onCheckAnswer}
         onNextQuestion={noNextQuestion}
       />,
@@ -647,11 +651,11 @@ describe('StudyCard – drag-order exercise', () => {
 
     // The answer sent to onCheckAnswer is `answers.order`, a comma-separated
     // string of the current item order. With no drag, it should be the
-    // reversed order, which doesn't match the canonical `expectedAnswers.order`.
+    // Layer-1-first order (OSI_ITEMS), which doesn't match CORRECT_ORDER.
     expect(onCheckAnswer).toHaveBeenCalledTimes(1);
     const passedAnswers = onCheckAnswer.mock.calls[0][0];
-    expect(passedAnswers.order).toBe([...OSI_ITEMS].reverse().join(','));
-    expect(passedAnswers.order).not.toBe(OSI_ITEMS.join(','));
+    expect(passedAnswers.order).toBe(OSI_ITEMS.join(','));
+    expect(passedAnswers.order).not.toBe(CORRECT_ORDER.join(','));
   });
 
   it('marks the answer correct when the user reorders into the canonical order', async () => {
@@ -660,15 +664,12 @@ describe('StudyCard – drag-order exercise', () => {
 
     render(
       <StudyCard
-        question={makeOsiOrderQuestion({}, [...OSI_ITEMS].reverse())}
+        question={makeOsiOrderQuestion({}, [...OSI_ITEMS])}
         onCheckAnswer={onCheckAnswer}
         onNextQuestion={noNextQuestion}
       />,
     );
 
-    // We don't simulate a drag here (dnd-kit requires real pointer/keyboard
-    // events); we just confirm the wiring: the answer is forwarded as a
-    // comma-separated string, which is what the validator compares.
     await user.click(screen.getByRole('button', { name: /Antwort prüfen/i }));
 
     expect(onCheckAnswer).toHaveBeenCalledTimes(1);

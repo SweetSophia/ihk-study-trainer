@@ -50,7 +50,7 @@ function splitLabel(label: string): { english: string; german: string } | null {
   if (slashIdx === -1) return null;
   return {
     english: label.slice(0, slashIdx),
-    german: label.slice(slashIdx + 3),
+    german: label.slice(slashIdx + ' / '.length),
   };
 }
 
@@ -157,12 +157,6 @@ export default function DragOrderExercise({
     setOrder(items);
   }, [items]);
 
-  // Tell the parent whenever the order changes so it can update
-  // `answers.order` (which feeds `onCheckAnswer`).
-  useEffect(() => {
-    onOrderChange(order);
-  }, [order, onOrderChange]);
-
   const sensors = useSensors(
     useSensor(PointerSensor, {
       // Don't start a drag on a simple click — require 8px of movement.
@@ -186,12 +180,16 @@ export default function DragOrderExercise({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    setOrder((prev) => {
-      const oldIndex = prev.indexOf(String(active.id));
-      const newIndex = prev.indexOf(String(over.id));
-      if (oldIndex === -1 || newIndex === -1) return prev;
-      return arrayMove(prev, oldIndex, newIndex);
-    });
+    const oldIndex = order.indexOf(String(active.id));
+    const newIndex = order.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const nextOrder = arrayMove(order, oldIndex, newIndex);
+    setOrder(nextOrder);
+    // Notify the parent directly here (not via useEffect) to avoid redundant
+    // mount-time renders and the risk of an infinite loop if the parent's
+    // callback isn't perfectly memoized.
+    onOrderChange(nextOrder);
   };
 
   return (
@@ -214,9 +212,7 @@ export default function DragOrderExercise({
                 label={item}
                 disabled={disabled}
                 position={idx}
-                status={
-                  itemStatus.has(item) ? itemStatus.get(item)! : 'idle'
-                }
+                status={itemStatus.get(item) ?? 'idle'}
               />
             ))}
           </ol>

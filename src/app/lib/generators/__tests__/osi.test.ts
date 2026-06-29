@@ -20,10 +20,10 @@ describe('generateOsiOrderQuestion', () => {
     expect(q.dragOrder.correctOrder).toHaveLength(7);
   });
 
-  it('places the canonical order as Layer 1 (Physical) first and Layer 7 (Application) last', () => {
+  it('places the canonical order as Layer 7 (Application) first and Layer 1 (Physical) last', () => {
     const q = generateOsiOrderQuestion();
-    expect(q.dragOrder.correctOrder[0]).toBe(OSI_LAYER_NAMES[1]);
-    expect(q.dragOrder.correctOrder[6]).toBe(OSI_LAYER_NAMES[7]);
+    expect(q.dragOrder.correctOrder[0]).toBe(OSI_LAYER_NAMES[7]);
+    expect(q.dragOrder.correctOrder[6]).toBe(OSI_LAYER_NAMES[1]);
   });
 
   it('expectedAnswers.order is the correct order as a comma-separated string', () => {

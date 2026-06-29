@@ -521,10 +521,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
             items={question.dragOrder.items}
             disabled={checked}
             checkedCorrectOrder={
-              checked
-                ? question.expectedAnswers.order?.toString().split(',') ??
-                  question.dragOrder.correctOrder
-                : undefined
+              checked ? question.dragOrder.correctOrder : undefined
             }
             onOrderChange={handleDragOrderChange}
           />
