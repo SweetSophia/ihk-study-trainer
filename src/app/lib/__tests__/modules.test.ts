@@ -9,11 +9,11 @@ import {
 } from '../modules';
 
 describe('modules registry', () => {
-  it('contains all 19 base modules', () => {
-    // 19 = the 17 existing modules + the 2 handelskalkulation sub-modes
-    // (Vorwärts / Rückwärts) introduced when the combined kalkulation module
-    // was split. Bump this number when adding a new entry.
-    expect(BASE_MODULES).toHaveLength(19);
+  it('contains all 20 base modules', () => {
+    // 20 = the 19 existing modules (17 original + 2 handelskalkulation
+    // sub-modes) + the RAID calculator added in feat/raid.
+    // Bump this number when adding a new entry.
+    expect(BASE_MODULES).toHaveLength(20);
   });
 
   it('contains unique module ids', () => {

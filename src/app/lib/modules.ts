@@ -74,6 +74,7 @@ export const BASE_MODULES = [
   { id: 'handelskalkulation', name: 'Kalkulation', icon: Calculator, description: 'Gemischt' },
   { id: 'handelskalkulationVorwaerts', name: 'Vorwärtskalkulation', shortName: 'Vorwärtskalk.', icon: Calculator, description: 'LEP → Brutto-VK' },
   { id: 'handelskalkulationRueckwaerts', name: 'Rückwärtskalkulation', shortName: 'Rückwärtskalk.', icon: Calculator, description: 'Brutto-VK → LEP' },
+  { id: 'raid', name: 'RAID-Rechner', shortName: 'RAID', icon: Server, description: 'Kapazität & Ausfallsicherheit' },
 ] as const satisfies readonly ModuleDescriptor[];
 
 /**

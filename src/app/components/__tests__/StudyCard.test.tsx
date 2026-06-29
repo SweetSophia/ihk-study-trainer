@@ -33,6 +33,12 @@ vi.mock('framer-motion', () => ({
         {children}
       </section>
     ),
+    // Kept for future visualizers that may use span-based motion elements.
+    span: ({ children, className, ...rest }: HTMLAttributes<HTMLSpanElement>) => (
+      <span className={className} {...rest}>
+        {children}
+      </span>
+    ),
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   // SubnettingVisualizer (rendered inside StudyCard) uses this to skip the
@@ -564,6 +570,128 @@ describe('StudyCard – subnetting visualizer gating', () => {
       />,
     );
     expect(screen.queryByTestId('subnetting-visualizer')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RAID visualizer integration (gated by module id + checked/showSolution)
+// ---------------------------------------------------------------------------
+
+describe('StudyCard – RAID visualizer gating', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+  });
+
+  function makeRaidQuestion(): Question {
+    return {
+      id: 'raid-test-1',
+      theme: 'RAID-Konfigurationen',
+      module: 'raid',
+      questionText:
+        'Du baust ein RAID 5-Array aus 4 Festplatten à 1000 GB. ' +
+        'Berechne die nutzbare Kapazität sowie die Anzahl der ' +
+        'Festplattenausfälle, die das Array toleriert.',
+      expectedAnswers: {
+        usableCapacity: '3',
+        unit: 'TB',
+        faultTolerance: '1',
+      },
+      answerInputs: [
+        {
+          valueKey: 'usableCapacity',
+          unitKey: 'unit',
+          label: 'Nutzbare Kapazität',
+          unitOptions: ['GB', 'TB'],
+        },
+        {
+          valueKey: 'faultTolerance',
+          label: 'Ausfallsicherheit (Festplattenausfälle)',
+          valueOptions: ['0', '1', '2', '3', '4'],
+        },
+      ],
+      solutionSteps: ['Schritt 1: …'],
+      difficulty: 'medium',
+      raid: {
+        level: 'RAID 5',
+        disks: 4,
+        diskSizeGb: 1000,
+        usableCapacityGb: 3000,
+        faultTolerance: 1,
+      },
+    };
+  }
+
+  it('does NOT render the RAID visualizer before submit or solution reveal', () => {
+    render(
+      <StudyCard
+        question={makeRaidQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+    expect(screen.queryByTestId('raid-visualizer')).toBeNull();
+  });
+
+  it('renders the RAID visualizer with the correct level after opening the solution', async () => {
+    const user = userEvent.setup();
+    render(
+      <StudyCard
+        question={makeRaidQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /Lösung anzeigen/i }));
+
+    const visualizer = screen.getByTestId('raid-visualizer');
+    expect(within(visualizer).getByTestId('viz-level')).toHaveTextContent('RAID 5');
+    // 4 disks → 4 tiles, 3 data + 1 parity.
+    expect(within(visualizer).getAllByTestId('raid-disk-tile')).toHaveLength(4);
+    // Formatted capacity (3 TB) is shown in the stat grid.
+    expect(within(visualizer).getByTestId('viz-stat-usable')).toHaveTextContent('3 TB');
+    // Fault tolerance > 0 → "toleriert 1 Ausfall" badge.
+    expect(
+      within(visualizer).getByTestId('viz-fault-tolerance-badge'),
+    ).toHaveTextContent('toleriert 1 Ausfall');
+  });
+
+  it('renders the RAID visualizer after submitting an answer', async () => {
+    const user = userEvent.setup();
+    render(
+      <StudyCard
+        question={makeRaidQuestion()}
+        onCheckAnswer={vi.fn().mockReturnValue(true)}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    // The RAID question has structured answerInputs (value + unit + dropdown).
+    // Fill the numeric value, pick the unit, and pick the fault tolerance.
+    const capacityInput = screen.getByPlaceholderText(/Wert eingeben/i);
+    const selects = screen.getAllByRole('combobox') as HTMLSelectElement[];
+    // [0] = unit dropdown, [1] = fault tolerance dropdown.
+    fireEvent.change(capacityInput, { target: { value: '3' } });
+    fireEvent.change(selects[0], { target: { value: 'TB' } });
+    fireEvent.change(selects[1], { target: { value: '1' } });
+
+    await user.click(screen.getByRole('button', { name: /Antwort prüfen/i }));
+
+    // Visualizer is now visible with the RAID 5 level rendered.
+    const visualizer = screen.getByTestId('raid-visualizer');
+    expect(within(visualizer).getByTestId('viz-level')).toHaveTextContent('RAID 5');
+  });
+
+  it('does NOT render the RAID visualizer for non-RAID questions', () => {
+    render(
+      <StudyCard
+        question={makeQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+    expect(screen.queryByTestId('raid-visualizer')).toBeNull();
   });
 });
 

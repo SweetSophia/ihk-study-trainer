@@ -17,6 +17,7 @@ import { fireFirstCorrectConfetti } from '../lib/celebrations';
 import { CHANGELOG_ENTRIES } from '../lib/changelog';
 import LinuxTerminal from './LinuxTerminal';
 import SubnettingVisualizer from './SubnettingVisualizer';
+import RaidVisualizer from './RaidVisualizer';
 import DragOrderExercise from './DragOrderExercise';
 
 interface StudyCardProps {
@@ -501,11 +502,18 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
         </p>
       </div>
 
-      {/* Module-specific visuals. The subnetting visualizer contains answer
-          values, so it only appears after submitting or opening the solution. */}
+      {/* Module-specific visuals. The subnetting/RAID visualizers contain
+          answer values, so they only appear after submitting or opening the
+          solution. */}
       {question.module === 'subnetting' && (checked || showSolution) && (
         <div className="px-6 pb-2">
           <SubnettingVisualizer question={question} />
+        </div>
+      )}
+
+      {question.module === 'raid' && question.raid && (checked || showSolution) && (
+        <div className="px-6 pb-2">
+          <RaidVisualizer raid={question.raid} />
         </div>
       )}
 

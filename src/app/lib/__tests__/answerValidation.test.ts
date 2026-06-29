@@ -45,6 +45,28 @@ describe('answer validation helpers', () => {
     ).toBe(true);
   });
 
+  it('accepts TB and TiB unit conversions for storage-size questions', () => {
+    expect(
+      validateStructuredAnswer(
+        [
+          { valueKey: 'size', unitKey: 'unit', unitOptions: ['GB', 'TB'] },
+        ],
+        { size: '3', unit: 'TB' },
+        { size: '3000', unit: 'GB' }
+      )
+    ).toBe(true);
+
+    expect(
+      validateStructuredAnswer(
+        [
+          { valueKey: 'size', unitKey: 'unit', unitOptions: ['GiB', 'TiB'] },
+        ],
+        { size: '1', unit: 'TiB' },
+        { size: '1024', unit: 'GiB' }
+      )
+    ).toBe(true);
+  });
+
 
   it('returns false instead of throwing when a numeric field is missing', () => {
     expect(

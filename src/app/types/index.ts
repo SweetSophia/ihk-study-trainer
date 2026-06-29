@@ -25,6 +25,22 @@ export interface DragOrderConfig {
   correctOrder: string[];
 }
 
+/**
+ * Configuration for the RAID calculator module. When present on a Question,
+ * StudyCard renders the RAID visualization alongside the answer inputs.
+ */
+export interface RaidConfig {
+  level: 'RAID 0' | 'RAID 1' | 'RAID 5' | 'RAID 6' | 'RAID 10';
+  /** Total number of disks in the array */
+  disks: number;
+  /** Capacity of a single disk in GB */
+  diskSizeGb: number;
+  /** Total usable capacity for the array in GB (precomputed by the generator) */
+  usableCapacityGb: number;
+  /** Number of disk failures the array can tolerate */
+  faultTolerance: number;
+}
+
 /** Question interface for all generators */
 export interface Question {
   id: string;
@@ -55,6 +71,12 @@ export interface Question {
    * `dragOrder.correctOrder`.
    */
   dragOrder?: DragOrderConfig;
+  /**
+   * When present, the RAID calculator module provides the scenario used by
+   * the visualization (level + disk count + disk size → usable capacity +
+   * fault tolerance).
+   */
+  raid?: RaidConfig;
 }
 
 /** User interface */

@@ -8,6 +8,8 @@ const SIZE_TO_BYTES: Record<string, number> = {
   mb: 1000 * 1000,
   gib: 1024 * 1024 * 1024,
   gb: 1000 * 1000 * 1000,
+  tib: 1024 ** 4,
+  tb: 1000 ** 4,
 };
 
 const TIME_TO_SECONDS: Record<string, number> = {
