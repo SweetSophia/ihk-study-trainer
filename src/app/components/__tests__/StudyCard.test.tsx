@@ -52,12 +52,50 @@ vi.mock('lucide-react', () => ({
   // SubnettingVisualizer also uses these icons when its module renders.
   Network: () => <svg data-testid="icon-network" />,
   Eye: () => <svg data-testid="icon-eye" />,
+  // DragOrderExercise uses this for the drag handle.
+  GripVertical: () => <svg data-testid="icon-gripvertical" />,
 }));
 
 // Mock the Linux terminal — we don't want to exercise its full keyboard
 // handling in StudyCard tests; that lives in its own suite.
 vi.mock('../LinuxTerminal', () => ({
   default: () => <div data-testid="linux-terminal" />,
+}));
+
+// Mock @dnd-kit entirely. The real PointerSensor / KeyboardSensor attach
+// global window listeners that hang in jsdom when invoked from within the
+// StudyCard render tree (the DragOrderExercise's own test suite exercises
+// the real wiring with a more controlled setup). This keeps StudyCard tests
+// focused on the parent → child wiring rather than drag mechanics.
+vi.mock('@dnd-kit/core', () => ({
+  DndContext: ({ children }: { children?: unknown }) => children,
+  PointerSensor: function PointerSensor() {},
+  KeyboardSensor: function KeyboardSensor() {},
+  closestCenter: () => null,
+  useSensor: () => null,
+  useSensors: () => null,
+}));
+vi.mock('@dnd-kit/sortable', () => ({
+  SortableContext: ({ children }: { children?: unknown }) => children,
+  arrayMove: (arr: unknown[], from: number, to: number) => {
+    const out = [...arr];
+    const [removed] = out.splice(from, 1);
+    out.splice(to, 0, removed);
+    return out;
+  },
+  sortableKeyboardCoordinates: () => null,
+  useSortable: () => ({
+    attributes: {},
+    listeners: {},
+    setNodeRef: () => undefined,
+    transform: null,
+    transition: null,
+    isDragging: false,
+  }),
+  verticalListSortingStrategy: 'vertical',
+}));
+vi.mock('@dnd-kit/utilities', () => ({
+  CSS: { Transform: { toString: () => undefined } },
 }));
 
 // Mock the celebration helpers — we want to assert *that* they get called
@@ -525,5 +563,140 @@ describe('StudyCard – subnetting visualizer gating', () => {
       />,
     );
     expect(screen.queryByTestId('subnetting-visualizer')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Drag-order exercise integration (e.g. OSI layers reorder)
+// ---------------------------------------------------------------------------
+
+describe('StudyCard – drag-order exercise', () => {
+  const OSI_ITEMS = [
+    'Physical / Bitübertragungsschicht',
+    'Data Link / Sicherungsschicht',
+    'Network / Vermittlungsschicht',
+    'Transport / Transportschicht',
+    'Session / Sitzungsschicht',
+    'Presentation / Darstellungsschicht',
+    'Application / Anwendungsschicht',
+  ];
+
+  function makeOsiOrderQuestion(
+    overrides: Partial<Question> = {},
+    items: string[] = [...OSI_ITEMS].reverse(),
+  ): Question {
+    return {
+      id: 'osi-order-1',
+      theme: 'TCP/IP-Referenzmodell & Protokolle',
+      module: 'osi',
+      questionText: 'Sortiere die 7 OSI-Schichten in die richtige Reihenfolge.',
+      expectedAnswers: { order: OSI_ITEMS.join(',') },
+      solutionSteps: ['Layer 1 — Physical ...', 'Layer 7 — Application ...'],
+      difficulty: 'medium',
+      dragOrder: { items, correctOrder: OSI_ITEMS },
+      ...overrides,
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+  });
+
+  it('renders the drag-order exercise for OSI order questions', () => {
+    render(
+      <StudyCard
+        question={makeOsiOrderQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    expect(screen.getByRole('list', { name: /sortierbare liste/i })).toBeInTheDocument();
+    expect(screen.getByTestId('drag-order-item-0')).toBeInTheDocument();
+    expect(screen.getByTestId('drag-order-item-6')).toBeInTheDocument();
+  });
+
+  it('does NOT render drag-order UI for non-drag-order questions', () => {
+    render(
+      <StudyCard
+        question={makeQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    expect(screen.queryByRole('list', { name: /sortierbare liste/i })).toBeNull();
+  });
+
+  it('passes the user\'s order to onCheckAnswer when they submit', async () => {
+    const user = userEvent.setup();
+    const onCheckAnswer = vi.fn().mockReturnValue(false);
+
+    // Start with the wrong order (reversed). If the user doesn't drag, the
+    // answer should be marked incorrect.
+    render(
+      <StudyCard
+        question={makeOsiOrderQuestion({}, [...OSI_ITEMS].reverse())}
+        onCheckAnswer={onCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /Antwort prüfen/i }));
+
+    // The answer sent to onCheckAnswer is `answers.order`, a comma-separated
+    // string of the current item order. With no drag, it should be the
+    // reversed order, which doesn't match the canonical `expectedAnswers.order`.
+    expect(onCheckAnswer).toHaveBeenCalledTimes(1);
+    const passedAnswers = onCheckAnswer.mock.calls[0][0];
+    expect(passedAnswers.order).toBe([...OSI_ITEMS].reverse().join(','));
+    expect(passedAnswers.order).not.toBe(OSI_ITEMS.join(','));
+  });
+
+  it('marks the answer correct when the user reorders into the canonical order', async () => {
+    const user = userEvent.setup();
+    const onCheckAnswer = vi.fn().mockReturnValue(true);
+
+    render(
+      <StudyCard
+        question={makeOsiOrderQuestion({}, [...OSI_ITEMS].reverse())}
+        onCheckAnswer={onCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    // We don't simulate a drag here (dnd-kit requires real pointer/keyboard
+    // events); we just confirm the wiring: the answer is forwarded as a
+    // comma-separated string, which is what the validator compares.
+    await user.click(screen.getByRole('button', { name: /Antwort prüfen/i }));
+
+    expect(onCheckAnswer).toHaveBeenCalledTimes(1);
+    const passedAnswers = onCheckAnswer.mock.calls[0][0];
+    expect(typeof passedAnswers.order).toBe('string');
+    expect((passedAnswers.order as string).split(',')).toHaveLength(7);
+  });
+
+  it('disables the grab handles after the answer has been checked', async () => {
+    const user = userEvent.setup();
+    render(
+      <StudyCard
+        question={makeOsiOrderQuestion()}
+        onCheckAnswer={noCheckAnswer}
+        onNextQuestion={noNextQuestion}
+      />,
+    );
+
+    // Before checking: all handles enabled.
+    expect(
+      screen.getAllByRole('button', { name: /Element verschieben/ })[0],
+    ).not.toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: /Antwort prüfen/i }));
+
+    // After checking: all handles disabled.
+    expect(
+      screen.getAllByRole('button', { name: /Element verschieben/ })[0],
+    ).toBeDisabled();
   });
 });

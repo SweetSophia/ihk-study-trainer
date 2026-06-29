@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type MutableRefObject, type Ref } from 'react';
+import { useCallback, useEffect, useRef, useState, type MutableRefObject, type Ref } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check,
@@ -17,6 +17,7 @@ import { fireFirstCorrectConfetti } from '../lib/celebrations';
 import { CHANGELOG_ENTRIES } from '../lib/changelog';
 import LinuxTerminal from './LinuxTerminal';
 import SubnettingVisualizer from './SubnettingVisualizer';
+import DragOrderExercise from './DragOrderExercise';
 
 interface StudyCardProps {
   question: Question | null;
@@ -109,6 +110,26 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
     setChecked(false);
     setRevealedSteps(1);
   }, [questionId]);
+
+  // For drag-order exercises, seed `answers.order` with the initial shuffled
+  // items so `allAnswered` is immediately true and the "Antwort prüfen" button
+  // enables. The DragOrderExercise keeps `answers.order` in sync on every
+  // reorder.
+  useEffect(() => {
+    if (question?.dragOrder && !answers.order) {
+      setAnswers({ order: question.dragOrder.items.join(',') });
+    }
+  }, [question?.dragOrder, answers.order]);
+
+  // Stable callback for DragOrderExercise. Wrapped in useCallback so the
+  // child's `useEffect(..., [onOrderChange])` doesn't re-fire on every parent
+  // re-render (which would cause an infinite setAnswers loop).
+  const handleDragOrderChange = useCallback(
+    (ordered: string[]) => {
+      setAnswers((prev) => ({ ...prev, order: ordered.join(',') }));
+    },
+    [],
+  );
 
   // Derived values used by both the active-question UI and the keyboard
   // shortcut effect. These are gated on `question` so they remain safe to
@@ -494,7 +515,20 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
 
       {/* Answer Inputs */}
       <div className="px-6 pb-4 space-y-4">
-        {isLinuxTerminal && linuxTerminalConfig ? (
+        {question.dragOrder ? (
+          /* Drag-to-reorder exercise (e.g. OSI layer ordering). */
+          <DragOrderExercise
+            items={question.dragOrder.items}
+            disabled={checked}
+            checkedCorrectOrder={
+              checked
+                ? question.expectedAnswers.order?.toString().split(',') ??
+                  question.dragOrder.correctOrder
+                : undefined
+            }
+            onOrderChange={handleDragOrderChange}
+          />
+        ) : isLinuxTerminal && linuxTerminalConfig ? (
           /* Linux terminal-style input for description→command questions */
           <LinuxTerminal
             disabled={checked}

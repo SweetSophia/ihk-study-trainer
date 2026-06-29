@@ -14,6 +14,17 @@ export interface AnswerInputConfig {
   acceptedValues?: string[];
 }
 
+/**
+ * Configuration for a drag-to-reorder exercise. When present on a Question,
+ * StudyCard renders a DragOrderExercise component instead of text inputs.
+ */
+export interface DragOrderConfig {
+  /** Items in their initial (shuffled) display order */
+  items: string[];
+  /** Items in the canonical correct order */
+  correctOrder: string[];
+}
+
 /** Question interface for all generators */
 export interface Question {
   id: string;
@@ -38,6 +49,12 @@ export interface Question {
    * (e.g., Cloud: describes the business/technical scenario for scenario-based questions)
    */
   scenario?: string;
+  /**
+   * When present, StudyCard renders a drag-to-reorder exercise instead of
+   * text inputs. The user drags items into the order specified by
+   * `dragOrder.correctOrder`.
+   */
+  dragOrder?: DragOrderConfig;
 }
 
 /** User interface */
