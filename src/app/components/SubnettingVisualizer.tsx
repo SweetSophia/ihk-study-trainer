@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Network, Eye } from 'lucide-react';
 import type { Question } from '../types';
 
@@ -107,6 +107,7 @@ interface SubnettingVisualizerProps {
  * hostMax, subnetMask, usableHosts all present).
  */
 export default function SubnettingVisualizer({ question }: SubnettingVisualizerProps) {
+  const prefersReducedMotion = useReducedMotion();
   const parsed = useMemo(() => {
     const fromText = parseIpAndCidr(question.questionText);
     const maskStr = String(question.expectedAnswers.subnetMask ?? '');
@@ -126,7 +127,9 @@ export default function SubnettingVisualizer({ question }: SubnettingVisualizerP
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 6 }}
+      // Respect prefers-reduced-motion: users with vestibular sensitivity
+      // see an instant mount instead of a 6px slide.
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
       aria-label="Subnetting Visualisierung"
@@ -169,7 +172,7 @@ export default function SubnettingVisualizer({ question }: SubnettingVisualizerP
       {/* ----------------------------------------------------------------- */}
       {parsed.cidr !== null && (
         <div className="px-5 pt-4 pb-3 border-b border-slate-800/60">
-          <SectionLabel icon={<Eye className="w-3 h-3" />}>
+          <SectionLabel icon={<Eye className="w-3 h-3" aria-hidden="true" />}>
             32-Bit-Aufteilung
           </SectionLabel>
           <BitBar cidr={parsed.cidr} />
@@ -180,7 +183,7 @@ export default function SubnettingVisualizer({ question }: SubnettingVisualizerP
       {/* Address range bar                                                  */}
       {/* ----------------------------------------------------------------- */}
       <div className="px-5 pt-4 pb-4 border-b border-slate-800/60">
-        <SectionLabel icon={<Eye className="w-3 h-3" />}>
+        <SectionLabel icon={<Eye className="w-3 h-3" aria-hidden="true" />}>
           Adressbereich im Subnetz
         </SectionLabel>
         <RangeBar
