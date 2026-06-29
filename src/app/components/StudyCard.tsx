@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type MutableRefObject, type Ref } from 'react';
+import { useCallback, useEffect, useRef, useState, type MutableRefObject, type Ref } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check,
@@ -17,6 +17,7 @@ import { fireFirstCorrectConfetti } from '../lib/celebrations';
 import { CHANGELOG_ENTRIES } from '../lib/changelog';
 import LinuxTerminal from './LinuxTerminal';
 import SubnettingVisualizer from './SubnettingVisualizer';
+import DragOrderExercise from './DragOrderExercise';
 
 interface StudyCardProps {
   question: Question | null;
@@ -101,14 +102,30 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
 
   // Reset the transient answer state whenever the question changes so the
   // card looks fresh and the previous feedback doesn't bleed through.
+  // For drag-order exercises we also seed `answers.order` with the initial
+  // shuffled items so `allAnswered` is immediately true and the "Antwort
+  // prüfen" button enables. DragOrderExercise then keeps `answers.order`
+  // in sync on every reorder.
   const questionId = question?.id ?? null;
   useEffect(() => {
-    setAnswers({});
+    const seed: Record<string, string> = question?.dragOrder
+      ? { order: question.dragOrder.items.join(',') }
+      : {};
+    setAnswers(seed);
     setShowSolution(false);
     setIsCorrect(null);
     setChecked(false);
     setRevealedSteps(1);
-  }, [questionId]);
+  }, [questionId, question?.dragOrder]);
+
+  // Stable callback for DragOrderExercise. Kept stable so future child
+  // effects can safely include it in their dep array.
+  const handleDragOrderChange = useCallback(
+    (ordered: string[]) => {
+      setAnswers((prev) => ({ ...prev, order: ordered.join(',') }));
+    },
+    [],
+  );
 
   // Derived values used by both the active-question UI and the keyboard
   // shortcut effect. These are gated on `question` so they remain safe to
@@ -494,7 +511,17 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
 
       {/* Answer Inputs */}
       <div className="px-6 pb-4 space-y-4">
-        {isLinuxTerminal && linuxTerminalConfig ? (
+        {question.dragOrder ? (
+          /* Drag-to-reorder exercise (e.g. OSI layer ordering). */
+          <DragOrderExercise
+            items={question.dragOrder.items}
+            disabled={checked}
+            checkedCorrectOrder={
+              checked ? question.dragOrder.correctOrder : undefined
+            }
+            onOrderChange={handleDragOrderChange}
+          />
+        ) : isLinuxTerminal && linuxTerminalConfig ? (
           /* Linux terminal-style input for description→command questions */
           <LinuxTerminal
             disabled={checked}

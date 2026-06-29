@@ -12,7 +12,7 @@ import { generateHexBinaryQuestion } from './hexBinary';
 import { generateSubnetMaskQuestion } from './subnetMask';
 import { generateAggregationQuestion } from './aggregation';
 import { generatePortQuestion } from './ports';
-import { generateOsiQuestion } from './osi';
+import { generateOsiQuestion, generateOsiOrderQuestion } from './osi';
 import { generateCableQuestion, CABLE_TYPES, ALL_CABLE_PROS } from './cables';
 import { generateLinuxQuestion } from './linux';
 import { generateCloudQuestion } from './cloud';
@@ -140,7 +140,23 @@ export const GENERATORS: Record<RegistryModuleId, () => Question> = {
     };
   },
   osi: () => {
-    const q = generateOsiQuestion();
+    // 50/50 split between the classic "item → layer" assignment and the
+    // new drag-to-reorder exercise. Keeps the module fresh without retiring
+    // the existing question style.
+    if (Math.random() < 0.5) {
+      const q = generateOsiQuestion();
+      return {
+        id: createQuestionId('osi'),
+        theme: q.theme,
+        module: 'osi',
+        questionText: q.questionText,
+        expectedAnswers: q.expectedAnswers,
+        solutionSteps: q.solutionSteps,
+        difficulty: 'medium',
+        answerInputs: q.answerInputs,
+      };
+    }
+    const q = generateOsiOrderQuestion();
     return {
       id: createQuestionId('osi'),
       theme: q.theme,
@@ -149,7 +165,7 @@ export const GENERATORS: Record<RegistryModuleId, () => Question> = {
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
       difficulty: 'medium',
-      answerInputs: q.answerInputs,
+      dragOrder: q.dragOrder,
     };
   },
   cables: () => {

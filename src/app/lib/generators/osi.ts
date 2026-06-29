@@ -1,4 +1,4 @@
-import { AnswerInputConfig } from '../../types';
+import { AnswerInputConfig, DragOrderConfig } from '../../types';
 
 export interface OsiQuestion {
   theme: string;
@@ -6,6 +6,14 @@ export interface OsiQuestion {
   item: string;
   expectedAnswers: { layer: number; layerName: string };
   answerInputs?: AnswerInputConfig[];
+  solutionSteps: string[];
+}
+
+export interface OsiOrderQuestion {
+  theme: string;
+  questionText: string;
+  expectedAnswers: { order: string };
+  dragOrder: DragOrderConfig;
   solutionSteps: string[];
 }
 
@@ -127,5 +135,76 @@ export function generateOsiQuestion(): OsiQuestion {
       `  Layer: ${entry.layer}`,
       `  Name: ${layerName}`
     ]
+  };
+}
+
+/**
+ * Fisher-Yates shuffle that returns a new array (immutable).
+ * Avoids the biased `sort(() => Math.random() - 0.5)` anti-pattern.
+ */
+function shuffle<T>(arr: readonly T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
+ * Drag-to-reorder exercise: the user shuffles the 7 OSI layers into the
+ * canonical top-to-bottom order (Layer 7 → Layer 1).
+ *
+ * The expected answer is a comma-separated string of the layer names in the
+ * correct order. Validation compares the user's current ordering against
+ * this string case-insensitively (handled by `validateQuestionAnswers`).
+ */
+export function generateOsiOrderQuestion(): OsiOrderQuestion {
+  // Canonical order: Layer 7 (Application) at the top, Layer 1 (Physical) at the
+  // bottom. This matches the standard pedagogical representation of the OSI
+  // model. The card display shows "English / German" so the student sees both names.
+  const correctOrder = Array.from({ length: 7 }, (_, i) => OSI_LAYER_NAMES[7 - i]);
+
+  // Shuffle for the initial display. Regenerate if (extremely unlikely) the
+  // shuffle happens to land on the already-correct order — a "drag nothing"
+  // exercise would be trivially correct.
+  let shuffled = shuffle(correctOrder);
+  if (shuffled.every((v, i) => v === correctOrder[i])) {
+    shuffled = [shuffled[1], shuffled[0], ...shuffled.slice(2)];
+  }
+
+  return {
+    theme: 'TCP/IP-Referenzmodell & Protokolle',
+    questionText:
+      'Sortiere die 7 OSI-Schichten in die richtige Reihenfolge — von Layer 7 (Application, ganz oben) bis Layer 1 (Physical, ganz unten).',
+    expectedAnswers: { order: correctOrder.join(',') },
+    dragOrder: { items: shuffled, correctOrder },
+    solutionSteps: [
+      `Das OSI-Modell von oben (Anwendung) nach unten (Bitübertragung):`,
+      ``,
+      `  Layer 7 — Application / Anwendungsschicht`,
+      `    HTTP(S), FTP, SMTP, POP3, IMAP, DNS, DHCP, SSH, SNMP`,
+      ``,
+      `  Layer 6 — Presentation / Darstellungsschicht`,
+      `    SSL/TLS, JPEG/MPEG, ASCII/UTF-8, Base64 — Verschlüsselung & Kodierung`,
+      ``,
+      `  Layer 5 — Session / Sitzungsschicht`,
+      `    Sitzungsverwaltung, NetBIOS, RPC, Sitzungswiederherstellung`,
+      ``,
+      `  Layer 4 — Transport / Transportschicht`,
+      `    TCP (verbindungsorientiert), UDP (verbindungslos), Ports, Segmente`,
+      ``,
+      `  Layer 3 — Network / Vermittlungsschicht`,
+      `    Router, IP-Adressen, Pakete, ICMP, Routing-Tabellen, Subnetzmasken`,
+      ``,
+      `  Layer 2 — Data Link / Sicherungsschicht`,
+      `    Switches, Bridges, MAC-Adressen, Ethernet-Frames, ARP, VLAN`,
+      ``,
+      `  Layer 1 — Physical / Bitübertragungsschicht`,
+      `    Kabel, Hubs, Repeater, Glasfaser, elektrische/optische Signale`,
+      ``,
+      `Merkspruch (von oben nach unten): "Please Do Not Throw Sausage Pizza Away"`,
+      `Merkspruch (von unten nach oben): "All People Seem To Need Data Processing"`,
+    ],
   };
 }
