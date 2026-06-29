@@ -80,8 +80,11 @@ export function calculateRaid(
 ): { usableCapacityGb: number; faultTolerance: number } {
   const spec = RAID_SPECS[level];
   if (!spec) throw new Error(`Unsupported RAID level: ${level}`);
-  if (!Number.isFinite(disks) || disks < spec.minDisks) {
+  if (!Number.isInteger(disks) || disks < spec.minDisks) {
     throw new Error(`${level} requires at least ${spec.minDisks} disks, got ${disks}`);
+  }
+  if (!Number.isFinite(diskSizeGb) || diskSizeGb <= 0) {
+    throw new Error(`${level} requires a positive finite disk size, got ${diskSizeGb}`);
   }
   if (spec.diskMultiple && disks % spec.diskMultiple !== 0) {
     throw new Error(`${level} requires a multiple of ${spec.diskMultiple} disks, got ${disks}`);

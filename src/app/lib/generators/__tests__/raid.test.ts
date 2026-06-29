@@ -61,6 +61,17 @@ describe('calculateRaid', () => {
     expect(() => calculateRaid('RAID 10', 3, 1000)).toThrow();
   });
 
+  it('rejects non-integer disk counts', () => {
+    expect(() => calculateRaid('RAID 0', 2.5, 1000)).toThrow();
+    expect(() => calculateRaid('RAID 5', 3.5, 1000)).toThrow();
+  });
+
+  it('rejects non-positive or non-finite disk sizes', () => {
+    expect(() => calculateRaid('RAID 1', 2, 0)).toThrow();
+    expect(() => calculateRaid('RAID 1', 2, -1000)).toThrow();
+    expect(() => calculateRaid('RAID 1', 2, Number.POSITIVE_INFINITY)).toThrow();
+  });
+
   it('rejects non-even RAID 10 disk counts', () => {
     expect(() => calculateRaid('RAID 10', 5, 1000)).toThrow();
     expect(() => calculateRaid('RAID 10', 7, 1000)).toThrow();
