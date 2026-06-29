@@ -21,6 +21,7 @@ import {
   generateVorwaertsKalkulationQuestion,
   generateRueckwaertsKalkulationQuestion,
 } from './handelskalkulation';
+import { generateRaidQuestion } from './raid';
 
 /**
  * Module IDs that have a registered generator. Excludes `'sql'` because
@@ -226,6 +227,20 @@ export const GENERATORS: Record<RegistryModuleId, () => Question> = {
   handelskalkulation: generateHandelskalkulationQuestion,
   handelskalkulationVorwaerts: generateVorwaertsKalkulationQuestion,
   handelskalkulationRueckwaerts: generateRueckwaertsKalkulationQuestion,
+  raid: () => {
+    const q = generateRaidQuestion();
+    return {
+      id: createQuestionId('raid'),
+      theme: q.theme,
+      module: 'raid',
+      questionText: q.questionText,
+      expectedAnswers: q.expectedAnswers,
+      solutionSteps: q.solutionSteps,
+      difficulty: q.difficulty,
+      answerInputs: q.answerInputs,
+      raid: q.raid,
+    };
+  },
 };
 
 /**
