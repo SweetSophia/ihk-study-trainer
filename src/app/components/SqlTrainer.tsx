@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition, useCallback } from 'react';
+import { useState, useTransition, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { PGlite } from '@electric-sql/pglite';
+import { gradeSqlAnswer } from '../lib/sql-grading';
 import { Database, Play, RefreshCw, AlertCircle, CheckCircle2, XCircle, Lock } from 'lucide-react';
 import { generateSqlExercise, SqlExercise } from '../actions/generate-sql-exercise';
 
@@ -25,26 +25,6 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: Split and execute multiple SQL statements
-// ---------------------------------------------------------------------------
-/**
- * Executes multiple SQL statements from a single SQL string.
- * Splits by semicolons and executes each statement individually.
- * PostgreSQL prepared statements don't support multiple commands.
- */
-async function executeMultiStatement(db: PGlite, sql: string): Promise<void> {
-  // Split by semicolons, filter out empty statements
-  const statements = sql
-    .split(';')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-
-  for (const statement of statements) {
-    await db.query(statement);
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 interface SqlTrainerProps {
@@ -54,10 +34,22 @@ interface SqlTrainerProps {
 }
 
 export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTrainerProps) {
-  const [exercise, setExercise] = useState<SqlExercise | null>(null);
+  const [loadedExercise, setExercise] = useState<{ value: SqlExercise; accessHash: string } | null>(null);
+  const exercise = loadedExercise?.accessHash === accessHash ? loadedExercise.value : null;
   const [userQuery, setUserQuery] = useState('');
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+
+  const [isValidating, setIsValidating] = useState(false);
+  const generation = useRef(0);
+  const inFlight = useRef(false);
+  const completed = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    generation.current++;
+    return () => { mounted.current = false; };
+  }, [accessHash]);
 
   const fetchNewExercise = useCallback(() => {
     if (!accessHash) {
@@ -65,13 +57,17 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
       return;
     }
 
+    const token = ++generation.current;
+    completed.current = false;
+    setExercise(null);
     startTransition(async () => {
       try {
         setFeedback(null);
         setUserQuery('');
         const newExercise = await generateSqlExercise(accessHash);
-        setExercise(newExercise);
+        if (mounted.current && token === generation.current) setExercise({ value: newExercise, accessHash });
       } catch (error: unknown) {
+        if (!mounted.current || token !== generation.current) return;
         const message = getErrorMessage(error, 'Unbekannter Fehler');
         console.error('Error generating exercise:', message);
         if (message.includes('rate limit') || message.includes('429')) {
@@ -95,70 +91,32 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
       return;
     }
 
+    if (inFlight.current || completed.current) return;
+    inFlight.current = true;
+    setIsValidating(true);
     setFeedback(null);
-
-    // Spin up a fresh, isolated PostgreSQL instance in the browser
-    let db: PGlite | null = null;
+    const token = generation.current;
+    const isCurrent = () => mounted.current && token === generation.current;
     try {
-      db = new PGlite();
-      // Execute the AI's schema and dummy data (split multi-statement SQL)
-      await executeMultiStatement(db, exercise.setup_sql);
-
-      // Get the expected result set using the AI's solution
-      let expectedResult;
-      try {
-        expectedResult = await db.query(exercise.solution_query);
-      } catch (solError: unknown) {
-        const msg = getErrorMessage(solError, 'Unbekannter Fehler');
-        console.error('Solution query failed:', msg);
-        setFeedback({
-          type: 'error',
-          message: `Die generierte Musterlösung enthält einen Fehler: ${msg}`,
-        });
-        return;
-      }
-
-      // Get the user's result set
-      let userResult;
-      try {
-        userResult = await db.query(userQuery);
-      } catch (userError: unknown) {
-        const msg = getErrorMessage(userError, 'Unbekannter Fehler');
-        setFeedback({
-          type: 'error',
-          message: `SQL Fehler: ${msg}`,
-        });
-        onIncorrect?.();
-        return;
-      }
-
-      // Compare the result sets (order-independent comparison)
-      const expectedRows = JSON.stringify(sortRows((expectedResult.rows || []) as Record<string, unknown>[]));
-      const userRows = JSON.stringify(sortRows((userResult.rows || []) as Record<string, unknown>[]));
-
-      if (expectedRows === userRows) {
-        setFeedback({
-          type: 'success',
-          message: '✅ Korrekt! Das Ergebnis stimmt mit der Musterlösung überein.',
-        });
+      const result = await gradeSqlAnswer(exercise, userQuery);
+      if (!isCurrent()) return;
+      setFeedback({
+        type: result.correct ? 'success' : 'error',
+        message: result.message ?? (result.correct
+          ? '✅ Korrekt! Das Ergebnis stimmt mit der Musterlösung überein.'
+          : '❌ Das Ergebnis weicht ab. Überprüfe deine Query.'),
+      });
+      if (result.correct) {
+        completed.current = true;
         onCorrect?.();
       } else {
-        setFeedback({
-          type: 'error',
-          message: '❌ Das Ergebnis weicht ab. Überprüfe deine Query.',
-        });
         onIncorrect?.();
       }
     } catch (error: unknown) {
-      const msg = getErrorMessage(error, 'Unbekannter Fehler');
-      console.error('Validation error:', msg);
-      setFeedback({
-        type: 'error',
-        message: `Validierungsfehler: ${msg}`,
-      });
+      if (isCurrent()) setFeedback({ type: 'error', message: `Validierungsfehler: ${getErrorMessage(error, 'Unbekannter Fehler')}` });
     } finally {
-      // Always close the PGlite instance to prevent memory leaks
-      await db?.close();
+      inFlight.current = false;
+      if (mounted.current) setIsValidating(false);
     }
   }, [exercise, userQuery, onCorrect, onIncorrect]);
 
@@ -236,7 +194,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
           <div className="flex items-center gap-4">
             <button
               onClick={validateAnswer}
-              disabled={!userQuery.trim()}
+              disabled={!userQuery.trim() || isValidating || completed.current}
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
             >
               <Play className="w-4 h-4" />
@@ -305,18 +263,4 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
       )}
     </div>
   );
-}
-
-/** Sort rows by all values to enable order-independent comparison */
-function sortRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
-  // Normalize each row by sorting its keys
-  const normalized = rows.map(row =>
-    Object.entries(row).sort().reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {})
-  );
-  // Sort the array of normalized rows deterministically
-  return normalized.sort((a, b) => {
-    const aStr = JSON.stringify(a);
-    const bStr = JSON.stringify(b);
-    return aStr.localeCompare(bStr);
-  });
 }
