@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 afterEach(() => {
@@ -5,30 +6,42 @@ afterEach(() => {
   vi.resetModules();
 });
 
-async function scriptSources(environment: 'production' | 'development') {
+async function policyDirectives(environment: 'production' | 'development') {
   vi.stubEnv('NODE_ENV', environment);
+  vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '');
   vi.resetModules();
   const { default: config } = await import('./next.config');
   const rules = await config.headers!();
   const header = rules
-    .find((rule) => rule.source === '/:path*')!
-    .headers.find((entry) => entry.key === 'Content-Security-Policy')!;
+    .find((rule) => rule.source === '/:path*')
+    ?.headers.find((entry) => entry.key === 'Content-Security-Policy');
+  expect(header, 'CSP header must cover every route').toBeDefined();
+  if (!header) throw new Error('Missing Content-Security-Policy header');
   return header.value
-    .split('; ')
-    .find((directive) => directive.startsWith('script-src '))!
-    .split(' ')
-    .slice(1);
+    .split(';')
+    .map((directive) => directive.trim().split(/\s+/).join(' '));
 }
 
-describe('script Content Security Policy', () => {
+describe('Content Security Policy', () => {
   it('allows PGlite WASM in production without allowing JavaScript eval', async () => {
-    const sources = await scriptSources('production');
-
-    expect(sources).toContain("'wasm-unsafe-eval'");
-    expect(sources).not.toContain("'unsafe-eval'");
+    expect(await policyDirectives('production')).toEqual([
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      'upgrade-insecure-requests',
+    ]);
   });
 
   it('retains JavaScript eval in development for Next HMR', async () => {
-    expect(await scriptSources('development')).toContain("'unsafe-eval'");
+    expect(await policyDirectives('development')).toContain(
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval'",
+    );
   });
 });

@@ -36,8 +36,8 @@ const ContentSecurityPolicy = [
   "default-src 'self'",
   // 'unsafe-eval' is dev-only (Next HMR). Production pre-compiles bundles;
   // framer-motion + Tailwind v4 inject inline styles, not eval. Removing
-  // 'unsafe-eval' from prod tightens XSS defense.
-  // 'unsafe-inline' stays (removing it needs nonces — out of scope here).
+  // 'unsafe-eval' from prod is defense in depth: 'unsafe-inline' still allows
+  // injected inline scripts. Removing it needs nonces — out of scope here.
   // PGlite compiles WebAssembly at runtime; allow WASM without enabling JS eval.
   `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
