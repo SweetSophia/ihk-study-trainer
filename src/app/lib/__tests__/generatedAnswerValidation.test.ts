@@ -5,7 +5,7 @@ import { Question } from '../../types';
 
 function generate(module: RegistryModuleId): Question {
   // Stable generated inputs, including counts large enough to expose 5% tolerance.
-  vi.spyOn(Math, 'random').mockReturnValue(0.5);
+  vi.spyOn(Math, 'random').mockReturnValue(module === 'osi' ? 0.4 : 0.5);
   return GENERATORS[module]();
 }
 
@@ -31,6 +31,8 @@ for (const path of ['generic', 'configured', 'leftover'] as const) {
         question.answerInputs = Object.keys(question.expectedAnswers).map(valueKey => ({ valueKey }));
       } else if (path === 'leftover') {
         question.answerInputs = [];
+      } else {
+        delete question.answerInputs;
       }
       return question;
     }
@@ -50,6 +52,7 @@ for (const path of ['generic', 'configured', 'leftover'] as const) {
     it.each([
       ['subnetting', 'usableHosts'], ['aggregation', 'summaryCidr'],
       ['binary', 'decimal'], ['hex', 'decimal'], ['raid', 'faultTolerance'], ['overhead', 'frameCount'],
+      ['overhead', 'totalBytes'], ['osi', 'layer'],
     ] as const)('%s %s requires an exact integer', (module, key) => {
       const question = questionFor(module);
       const answers = correctAnswers(question);
@@ -79,4 +82,24 @@ it('preserves generated RAID capacity conversion and measured tolerance', () => 
 it.each(['Infinity', '-Infinity', 'NaN', '1e999'])('rejects nonfinite measured input %s', invalid => {
   const question = generate('raid');
   expect(validateQuestionAnswers(question, { ...correctAnswers(question), usableCapacity: invalid })).toBe(false);
+});
+
+it('preserves configured OSI answers and rejects fractional layer numbers', () => {
+  const question = generate('osi');
+  const answers = correctAnswers(question);
+  expect(answers.layer).toBe('4');
+  expect(validateQuestionAnswers(question, answers)).toBe(true);
+  expect(validateQuestionAnswers(question, { ...answers, layer: '4.1' })).toBe(false);
+  const layerInput = question.answerInputs!.find(input => input.valueKey === 'layer')!;
+  // Configured alternatives must retain precedence over exact-key validation.
+  layerInput.acceptedValues = [...layerInput.acceptedValues!, 'Transport'];
+  expect(validateQuestionAnswers(question, { ...answers, layer: '  TRANSPORT  ' })).toBe(true);
+});
+
+it('preserves tolerance for the generated rounded overhead efficiency', () => {
+  const question = generate('overhead');
+  const answers = correctAnswers(question);
+  const efficiency = Number(answers.efficiency);
+  expect(validateQuestionAnswers(question, { ...answers, efficiency: String(efficiency * 1.04) })).toBe(true);
+  expect(validateQuestionAnswers(question, { ...answers, efficiency: String(efficiency * 1.06) })).toBe(false);
 });

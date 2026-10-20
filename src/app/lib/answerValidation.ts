@@ -103,7 +103,7 @@ const IPV4_KEYS = new Set([
   'networkId', 'broadcast', 'hostMin', 'hostMax', 'subnetMask', 'wildcard', 'summaryRoute',
 ]);
 const INTEGER_KEYS = new Set([
-  'usableHosts', 'summaryCidr', 'decimal', 'faultTolerance', 'frameCount',
+  'usableHosts', 'summaryCidr', 'decimal', 'faultTolerance', 'frameCount', 'totalBytes', 'layer',
 ]);
 
 function validateExactKey(key: string, answer: string, expected: string): boolean | undefined {
