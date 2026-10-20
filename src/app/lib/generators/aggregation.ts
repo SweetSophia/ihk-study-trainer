@@ -10,7 +10,7 @@ export function generateAggregationQuestion(): AggregationQuestion {
   // Generate 2-4 networks that can be aggregated
   const numNetworks = Math.floor(Math.random() * 3) + 2; // 2-4 networks
   const baseCidr = [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30][Math.floor(Math.random() * 11)];
-  const baseNetwork = generateRandomNetwork();
+  const baseNetwork = generateRandomNetwork(baseCidr);
   
   // Generate contiguous networks
   const networks: string[] = [];
@@ -50,10 +50,12 @@ export function generateAggregationQuestion(): AggregationQuestion {
   };
 }
 
-function generateRandomNetwork(): string {
+function generateRandomNetwork(cidr: number): string {
   const octet2 = Math.floor(Math.random() * 256);
   const octet3 = Math.floor(Math.random() * 256);
-  return `10.${octet2}.${octet3}.0`;
+  const address = (10 << 24) | (octet2 << 16) | (octet3 << 8);
+  const mask = -1 << (32 - cidr);
+  return longToIp(address & mask);
 }
 
 function incrementNetwork(network: string, increment: number, cidr: number): string {
