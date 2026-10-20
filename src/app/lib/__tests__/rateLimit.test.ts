@@ -212,6 +212,24 @@ describe('rateLimit — Upstash failure handling', () => {
     expect(result.pending).toBe(pending);
   });
 
+  it('logs timeout denial using only static diagnostics and failure count', async () => {
+    const identifier = 'secret-access-hash';
+    mockLimit.mockResolvedValueOnce({
+      success: true,
+      reason: 'timeout',
+      limit: 0,
+      remaining: 0,
+      reset: 0,
+      pending: Promise.resolve(),
+    });
+    const { checkRateLimit } = await import('../rateLimit');
+    await checkRateLimit(identifier);
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(
+      '[rateLimit] Upstash-Call timeout:',
+      { failures: 1, failClosed: true }
+    );
+  });
+
   it('counts timeouts as failures without resetting the exception failure streak', async () => {
     mockLimit.mockRejectedValue(new Error('boom'));
     const { checkRateLimit } = await import('../rateLimit');
@@ -227,7 +245,12 @@ describe('rateLimit — Upstash failure handling', () => {
       pending: Promise.resolve(),
     });
     await checkRateLimit('user-mixed');
+    mockLimit.mockRejectedValueOnce(new Error('boom'));
     expect((await checkRateLimit('user-mixed')).allowed).toBe(false);
+    expect(console.error).toHaveBeenLastCalledWith(
+      '[rateLimit] Upstash-Call fehlgeschlagen:',
+      { name: 'Error', status: undefined, failures: 5, failClosed: true }
+    );
   });
 
   it.each([true, false])('preserves normal Upstash success=%s and resets prior failures', async (success) => {

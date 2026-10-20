@@ -178,6 +178,10 @@ export async function checkRateLimit(identifier: string): Promise<RateLimitResul
     // Ohne bestätigte Prüfung sofort blockieren und den Fehler mitzählen.
     if (r.reason === 'timeout') {
       recordUpstashFailure();
+      console.error('[rateLimit] Upstash-Call timeout:', {
+        failures,
+        failClosed: true,
+      });
       return {
         allowed: false,
         limit: RATE_LIMIT_MAX,
