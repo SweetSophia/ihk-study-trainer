@@ -154,7 +154,8 @@ export function __resetRateLimitForTests(): void {
  * Prüft, ob `identifier` (bei uns der accessHash) im aktuellen Fenster noch
  * einen Call frei hat. Upstash, wenn env gesetzt, sonst In-Memory.
  *
- * Fail-closed nach FAILURE_THRESHOLD Upstash-Fehlern in FAILURE_WINDOW_MS.
+ * Timeouts sind sofort fail-closed; andere Upstash-Fehler nach
+ * FAILURE_THRESHOLD Fehlern in FAILURE_WINDOW_MS.
  */
 export async function checkRateLimit(identifier: string): Promise<RateLimitResult> {
   const limiter = getUpstashLimiter();
@@ -173,6 +174,25 @@ export async function checkRateLimit(identifier: string): Promise<RateLimitResul
 
   try {
     const r = await limiter.limit(hashedId);
+    // Das SDK meldet Timeouts als success=true mit leeren Limit-Metadaten.
+    // Ohne bestätigte Prüfung sofort blockieren und den Fehler mitzählen.
+    if (r.reason === 'timeout') {
+      recordUpstashFailure();
+      console.error('[rateLimit] Upstash-Call timeout:', {
+        failures,
+        failClosed: true,
+      });
+      return {
+        allowed: false,
+        limit: RATE_LIMIT_MAX,
+        remaining: 0,
+        resetMs: Date.now() + RATE_LIMIT_WINDOW_MS,
+        retryAfterMs: RATE_LIMIT_WINDOW_MS,
+        reason: r.reason,
+        pending: r.pending,
+        mode: 'upstash-degraded',
+      };
+    }
     // Erfolg — Failure-Streak resetten.
     failures = 0;
     firstFailureAt = 0;

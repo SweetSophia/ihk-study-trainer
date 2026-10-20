@@ -185,6 +185,104 @@ describe('rateLimit — Upstash failure handling', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
+  it('fail-closes on the SDK timeout response and preserves background cleanup', async () => {
+    const now = 1_800_000_000_000;
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    const pending = Promise.resolve();
+    mockLimit.mockResolvedValue({
+      success: true,
+      reason: 'timeout',
+      limit: 0,
+      remaining: 0,
+      reset: 0,
+      pending,
+    });
+    const { checkRateLimit, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS } = await import('../rateLimit');
+    const result = await checkRateLimit('user-timeout');
+    expect(result).toEqual({
+      allowed: false,
+      reason: 'timeout',
+      limit: RATE_LIMIT_MAX,
+      remaining: 0,
+      resetMs: now + RATE_LIMIT_WINDOW_MS,
+      retryAfterMs: RATE_LIMIT_WINDOW_MS,
+      pending,
+      mode: 'upstash-degraded',
+    });
+    expect(result.pending).toBe(pending);
+  });
+
+  it('logs timeout denial using only static diagnostics and failure count', async () => {
+    const identifier = 'secret-access-hash';
+    mockLimit.mockResolvedValueOnce({
+      success: true,
+      reason: 'timeout',
+      limit: 0,
+      remaining: 0,
+      reset: 0,
+      pending: Promise.resolve(),
+    });
+    const { checkRateLimit } = await import('../rateLimit');
+    await checkRateLimit(identifier);
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(
+      '[rateLimit] Upstash-Call timeout:',
+      { failures: 1, failClosed: true }
+    );
+  });
+
+  it('counts timeouts as failures without resetting the exception failure streak', async () => {
+    mockLimit.mockRejectedValue(new Error('boom'));
+    const { checkRateLimit } = await import('../rateLimit');
+    for (let i = 0; i < 3; i++) {
+      expect((await checkRateLimit('user-mixed')).allowed).toBe(true);
+    }
+    mockLimit.mockResolvedValueOnce({
+      success: true,
+      reason: 'timeout',
+      limit: 0,
+      remaining: 0,
+      reset: 0,
+      pending: Promise.resolve(),
+    });
+    await checkRateLimit('user-mixed');
+    mockLimit.mockRejectedValueOnce(new Error('boom'));
+    expect((await checkRateLimit('user-mixed')).allowed).toBe(false);
+    expect(console.error).toHaveBeenLastCalledWith(
+      '[rateLimit] Upstash-Call fehlgeschlagen:',
+      { name: 'Error', status: undefined, failures: 5, failClosed: true }
+    );
+  });
+
+  it.each([true, false])('preserves normal Upstash success=%s and resets prior failures', async (success) => {
+    const now = 1_800_000_000_000;
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    mockLimit.mockRejectedValue(new Error('boom'));
+    const { checkRateLimit } = await import('../rateLimit');
+    for (let i = 0; i < 4; i++) {
+      await checkRateLimit('user-recovery');
+    }
+    const pending = Promise.resolve();
+    mockLimit.mockResolvedValueOnce({
+      success,
+      limit: 5,
+      remaining: success ? 4 : 0,
+      reset: now + 30_000,
+      pending,
+      reason: success ? undefined : 'cacheBlock',
+    });
+    expect(await checkRateLimit('user-recovery')).toEqual({
+      allowed: success,
+      limit: 5,
+      remaining: success ? 4 : 0,
+      resetMs: now + 30_000,
+      retryAfterMs: success ? undefined : 30_000,
+      pending,
+      reason: success ? undefined : 'cacheBlock',
+      mode: 'upstash',
+    });
+    expect((await checkRateLimit('user-recovery')).allowed).toBe(true);
+  });
+
   it('fail-opens on a single Upstash error and tags mode=upstash-degraded', async () => {
     mockLimit.mockRejectedValueOnce(new Error('HTTP 503 from https://test.upstash.io'));
     const { checkRateLimit, __resetRateLimitForTests } = await import('../rateLimit');
