@@ -207,7 +207,10 @@ describe('StudyCard – welcome screen (no question)', () => {
       />,
     );
     await userEvent.click(screen.getByText('Was ist neu?'));
-    // Should now reveal the most recent changelog entry.
+    // Shows the shipped update alongside the preserved history.
+    expect(screen.getByText(/Antwortprüfung: IPv4-Adressen/)).toBeInTheDocument();
+    expect(screen.getByText(/SQL-Trainer: Start im Browser repariert/)).toBeInTheDocument();
+    expect(screen.getByText(/KI-Anfragen: Bei einer Zeitüberschreitung/)).toBeInTheDocument();
     expect(screen.getByText(/Confetti, UX, Upstash/)).toBeInTheDocument();
   });
 });
