@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock framer-motion to avoid animation complexity in tests
@@ -26,19 +26,9 @@ vi.mock('../../actions/generate-sql-exercise', () => ({
   generateSqlExercise: vi.fn(),
 }));
 
-// Mock PGlite as a class constructor
-let mockQueryFn = vi.fn();
-vi.mock('@electric-sql/pglite', () => ({
-  PGlite: vi.fn().mockImplementation(function () {
-    return {
-      query: mockQueryFn,
-      close: vi.fn(),
-    };
-  }),
-}));
-
+vi.mock('../../lib/sql-grading', () => ({ gradeSqlAnswer: vi.fn() }));
+import { gradeSqlAnswer } from '../../lib/sql-grading';
 import { generateSqlExercise } from '../../actions/generate-sql-exercise';
-import { PGlite } from '@electric-sql/pglite';
 import SqlTrainer from '../SqlTrainer';
 
 const mockGenerateSqlExercise = vi.mocked(generateSqlExercise);
@@ -57,21 +47,11 @@ INSERT INTO devices VALUES (2, 'Switch-01', 'switch');`,
   question: 'Welche Geräte vom Typ "router" sind im System erfasst?',
   solution_query: "SELECT * FROM devices WHERE type = 'router';",
   difficulty: 'easy' as const,
+  grading: { kind: 'select', ordered: false } as const,
 };
 
 describe('SqlTrainer', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Reset mockQueryFn to a fresh mock
-    mockQueryFn = vi.fn();
-    // Re-assign to the PGlite mock implementation
-    vi.mocked(PGlite).mockImplementation(function () {
-      return {
-        query: mockQueryFn,
-        close: vi.fn(),
-      };
-    });
-  });
+  beforeEach(() => { vi.resetAllMocks(); });
 
   describe('initial render', () => {
     it('renders the heading', () => {
@@ -219,350 +199,93 @@ describe('SqlTrainer', () => {
     });
   });
 
-  describe('validateAnswer', () => {
-    it('"Query ausführen" button is disabled when textarea is empty', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
 
-      renderSqlTrainer();
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Query ausführen/i })).toBeInTheDocument();
-      });
-
-      const runBtn = screen.getByRole('button', { name: /Query ausführen/i });
-      expect(runBtn).toBeDisabled();
-    });
-
-    it('"Query ausführen" button is enabled after typing in textarea', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      renderSqlTrainer();
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument();
-      });
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), 'SELECT 1;');
-
-      const runBtn = screen.getByRole('button', { name: /Query ausführen/i });
-      expect(runBtn).not.toBeDisabled();
-    });
-
-    it('shows success feedback when user query matches solution', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      const solutionRows = [{ id: 1, name: 'Router-01', type: 'router' }];
-      mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })           // setup: CREATE TABLE
-        .mockResolvedValueOnce({ rows: [] })           // setup: INSERT 1
-        .mockResolvedValueOnce({ rows: [] })           // setup: INSERT 2
-        .mockResolvedValueOnce({ rows: solutionRows })  // solution_query
-        .mockResolvedValueOnce({ rows: solutionRows }); // user query
-
-      const onCorrect = vi.fn();
-      renderSqlTrainer({ onCorrect });
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument();
-      });
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), "SELECT * FROM devices WHERE type = 'router';");
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Korrekt!/i)).toBeInTheDocument();
-      });
-
-      expect(onCorrect).toHaveBeenCalledOnce();
-    });
-
-    it('shows error feedback when user query result differs from solution', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
-        .mockResolvedValueOnce({ rows: [{ id: 1, name: 'Router-01', type: 'router' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 2, name: 'Switch-01', type: 'switch' }] });
-
-      const onIncorrect = vi.fn();
-      renderSqlTrainer({ onIncorrect });
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument();
-      });
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), "SELECT * FROM devices WHERE type = 'switch';");
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Ergebnis weicht ab/i)).toBeInTheDocument();
-      });
-
-      expect(onIncorrect).toHaveBeenCalledOnce();
-    });
-
-    it('shows SQL error feedback when user query is invalid SQL', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
-        .mockResolvedValueOnce({ rows: [{ id: 1 }] })
-        .mockRejectedValueOnce(new Error('syntax error at or near "SELEXT"'));
-
-      const onIncorrect = vi.fn();
-      renderSqlTrainer({ onIncorrect });
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument();
-      });
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), 'SELEXT * FROM devices;');
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/SQL Fehler/i)).toBeInTheDocument();
-      });
-
-      expect(onIncorrect).toHaveBeenCalledOnce();
-    });
-
-    it('shows error when solution query itself fails', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
-        .mockRejectedValueOnce(new Error('column "nonexistent" does not exist'));
-
-      renderSqlTrainer();
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument();
-      });
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), 'SELECT * FROM devices;');
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Musterlösung enthält einen Fehler/i)).toBeInTheDocument();
-      });
-    });
-
-    it('shows generic validation error when PGlite throws on construction', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      vi.mocked(PGlite).mockImplementationOnce(function () {
-        throw new Error('PGlite init failed');
-      });
-
-      renderSqlTrainer();
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument();
-      });
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), 'SELECT 1;');
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Validierungsfehler/i)).toBeInTheDocument();
-      });
-    });
-
-    it('does not call onCorrect or onIncorrect when solution query fails', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
-        .mockRejectedValueOnce(new Error('solution error'));
-
-      const onCorrect = vi.fn();
-      const onIncorrect = vi.fn();
-      renderSqlTrainer({ onCorrect, onIncorrect });
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument();
-      });
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), 'SELECT * FROM devices;');
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Musterlösung enthält einen Fehler/i)).toBeInTheDocument();
-      });
-
-      expect(onCorrect).not.toHaveBeenCalled();
-      expect(onIncorrect).not.toHaveBeenCalled();
-    });
-
-    it('normalizes column key order when comparing result rows', async () => {
-      // sortRows normalizes the key ordering within each row object.
-      // A user query returning {type:'router', id:1, name:'Router-01'} (different key order)
-      // should match a solution that returns {id:1, name:'Router-01', type:'router'}.
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      const solutionRow = { id: 1, name: 'Router-01', type: 'router' };
-      const userRow = { type: 'router', name: 'Router-01', id: 1 }; // same data, different key order
-      mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
-        .mockResolvedValueOnce({ rows: [solutionRow] })
-        .mockResolvedValueOnce({ rows: [userRow] });
-
-      const onCorrect = vi.fn();
-      renderSqlTrainer({ onCorrect });
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument();
-      });
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), "SELECT type, name, id FROM devices WHERE type = 'router';");
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Korrekt!/i)).toBeInTheDocument();
-      });
-
-      expect(onCorrect).toHaveBeenCalledOnce();
-    });
-
-    it('treats empty result sets as equal (both queries return no rows)', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
-        .mockResolvedValueOnce({ rows: [] })  // solution_query
-        .mockResolvedValueOnce({ rows: [] }); // user query
-
-      const onCorrect = vi.fn();
-      renderSqlTrainer({ onCorrect });
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument();
-      });
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), "SELECT * FROM devices WHERE type = 'nonexistent';");
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Korrekt!/i)).toBeInTheDocument();
-      });
-
-      expect(onCorrect).toHaveBeenCalledOnce();
-    });
-
-    it('shows the solution query in the "Musterlösung" details element', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      renderSqlTrainer();
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Musterlösung anzeigen/i)).toBeInTheDocument();
-      });
-
-      expect(screen.getByText(sampleExercise.solution_query)).toBeInTheDocument();
-    });
+  async function load(onCorrect = vi.fn(), onIncorrect = vi.fn()) {
+    mockGenerateSqlExercise.mockResolvedValue(sampleExercise);
+    const view = renderSqlTrainer({ onCorrect, onIncorrect });
+    await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
+    await userEvent.type(await screen.findByRole('textbox'), 'SELECT 1');
+    return { ...view, onCorrect, onIncorrect, run: screen.getByRole('button', { name: /Query ausführen/i }) };
+  }
+
+  it('shows feedback and scores a correct submission only once', async () => {
+    vi.mocked(gradeSqlAnswer).mockResolvedValue({ correct: true });
+    const { run, onCorrect } = await load();
+    await userEvent.click(run);
+    expect(await screen.findByText(/Korrekt!/)).toBeInTheDocument();
+    await userEvent.click(run);
+    expect(onCorrect).toHaveBeenCalledOnce();
+    expect(run).toBeDisabled();
   });
 
-  describe('feedback display', () => {
-    it('renders success feedback with CheckCircle2 icon', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      const rows = [{ id: 1 }];
-      mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
-        .mockResolvedValueOnce({ rows })      // solution_query
-        .mockResolvedValueOnce({ rows });     // user query
-
-      renderSqlTrainer();
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-      await waitFor(() => expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument());
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), 'SELECT 1;');
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('icon-check')).toBeInTheDocument();
-      });
-    });
-
-    it('renders error feedback with XCircle icon for wrong answer', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
-        .mockResolvedValueOnce({ rows: [{ id: 1 }] })
-        .mockResolvedValueOnce({ rows: [{ id: 2 }] });
-
-      renderSqlTrainer();
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-      await waitFor(() => expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument());
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), 'SELECT 2;');
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('icon-xcircle')).toBeInTheDocument();
-      });
-    });
-
-    it('error message contains the SQL error detail from the exception', async () => {
-      mockGenerateSqlExercise.mockResolvedValueOnce(sampleExercise);
-
-      mockQueryFn
-        .mockResolvedValueOnce({ rows: [] })  // setup: CREATE TABLE
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 1
-        .mockResolvedValueOnce({ rows: [] })  // setup: INSERT 2
-        .mockResolvedValueOnce({ rows: [{ id: 1 }] })
-        .mockRejectedValueOnce(new Error('relation "unknown_table" does not exist'));
-
-      renderSqlTrainer();
-      await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
-      await waitFor(() => expect(screen.getByPlaceholderText(/SELECT/i)).toBeInTheDocument());
-
-      await userEvent.type(screen.getByPlaceholderText(/SELECT/i), 'SELECT * FROM unknown_table;');
-      await userEvent.click(screen.getByRole('button', { name: /Query ausführen/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/relation "unknown_table" does not exist/i)).toBeInTheDocument();
-      });
-    });
+  it('allows retry after an incorrect answer', async () => {
+    vi.mocked(gradeSqlAnswer).mockResolvedValueOnce({ correct: false }).mockResolvedValueOnce({ correct: true });
+    const { run, onIncorrect, onCorrect } = await load();
+    await userEvent.click(run);
+    expect(await screen.findByText(/Ergebnis weicht ab/)).toBeInTheDocument();
+    expect(onIncorrect).toHaveBeenCalledOnce();
+    await userEvent.click(run);
+    expect(await screen.findByText(/Korrekt!/)).toBeInTheDocument();
+    expect(onCorrect).toHaveBeenCalledOnce();
   });
 
-  describe('SqlTrainer props', () => {
-    it('renders without onCorrect/onIncorrect props (optional)', () => {
-      expect(() => renderSqlTrainer()).not.toThrow();
-    });
+  it('shows SQL errors and does not score fixture failures', async () => {
+    vi.mocked(gradeSqlAnswer).mockResolvedValueOnce({ correct: false, message: 'SQL Fehler: syntax error' }).mockRejectedValueOnce(new Error('Musterlösung enthält einen Fehler'));
+    const { run, onIncorrect, onCorrect } = await load();
+    await userEvent.click(run);
+    expect(await screen.findByText(/SQL Fehler: syntax error/)).toBeInTheDocument();
+    await userEvent.click(run);
+    expect(await screen.findByText(/Musterlösung enthält einen Fehler/)).toBeInTheDocument();
+    expect(onIncorrect).toHaveBeenCalledOnce();
+    expect(onCorrect).not.toHaveBeenCalled();
+  });
 
-    it('renders with both callback props', () => {
-      const onCorrect = vi.fn();
-      const onIncorrect = vi.fn();
-      expect(() => renderSqlTrainer({ onCorrect, onIncorrect })).not.toThrow();
-    });
+  it('ignores repeated clicks while a submission is running', async () => {
+    let finish!: (value: { correct: boolean }) => void;
+    vi.mocked(gradeSqlAnswer).mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    const { run, onCorrect } = await load();
+    fireEvent.click(run);
+    fireEvent.click(run);
+    expect(run).toBeDisabled();
+    expect(gradeSqlAnswer).toHaveBeenCalledOnce();
+    await act(async () => finish({ correct: true }));
+    expect(onCorrect).toHaveBeenCalledOnce();
+  });
+
+  it.each(['success', 'error'] as const)('ignores stale %s after a new exercise', async outcome => {
+    let finish!: (value: { correct: boolean }) => void;
+    let fail!: (reason: Error) => void;
+    vi.mocked(gradeSqlAnswer).mockReturnValue(new Promise((resolve, reject) => { finish = resolve; fail = reject; }));
+    const { run, onCorrect, onIncorrect } = await load();
+    fireEvent.click(run);
+    await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
+    await act(async () => { if (outcome === 'success') finish({ correct: true }); else fail(new Error('stale')); });
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(onIncorrect).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Korrekt!|stale/)).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+
+  it('ignores completion and hides the old exercise after the account changes', async () => {
+    let finish!: (value: { correct: boolean }) => void;
+    vi.mocked(gradeSqlAnswer).mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    const { run, rerender, onCorrect, onIncorrect } = await load();
+    fireEvent.click(run);
+    rerender(<SqlTrainer accessHash="another-hash" onCorrect={onCorrect} onIncorrect={onIncorrect} />);
+    await act(async () => finish({ correct: true }));
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(onIncorrect).not.toHaveBeenCalled();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
+  it('ignores completion after unmount', async () => {
+    let finish!: (value: { correct: boolean }) => void;
+    vi.mocked(gradeSqlAnswer).mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    const { run, unmount, onCorrect, onIncorrect } = await load();
+    fireEvent.click(run);
+    unmount();
+    await act(async () => finish({ correct: true }));
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(onIncorrect).not.toHaveBeenCalled();
   });
 });

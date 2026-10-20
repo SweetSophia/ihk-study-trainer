@@ -6,7 +6,8 @@ import { after } from 'next/server';
 import { z } from 'zod';
 import { hashExists, isValidAccessHash } from '../lib/auth';
 import { checkRateLimit, RATE_LIMIT_WINDOW_MS } from '../lib/rateLimit';
-import { SQL_CONCEPTS, THEMES } from './sql-content';
+import { SQL_CONCEPTS, THEMES, gradingForConcept } from './sql-content';
+import type { SqlGrading } from '../lib/sql-grading';
 
 // ---------------------------------------------------------------------------
 // Type guard for error objects
@@ -38,7 +39,7 @@ const schema = z.object({
   difficulty: z.enum(['easy', 'medium', 'hard']).describe('Schwierigkeitsgrad'),
 });
 
-export type SqlExercise = z.infer<typeof schema>;
+export type SqlExercise = z.infer<typeof schema> & { grading: SqlGrading };
 
 // ---------------------------------------------------------------------------
 // Helper to extract JSON from model response
@@ -122,6 +123,7 @@ export async function generateSqlExercise(accessHash: string): Promise<SqlExerci
   const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
   const randomConcept = SQL_CONCEPTS[Math.floor(Math.random() * SQL_CONCEPTS.length)];
 
+  const grading = gradingForConcept(randomConcept);
   const maxRetries = 3;
   let lastError: unknown;
 
@@ -145,7 +147,11 @@ Regeln:
 - themeDescription: 1-2 Sätze auf Deutsch
 - setup_sql: Gültige PostgreSQL CREATE TABLE + INSERT Statements, FORMATIERT mit Zeilenumbrüchen (jeder Befehl auf neuer Zeile)
 - question: Aufgabe auf Deutsch, IHK-Stil
-- solution_query: Vollständige PostgreSQL SELECT Query
+- solution_query: Genau ein PostgreSQL ${grading.kind === 'mutation' ? grading.operation.toUpperCase() : 'SELECT'} Statement
+- ${grading.kind === 'select' && grading.ordered ? 'Die Aufgabe muss eine eindeutige Sortierung verlangen (inklusive Tie-Breaker); die Lösung muss ORDER BY verwenden.' : 'Bei SELECT keine bestimmte Reihenfolge verlangen; bei LIMIT eine deterministische Auswahl mit ORDER BY verwenden.'}
+- Nur normale Tabellen mit eindeutigen Spaltennamen; keine Views, Trigger, Funktionen, Sequenzänderungen oder DDL als Lösung
+- Testdaten deterministisch als Literale angeben, kein random(), NOW() oder CURRENT_DATE
+- Bei INSERT/UPDATE/DELETE muss die Lösung vorhandene Tabellendaten tatsächlich verändern
 - difficulty: "easy" ODER "medium" ODER "hard"
 - Keine Markdown-Codeblöcke, keine Erklärung, NUR das JSON`,
       });
@@ -154,7 +160,7 @@ Regeln:
       console.log('[generateSqlExercise] Raw response:', jsonText.slice(0, 300));
 
       const parsed = schema.parse(JSON.parse(jsonText));
-      return parsed;
+      return { ...parsed, grading };
     } catch (error: unknown) {
       lastError = error;
       const message = getErrorMessage(error, 'Unbekannter Fehler');

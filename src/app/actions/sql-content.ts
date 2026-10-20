@@ -1,3 +1,5 @@
+import type { SqlGrading } from '../lib/sql-grading';
+
 // SQL exercise content pools. Kept outside the Server Action file so tests can
 // import and verify the pools directly; `use server` files may only export async
 // functions in Next.js.
@@ -50,3 +52,15 @@ export const SQL_CONCEPTS = [
   'FOREIGN KEY Beziehung prüfen',
   'DATE_TRUNC für Monatsauswertung',
 ] as const;
+
+// Grading is application-owned, never inferred from model prose or SQL text.
+export function gradingForConcept(concept: typeof SQL_CONCEPTS[number]): SqlGrading {
+  switch (concept) {
+    case 'INSERT INTO mit mehreren Werten': return { kind: 'mutation', operation: 'Insert' };
+    case 'UPDATE mit Bedingung': return { kind: 'mutation', operation: 'Update' };
+    case 'DELETE mit WHERE Klausel': return { kind: 'mutation', operation: 'Delete' };
+    case 'SELECT mit WHERE Bedingung und ORDER BY':
+    case 'ORDER BY mit mehreren Spalten': return { kind: 'select', ordered: true };
+    default: return { kind: 'select', ordered: false };
+  }
+}

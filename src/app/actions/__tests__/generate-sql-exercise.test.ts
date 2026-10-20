@@ -52,7 +52,7 @@ beforeAll(() => {
   vi.stubEnv('GROQ_API_KEY', 'test-groq-api-key');
 });
 
-const validExercise: SqlExercise = {
+const validExercise: Omit<SqlExercise, 'grading'> = {
   theme: 'Network Infrastructure Asset Inventory',
   themeDescription: 'Verwaltung von Netzwerkgeräten im Unternehmen',
   setup_sql: `CREATE TABLE devices (id SERIAL PRIMARY KEY, name VARCHAR(50), type VARCHAR(20));
@@ -91,7 +91,7 @@ describe('generateSqlExercise', () => {
 
     const result = await generateSqlExercise(nextHash());
 
-    expect(result).toEqual(validExercise);
+    expect(result).toMatchObject(validExercise);
     expect(result.theme).toBe('Network Infrastructure Asset Inventory');
     expect(result.difficulty).toBe('easy');
   });
@@ -167,7 +167,7 @@ describe('generateSqlExercise', () => {
   });
 
   it('returns the exact object from generateText response', async () => {
-    const customExercise: SqlExercise = {
+    const customExercise: Omit<SqlExercise, 'grading'> = {
       theme: 'IT-Helpdesk Ticket System',
       themeDescription: 'Verwaltung von Support-Tickets',
       setup_sql: 'CREATE TABLE tickets (id INT, title TEXT);',
@@ -179,7 +179,7 @@ describe('generateSqlExercise', () => {
 
     const result = await generateSqlExercise(nextHash());
 
-    expect(result).toEqual(customExercise);
+    expect(result).toMatchObject(customExercise);
   });
 
   it('includes IHK-specific instructions in the prompt', async () => {
@@ -280,5 +280,26 @@ describe('generateSqlExercise - access hash shape validation', () => {
     await expect(generateSqlExercise('abcdef 12345')).rejects.toThrow(/Bitte melde dich an/i);
     expect(mockHashExists).not.toHaveBeenCalled();
     expect(mockGenerateText).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('application-owned grading metadata', () => {
+  it.each([
+    [0, { kind: 'select', ordered: true }, 'SELECT'],
+    [1, { kind: 'select', ordered: false }, 'SELECT'],
+    [3, { kind: 'mutation', operation: 'Insert' }, 'INSERT'],
+    [4, { kind: 'mutation', operation: 'Update' }, 'UPDATE'],
+    [5, { kind: 'mutation', operation: 'Delete' }, 'DELETE'],
+    [14, { kind: 'select', ordered: true }, 'SELECT'],
+  ])('derives grading for concept %s and ignores model-supplied grading', async (index, grading, command) => {
+    const spy = vi.spyOn(Math, 'random').mockReturnValue((Number(index) + 0.1) / SQL_CONCEPTS.length);
+    mockHashExists.mockResolvedValue(true);
+    mockGenerateText.mockResolvedValueOnce(fakeResult(JSON.stringify({ ...validExercise, grading: { kind: 'bogus' } })));
+    try {
+      const result = await generateSqlExercise(nextHash());
+      expect(result.grading).toEqual(grading);
+      expect(mockGenerateText.mock.lastCall?.[0].prompt).toContain(`Genau ein PostgreSQL ${command} Statement`);
+    } finally { spy.mockRestore(); }
   });
 });
