@@ -97,6 +97,29 @@ function validateNonDecimalKey(
   return !isNaN(userVal) && !isNaN(expectedVal) && userVal === expectedVal;
 }
 
+// These generator fields represent exact values, never measurements. Keep the
+// policy shared by configured inputs, leftover fields, and generic questions.
+const IPV4_KEYS = new Set([
+  'networkId', 'broadcast', 'hostMin', 'hostMax', 'subnetMask', 'wildcard', 'summaryRoute',
+]);
+const INTEGER_KEYS = new Set([
+  'usableHosts', 'summaryCidr', 'decimal', 'faultTolerance', 'frameCount', 'totalBytes', 'layer',
+]);
+
+function validateExactKey(key: string, answer: string, expected: string): boolean | undefined {
+  if (IPV4_KEYS.has(key)) {
+    const octets = answer.split('.');
+    return octets.length === 4 &&
+      octets.every(octet => /^(0|[1-9]\d{0,2})$/.test(octet) && Number(octet) <= 255) &&
+      answer === expected;
+  }
+  if (INTEGER_KEYS.has(key)) {
+    return /^\d+$/.test(answer) && Number.isSafeInteger(Number(answer)) &&
+      Number(answer) === Number(expected);
+  }
+  return validateNonDecimalKey(key, answer, expected);
+}
+
 /**
  * Detect the conversion map that applies for the given unit options.
  * Returns null when no conversion-aware check is needed.
@@ -149,9 +172,9 @@ export function validateStructuredAnswer(
     const userAnswer = (answers[cfg.valueKey] ?? '').trim().toLowerCase();
     const expectedStr = String(expected[cfg.valueKey]).toLowerCase();
 
-    const nonDecimalResult = validateNonDecimalKey(cfg.valueKey, userAnswer, expectedStr);
-    if (nonDecimalResult !== undefined) {
-      if (!nonDecimalResult) return false;
+    const exactResult = validateExactKey(cfg.valueKey, userAnswer, expectedStr);
+    if (exactResult !== undefined) {
+      if (!exactResult) return false;
       continue;
     }
 
@@ -203,9 +226,9 @@ export function validateStructuredAnswer(
     const userAnswer = (answers[key] ?? '').trim().toLowerCase();
     const expectedStr = String(exp).toLowerCase();
 
-    const nonDecimalResult = validateNonDecimalKey(key, userAnswer, expectedStr);
-    if (nonDecimalResult !== undefined) {
-      if (!nonDecimalResult) return false;
+    const exactResult = validateExactKey(key, userAnswer, expectedStr);
+    if (exactResult !== undefined) {
+      if (!exactResult) return false;
       continue;
     }
 
@@ -246,9 +269,9 @@ export function validateQuestionAnswers(
     const userAnswer = (answers[key] ?? '').trim().toLowerCase();
     const expectedStr = String(expected).toLowerCase();
 
-    const nonDecimalResult = validateNonDecimalKey(key, userAnswer, expectedStr);
-    if (nonDecimalResult !== undefined) {
-      if (!nonDecimalResult) return false;
+    const exactResult = validateExactKey(key, userAnswer, expectedStr);
+    if (exactResult !== undefined) {
+      if (!exactResult) return false;
       continue;
     }
 
