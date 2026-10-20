@@ -41,6 +41,22 @@ describe('real PostgreSQL grading', () => {
     expect(await gradeSqlAnswer(exercise('SELECT 1 AS n UNION ALL SELECT 1'), 'SELECT 1 AS n')).toMatchObject({ correct: false });
     expect(await gradeSqlAnswer(exercise('SELECT 1 AS n'), 'SELECT 1 AS other')).toMatchObject({ correct: false });
   });
+  it('accepts equivalent named columns selected in a different order', async () => {
+    expect(await gradeSqlAnswer(exercise('SELECT id, name FROM items'), 'SELECT name, id FROM items')).toMatchObject({ correct: true });
+  });
+  it.each(['int2', 'float8', 'int8'])('accepts equivalent numeric values cast to %s', async type => {
+    expect(await gradeSqlAnswer(exercise('SELECT id AS n FROM items'), `SELECT id::${type} AS n FROM items`)).toMatchObject({ correct: true });
+  });
+  it.each(['NaN', 'Infinity', '-Infinity'])('distinguishes numeric %s from NULL', async value => {
+    expect(await gradeSqlAnswer(exercise('SELECT NULL::float8 AS n'), `SELECT '${value}'::float8 AS n`)).toMatchObject({ correct: false });
+  });
+  it('preserves distinct nonfinite values and distinguishes text/JSON lookalikes', async () => {
+    const reference = exercise("SELECT 'NaN'::float8 AS n");
+    expect(await gradeSqlAnswer(reference, "SELECT 'Infinity'::float8 AS n")).toMatchObject({ correct: false });
+    expect(await gradeSqlAnswer(reference, "SELECT 'NaN'::float8 AS n")).toMatchObject({ correct: true });
+    expect(await gradeSqlAnswer(reference, "SELECT 'NaN'::text AS n")).toMatchObject({ correct: false });
+    expect(await gradeSqlAnswer(reference, `SELECT ' ["number", "NaN"] '::jsonb AS n`)).toMatchObject({ correct: false });
+  });
   it('checks empty result column schemas and accepts matching empty results', async () => {
     expect(await gradeSqlAnswer(exercise('SELECT id FROM items WHERE false'), 'SELECT name FROM items WHERE false')).toMatchObject({ correct: false });
     expect(await gradeSqlAnswer(exercise('SELECT id FROM items WHERE false'), 'SELECT id FROM items WHERE false')).toMatchObject({ correct: true });

@@ -8,18 +8,27 @@ type GradedExercise = { setup_sql: string; solution_query: string; grading: SqlG
 type Plan = { Operation?: string; Plans?: Plan[] };
 
 function canonical(value: unknown): string {
-  return JSON.stringify(value, (_, item) =>
-    item && typeof item === 'object' && !Array.isArray(item)
-      ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b)))
-      : item,
-  );
+  // Tag every value so nonfinite numbers survive JSON encoding without
+  // colliding with NULL, text, or JSON arrays/objects that resemble a tag.
+  function encode(item: unknown): unknown {
+    if (item === null) return ['null'];
+    if (typeof item === 'number') return ['number', Number.isFinite(item) ? item : String(item)];
+    if (item instanceof Date) return encode(item.toJSON());
+    if (Array.isArray(item)) return ['array', item.map(encode)];
+    if (typeof item === 'object') {
+      return ['object', Object.entries(item).sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => [key, encode(entry)])];
+    }
+    return [typeof item, typeof item === 'bigint' ? String(item) : item];
+  }
+  return JSON.stringify(encode(value));
 }
 
 function resultSignature(result: Results<unknown>, ordered: boolean): string {
   const rows = result.rows.map(canonical);
   if (!ordered) rows.sort();
-  // Keep column names/types even when there are no rows; allow column reordering.
-  const fields = result.fields.map(field => canonical(field)).sort();
+  // Keep column names even when there are no rows; allow column reordering
+  // and equivalent result values returned under different PostgreSQL type OIDs.
+  const fields = result.fields.map(field => field.name).sort();
   if (new Set(result.fields.map(field => field.name)).size !== result.fields.length) {
     throw new Error('Mehrdeutige Spaltennamen werden nicht unterstützt. Bitte eindeutige Aliase verwenden.');
   }
