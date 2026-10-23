@@ -3,11 +3,12 @@ import { GENERATORS, GENERATOR_MODULE_IDS, createQuestionId } from '../registry'
 import { BASE_MODULES } from '../../modules';
 
 describe('generators registry', () => {
-  it('every non-SQL base module has a registered generator', () => {
+  it('every drill module has a registered generator', () => {
     // Coverage is also enforced at compile time by
     // `Record<RegistryModuleId, () => Question>`; this runtime check
     // catches any future widening of that type.
     for (const m of BASE_MODULES) {
+      if (m.id === 'ap2NetworkPlanning') continue;
       expect(GENERATORS[m.id], `missing generator for ${m.id}`).toBeDefined();
     }
   });
@@ -17,6 +18,10 @@ describe('generators registry', () => {
     // the key space, so `GENERATORS['sql']` won't compile. The cast is
     // for the runtime sanity check only — guards against future widening.
     expect((GENERATORS as Record<string, unknown>)['sql']).toBeUndefined();
+  });
+
+  it('AP2 network planning uses its dedicated constraint-based trainer', () => {
+    expect((GENERATORS as Record<string, unknown>)['ap2NetworkPlanning']).toBeUndefined();
   });
 
   it('every generator is a function', () => {
