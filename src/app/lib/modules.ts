@@ -44,8 +44,8 @@ export interface ModuleDescriptor {
  * All non-auth-gated modules. Order in this array drives display order in
  * the module selector — group by topic (math → networking → security → …).
  *
- * Adding a new module = (1) add an entry here, (2) add a generator and
- * register it in `lib/generators/registry.ts`, (3) ensure DB rows use the
+ * Adding a new module = (1) add an entry here, (2) add a generator or a
+ * dedicated trainer in `page.tsx`, (3) ensure DB rows use the
  * canonical id (or add a mapping in `lib/moduleIds.ts` for legacy stored
  * forms).
  *
@@ -60,6 +60,7 @@ export const BASE_MODULES = [
   { id: 'imageTransferCombo', name: 'Bild-Transfer', icon: ImageIcon, description: 'Bild + Übertragung' },
   { id: 'overhead', name: 'Overhead', icon: Calculator, description: 'Protokoll' },
   { id: 'subnetting', name: 'Subnetting', icon: Network, description: 'IP-Subnetze' },
+  { id: 'ap2NetworkPlanning', name: 'AP2 Netzwerkplanung', shortName: 'AP2 Netzwerk', icon: Network, description: 'Teilnetze · VLANs' },
   { id: 'unitConversion', name: 'Einheiten', icon: Settings, description: 'Umrechnung' },
   { id: 'binary', name: 'Binär', icon: Binary, description: 'Binär/Dezimal' },
   { id: 'hex', name: 'Hexadezimal', shortName: 'Hex', icon: Hexagon, description: 'Hex/Dezimal' },

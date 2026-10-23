@@ -8,6 +8,7 @@ import AuthModal from './components/AuthModal';
 import ThemeSelector from './components/ThemeSelector';
 import ProgressDashboard from './components/ProgressDashboard';
 import SqlTrainer from './components/SqlTrainer';
+import NetworkPlanningTrainer from './components/NetworkPlanningTrainer';
 import { Question, User as UserType } from './types';
 import {
   generateUniqueUser,
@@ -129,9 +130,8 @@ export default function Home() {
   };
 
   const generateNewQuestion = (module: string) => {
-    // isModuleId narrows `module` to ModuleId; the SQL exclusion keeps us
-    // out of the registry (SQL has its own trainer + AI server action).
-    if (!isModuleId(module) || module === 'sql') return;
+    // Dedicated trainers do not use the exact-answer question registry.
+    if (!isModuleId(module) || module === 'sql' || module === 'ap2NetworkPlanning') return;
     const question = GENERATORS[module]();
     setCurrentQuestion(question);
   };
@@ -268,7 +268,18 @@ export default function Home() {
 
           {/* Main Study Area */}
           <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
-            {currentModule === 'sql' ? (
+            {currentModule === 'ap2NetworkPlanning' ? (
+              <NetworkPlanningTrainer
+                isAuthenticated={!!accessHash}
+                onAttempt={(correct) => {
+                  if (accessHash) {
+                    updateProgress(accessHash, 'ap2NetworkPlanning', correct)
+                      .then(() => loadProgress(accessHash))
+                      .catch((err) => console.error('Error updating progress:', err));
+                  }
+                }}
+              />
+            ) : currentModule === 'sql' ? (
               <SqlTrainer
                 accessHash={accessHash}
                 onCorrect={() => {

@@ -24,12 +24,12 @@ import {
 import { generateRaidQuestion } from './raid';
 
 /**
- * Module IDs that have a registered generator. Excludes `'sql'` because
- * the SQL module's exercises come from an AI server action, not a local
- * generator. Deriving this from `ModuleId` (instead of hardcoding the
- * 18 keys) means a missing generator becomes a compile error.
+ * Module IDs with drill generators. SQL uses an AI server action; AP2
+ * network planning uses a fixed scenario and constraint validation.
+ * Both have dedicated trainers. Deriving this from `ModuleId` means
+ * a missing drill generator becomes a compile error.
  */
-export type RegistryModuleId = Exclude<ModuleId, 'sql'>;
+export type RegistryModuleId = Exclude<ModuleId, 'sql' | 'ap2NetworkPlanning'>;
 
 /**
  * Generate a unique question id with a stable module prefix.
@@ -48,15 +48,15 @@ export function createQuestionId(module: ModuleId): string {
 /**
  * Module ID → generator function.
  *
- * The SQL module is intentionally absent (its exercises come from an AI
- * server action and have their own UI flow in `SqlTrainer`).
+ * SQL and AP2 network planning are intentionally absent: both have
+ * dedicated trainers rather than the exact-answer drill flow.
  *
  * Wrappers that build `answerInputs` (cables, ports, osi, linux, cloud) or
  * stamp a fresh id + module name live here so the underlying generators
  * stay pure: they return typed content, this layer adapts it to a
  * `Question` ready for the `StudyCard` component.
  *
- * The `Record<RegistryModuleId, …>` type forces every base module to
+ * The `Record<RegistryModuleId, …>` type forces every drill module to
  * have a generator and forbids stray keys — `tsc` is the source of
  * truth for coverage.
  */
