@@ -207,11 +207,28 @@ describe('StudyCard – welcome screen (no question)', () => {
       />,
     );
     await userEvent.click(screen.getByText('Was ist neu?'));
-    // Shows the shipped update alongside the preserved history.
-    expect(screen.getByText(/Antwortprüfung: IPv4-Adressen/)).toBeInTheDocument();
-    expect(screen.getByText(/SQL-Trainer: Start im Browser repariert/)).toBeInTheDocument();
-    expect(screen.getByText(/KI-Anfragen: Bei einer Zeitüberschreitung/)).toBeInTheDocument();
-    expect(screen.getByText(/Confetti, UX, Upstash/)).toBeInTheDocument();
+    // Literal full summaries catch truncated or altered release descriptions.
+    const ap2Summary = 'AP2 Netzwerkplanung: Eigene Übungsaufgabe mit Teilnetzen, VLANs und Verkehrsregeln. Gültige alternative Netzpläne werden akzeptiert; Begründungen prüfst du anhand einer Selbstbewertung.';
+    const previousSummaries = [
+      'Antwortprüfung: IPv4-Adressen und ganzzahlige Ergebnisse werden genauer geprüft. Aufgaben zur Netzaggregation verwenden passend ausgerichtete Teilnetze.',
+      'SQL-Trainer: Start im Browser repariert, Übungsdaten vollständig geladen und Lösungen auf getrennten Ausgangsdaten geprüft. Sortierung und Datenänderungen werden je nach Aufgabe berücksichtigt.',
+      'KI-Anfragen: Bei einer Zeitüberschreitung der Anfragelimit-Prüfung wird die Anfrage vorsorglich abgewiesen.',
+      'Confetti, UX, Upstash, Security, Subnetting',
+    ];
+    const newestRow = screen.getByText(ap2Summary, { exact: true }).parentElement!;
+    expect(within(newestRow).getByText('23/10/2026')).toBeInTheDocument();
+    expect(screen.getAllByText('Aktuell', { exact: true })).toHaveLength(1);
+    expect(within(newestRow).getByText('Aktuell', { exact: true })).toBeInTheDocument();
+    expect(newestRow).toHaveClass('bg-emerald-500/10');
+
+    for (const summary of previousSummaries) {
+      const row = screen.getByText(summary, { exact: true }).parentElement!;
+      expect(within(row).queryByText('Aktuell', { exact: true })).not.toBeInTheDocument();
+      expect(row).not.toHaveClass('bg-emerald-500/10');
+    }
+    const rows = Array.from(newestRow.parentElement!.children);
+    expect(rows[0]).toBe(newestRow);
+    expect(rows.filter(row => row.classList.contains('bg-emerald-500/10'))).toEqual([newestRow]);
   });
 });
 

@@ -7,10 +7,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
-    date: '20/10/2026',
-    summary: 'Antwortprüfung: IPv4-Adressen und ganzzahlige Ergebnisse werden genauer geprüft. Aufgaben zur Netzaggregation verwenden passend ausgerichtete Teilnetze.',
+    date: '23/10/2026',
+    summary: 'AP2 Netzwerkplanung: Eigene Übungsaufgabe mit Teilnetzen, VLANs und Verkehrsregeln. Gültige alternative Netzpläne werden akzeptiert; Begründungen prüfst du anhand einer Selbstbewertung.',
     highlight: true,
     tag: 'Aktuell',
+  },
+  {
+    date: '20/10/2026',
+    summary: 'Antwortprüfung: IPv4-Adressen und ganzzahlige Ergebnisse werden genauer geprüft. Aufgaben zur Netzaggregation verwenden passend ausgerichtete Teilnetze.',
   },
   {
     date: '20/10/2026',
