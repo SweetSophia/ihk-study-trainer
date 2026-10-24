@@ -9,9 +9,10 @@ import {
 } from '../modules';
 
 describe('modules registry', () => {
-  it('contains all 21 base modules including AP2 network planning', () => {
-    expect(BASE_MODULES).toHaveLength(21);
+  it('contains all 22 base modules including both AP2 scenarios', () => {
+    expect(BASE_MODULES).toHaveLength(22);
     expect(BASE_MODULES.map(module => module.id)).toContain('ap2NetworkPlanning');
+    expect(BASE_MODULES.map(module => module.id)).toContain('ap2DatabaseDesign');
   });
 
   it('contains unique module ids', () => {
