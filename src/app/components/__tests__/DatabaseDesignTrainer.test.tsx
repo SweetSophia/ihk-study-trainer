@@ -75,3 +75,20 @@ it('revealing while running suppresses scoring and tasks score independently', a
  fireEvent.click(screen.getByRole('button', { name: 'Aufgabe 2 prüfen' }));
  await waitFor(() => expect(check).toHaveBeenCalledTimes(3)); expect(onAttempt).toHaveBeenCalledTimes(1);
 });
+it('completed guest grading never scores and warns about login reset', async () => {
+ const onAttempt=vi.fn();render(<DatabaseDesignTrainer isAuthenticated={false} onAttempt={onAttempt}/>);
+ expect(screen.getByText(/Beim Anmelden wird dieser Durchlauf zurückgesetzt/)).toBeInTheDocument();
+ fireEvent.change(query(),{target:{value:'SELECT 1'}});fireEvent.click(button());
+ await screen.findByText(/Beide Testdatensätze bestanden/);expect(onAttempt).not.toHaveBeenCalled();
+});
+it('labels incorrect and unscored outcomes and links the model disclosure', async () => {
+ check.mockResolvedValueOnce({correct:false});render(<DatabaseDesignTrainer isAuthenticated onAttempt={vi.fn()}/>);
+ fireEvent.change(query(),{target:{value:'SELECT 1'}});fireEvent.click(button());
+ const wrong=await screen.findByText(/Nicht korrekt:/);expect(wrong).toHaveClass('text-rose-200');
+ check.mockRejectedValueOnce(new Error('Fehler'));fireEvent.click(button());
+ expect(await screen.findByText(/Ohne Wertung:/)).toHaveClass('text-amber-200');
+ fireEvent.click(screen.getByRole('button',{name:'Modellbeispiel anzeigen'}));
+ const hide=screen.getByRole('button',{name:'Modellbeispiel verbergen'});
+ expect(hide).toHaveAttribute('aria-controls','db-model-example');expect(document.getElementById('db-model-example')).toBeInTheDocument();
+ fireEvent.click(hide);expect(document.getElementById('db-model-example')).not.toBeInTheDocument();
+});

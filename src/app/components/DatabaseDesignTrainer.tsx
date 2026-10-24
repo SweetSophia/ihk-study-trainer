@@ -17,6 +17,7 @@ function SqlTask({ index, isAuthenticated, onAttempt }: { index: number; isAuthe
   const task = DATABASE_TASKS[index];
   const [query, setQuery] = useState('');
   const [feedback, setFeedback] = useState('Noch keine aktuelle Prüfung.');
+  const [feedbackKind, setFeedbackKind] = useState<'info' | 'correct' | 'incorrect' | 'unscored'>('info');
   const [busy, setBusy] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const controller = useRef<AbortController | null>(null);
@@ -25,22 +26,26 @@ function SqlTask({ index, isAuthenticated, onAttempt }: { index: number; isAuthe
   useEffect(() => () => { controller.current?.abort(); controller.current = null; }, []);
   function cancel(message = 'Abgebrochen. Ohne Wertung.') {
     controller.current?.abort(); controller.current = null;
-    setBusy(false); setFeedback(message);
+    setBusy(false); setFeedbackKind('info'); setFeedback(message);
   }
   async function check() {
     if (controller.current || !query.trim()) return;
     const active = new AbortController(); controller.current = active;
-    setBusy(true); setFeedback('Prüfung läuft … maximal 30 Sekunden.');
+    setBusy(true); setFeedbackKind('info'); setFeedback('Prüfung läuft … Abbruch nach etwa 30 Sekunden, sobald der Browser den Timer ausführt.');
     try {
       const result = await checkDatabaseTask(index, query, active.signal);
       if (controller.current !== active || active.signal.aborted) return;
-      setFeedback(result.correct ? 'Beide Testdatensätze bestanden. Dies ist kein Beweis für alle möglichen Daten.' : result.message ?? 'Das Ergebnis oder der Datenbestand weicht ab. Prüfe Bedingungen, Spaltennamen, Reihenfolge und unveränderte Daten.');
+      setFeedbackKind(result.correct ? 'correct' : 'incorrect');
+      setFeedback(result.correct ? 'Beide Testdatensätze bestanden. Dies ist kein Beweis für alle möglichen Daten.' : `Nicht korrekt: ${result.message ?? 'Das Ergebnis oder der Datenbestand weicht ab. Prüfe Bedingungen, Spaltennamen, Reihenfolge und unveränderte Daten.'}`);
       if (!attempted.current) {
         attempted.current = true;
         if (!exampleSeen.current && isAuthenticated) onAttempt(result.correct);
       }
     } catch (error) {
-      if (controller.current === active && !active.signal.aborted) setFeedback(`${error instanceof Error ? error.message : 'Prüfung fehlgeschlagen.'} Versuch nicht gewertet.`);
+      if (controller.current === active && !active.signal.aborted) {
+        setFeedbackKind('unscored');
+        setFeedback(`Ohne Wertung: ${error instanceof Error ? error.message : 'Prüfung fehlgeschlagen.'} Versuch nicht gewertet.`);
+      }
     } finally {
       if (controller.current === active) { controller.current = null; setBusy(false); }
     }
@@ -56,7 +61,7 @@ function SqlTask({ index, isAuthenticated, onAttempt }: { index: number; isAuthe
       {busy && <button className={buttonClass} onClick={() => cancel()}>Aufgabe {index + 1} abbrechen</button>}
       <button className={buttonClass} aria-expanded={revealed} aria-controls={`db-solution-${index}`} onClick={() => { exampleSeen.current = true; setRevealed(true); }}>Lösung für Aufgabe {index + 1} anzeigen (ohne Wertung)</button>
     </div>
-    <p id={`db-feedback-${index}`} role="status" aria-live="polite" aria-atomic="true" className="text-sm text-emerald-200">{feedback}</p>
+    <p id={`db-feedback-${index}`} role="status" aria-live="polite" aria-atomic="true" className={`text-sm ${feedbackKind === 'correct' ? 'text-emerald-200' : feedbackKind === 'incorrect' ? 'text-rose-200' : feedbackKind === 'unscored' ? 'text-amber-200' : 'text-slate-300'}`}>{feedback}</p>
     {revealed && <div id={`db-solution-${index}`} className="space-y-2">
       <p className="text-sm text-amber-200">Eine mögliche Query. Diese Aufgabe bleibt für den restlichen Durchlauf ohne weitere Wertung.</p>
       <pre className="whitespace-pre-wrap break-words text-sm text-slate-200"><code>{task.solution}</code></pre>
@@ -84,16 +89,16 @@ export default function DatabaseDesignTrainer({ isAuthenticated, onAttempt }: { 
       <fieldset className="space-y-3"><legend className="mb-2 text-slate-200">Prüfe dein Modell</legend>
         {RUBRIC.map((criterion, index) => <label key={criterion} className="flex items-start gap-3 text-sm text-slate-300"><input type="checkbox" checked={ticks[index]} onChange={event => setTicks(previous => previous.map((v, i) => i === index ? event.target.checked : v))} /><span>{criterion}</span></label>)}
       </fieldset>
-      <button className={buttonClass} aria-expanded={example} onClick={() => setExample(!example)}>Modellbeispiel anzeigen</button>
-      {example && <p className="text-sm text-slate-300">Eine Möglichkeit: Standort(id PK, name), Gerät(id PK, inventarnummer UNIQUE, standort_id FK NOT NULL, status, angeschafft_am), Wartung(id PK, geraet_id FK NOT NULL, datum, notiz). Die Fremdschlüssel verhindern verwaiste Zuordnungen; ohne Löschkaskade bleiben referenzierte Datensätze geschützt. Alternativ kann etwa die Inventarnummer als Geräteschlüssel dienen, wenn ihre Stabilität gesichert ist. Dieses Beispiel bewertet dein eigenes Modell nicht.</p>}
+      <button className={buttonClass} aria-expanded={example} aria-controls="db-model-example" onClick={() => setExample(!example)}>{example ? 'Modellbeispiel verbergen' : 'Modellbeispiel anzeigen'}</button>
+      {example && <p id="db-model-example" className="text-sm text-slate-300">Eine Möglichkeit: Standort(id PK, name), Gerät(id PK, inventarnummer UNIQUE, standort_id FK NOT NULL, status, angeschafft_am), Wartung(id PK, geraet_id FK NOT NULL, datum, notiz). Die Fremdschlüssel verhindern verwaiste Zuordnungen; ohne Löschkaskade bleiben referenzierte Datensätze geschützt. Alternativ kann etwa die Inventarnummer als Geräteschlüssel dienen, wenn ihre Stabilität gesichert ist. Dieses Beispiel bewertet dein eigenes Modell nicht.</p>}
     </section>
     <section className="space-y-3" aria-labelledby="db-sql-title">
       <h3 id="db-sql-title" className="font-semibold text-slate-100">2. SQL auf einem vorgegebenen Übungsschema</h3>
       <p className="text-sm text-slate-300">Für vergleichbare SQL-Prüfungen verwenden alle dieses Schema, unabhängig vom eigenen Entwurf. PostgreSQL läuft nur mit synthetischen Daten in deinem Browser. Jede Prüfung beginnt frisch; das UPDATE beeinflusst keine spätere Aufgabe.</p>
       <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-3 text-xs text-slate-300"><code>{DATABASE_SCHEMA}</code></pre>
-      <p className="text-sm text-slate-300">Zwei feste Testdatensätze prüfen alternative Queries. Nutze die geforderten Spaltennamen; ihre Spaltenreihenfolge ist frei. Duplikate zählen. Bei Aufgabe 1 zählt auch die Zeilenreihenfolge, bei Aufgabe 3 der gesamte Datenbestand. Genau eine SQL-Anweisung je Prüfung.</p>
+      <p className="text-sm text-slate-300">Zwei feste Testdatensätze prüfen alternative Queries. Nutze die geforderten Spaltennamen; ihre Spaltenreihenfolge ist frei. Duplikate zählen. Bei Aufgabe 1 zählt auch die Zeilenreihenfolge, bei Aufgabe 3 der gesamte Datenbestand. Genau eine SQL-Anweisung je Prüfung. Der Abbruch-Timer kann bei pausierten oder im Hintergrund laufenden Browsern verzögert sein; er begrenzt nicht den Speicherbedarf einer Query.</p>
       <p className="text-sm text-slate-300">Nur die erste abgeschlossene Prüfung jeder SQL-Aufgabe zählt pro Durchlauf (maximal drei). Weitere Prüfungen geben Rückmeldung ohne Punkte. Eine zuvor geöffnete SQL-Lösung macht diese Aufgabe ungewertet. Abbruch, Zeitlimit und technische Fehler zählen nicht.</p>
-      {!isAuthenticated && <p className="text-sm text-amber-200">Als Gast übst du ohne gespeicherten Fortschritt.</p>}
+      {!isAuthenticated && <p className="text-sm text-amber-200">Als Gast übst du ohne gespeicherten Fortschritt. Beim Anmelden wird dieser Durchlauf zurückgesetzt: Modelltext, Häkchen und SQL-Eingaben gehen verloren. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.</p>}
       {DATABASE_TASKS.map((_, index) => <SqlTask key={`${run}-${index}`} index={index} isAuthenticated={isAuthenticated} onAttempt={onAttempt} />)}
     </section>
     <button className={buttonClass} onClick={() => { setRun(value => value + 1); setReasoning(''); setTicks(RUBRIC.map(() => false)); setExample(false); }}>Neuer Durchlauf</button>

@@ -4,7 +4,9 @@ export type DatabaseCheckResult = { correct: boolean; message?: string };
 export function checkDatabaseTask(taskId: number, query: string, signal: AbortSignal): Promise<DatabaseCheckResult> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) { reject(new Error('Abgebrochen.')); return; }
-    const worker = new Worker(new URL('./database.worker.ts', import.meta.url), { type: 'module' });
+    let worker: Worker;
+    try { worker = new Worker(new URL('./database.worker.ts', import.meta.url), { type: 'module' }); }
+    catch { reject(new Error('SQL-Worker konnte nicht gestartet werden. Ohne Wertung.')); return; }
     let settled = false;
     const finish = (result?: DatabaseCheckResult, error?: Error) => {
       if (settled) return;

@@ -36,3 +36,12 @@ it('rejects worker failures without reporting incorrect SQL', async () => {
   await expect(promise).rejects.toThrow('Worker');
   expect(FakeWorker.instance.terminate).toHaveBeenCalledTimes(1);
 });
+it('sends the selected nonzero task and query exactly', async () => {
+ const promise = checkDatabaseTask(2, 'UPDATE geraet SET status=\'defekt\'', new AbortController().signal);
+ expect(FakeWorker.instance.postMessage).toHaveBeenCalledExactlyOnceWith({taskId:2, query:"UPDATE geraet SET status='defekt'"});
+ FakeWorker.instance.onmessage?.({data:{result:{correct:true}}}); await promise;
+});
+it('reports constructor failure without leaking the raw error', async () => {
+ vi.stubGlobal('Worker', class { constructor() { throw new DOMException('private chunk URL', 'SecurityError'); } });
+ await expect(checkDatabaseTask(0,'SELECT 1',new AbortController().signal)).rejects.toThrow('SQL-Worker konnte nicht gestartet werden. Ohne Wertung.');
+});

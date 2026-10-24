@@ -65,3 +65,12 @@
 - Independent review finding fixed and covered by failing-then-passing infrastructure regression. No other substantive review findings.
 - Live Supabase persistence and real mobile hardware were not exercised. Integration uses mocked auth/progress services; browser flows use guest mode. Fixture equivalence is not a proof for all data; client scoring guards are not durable server-side attempt deduplication.
 - Work retained on local feature branch only; no publication, PR, merge, deployment or PR58 modification.
+
+## Approved review repairs (2026-10-24)
+- SQLSTATE 25006 is a learner error; typed learner errors replace message-prefix control flow. Engine failures remain unscored in this module and retain legacy default behavior elsewhere.
+- Progress snapshots are guarded by request order and active identity; logout invalidates in-flight reads and old-identity callbacks.
+- Worker construction failures receive safe German feedback; task outcomes have distinct labels/styles; model disclosure has show/hide labels and control linkage.
+- Guest-login reset is explicitly disclosed. Timeout wording explains browser scheduling limitations and does not claim memory containment.
+- Regression additions: completed guest no-score, nonzero worker payload, constructor failure, read-only SQL violation, legacy engine trap, stale progress replies across logout/login, feedback and disclosure.
+- Independent repair review: no substantive findings. Full suite: 763 passed / 39 files (`npm test -- --maxWorkers=2`); lint, types, production build and diff checks passed. Production Chromium 1440/390 checks passed for warnings, keyboard disclosure, SQLSTATE25006 feedback, recovery, cancellation, reset and unchanged CSP.
+- Deferred by approved scope: caching, randomized/hidden fixtures, memory containment redesign. Resource exhaustion remains a browser-local risk; no hard memory bound claimed. Live Supabase and physical-device background suspension remain untested.

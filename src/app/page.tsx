@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, User, LogOut, GraduationCap } from 'lucide-react';
 import StudyCard from './components/StudyCard';
@@ -32,9 +32,15 @@ export default function Home() {
   const [streakDays, setStreakDays] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  const progressIdentity = useRef<string | null>(null);
+  const progressRequest = useRef(0);
+
   const loadProgress = useCallback(async (hash: string) => {
+    if (progressIdentity.current !== hash) return;
+    const request = ++progressRequest.current;
     try {
       const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days?: number | null }[] = await getAllProgress(hash);
+      if (progressIdentity.current !== hash || request !== progressRequest.current) return;
       setProgress(userProgress);
       
       // Calculate streak (simplified)
@@ -49,6 +55,8 @@ export default function Home() {
     try {
       const userData = await getUserByHash(hash);
       if (userData) {
+        progressIdentity.current = hash;
+        ++progressRequest.current;
         setUser(userData);
         setAccessHash(hash);
         localStorage.setItem('ihk_access_hash', hash);
@@ -81,6 +89,8 @@ export default function Home() {
       try {
         const userData = await getUserByHash(storedHash);
         if (userData) {
+          progressIdentity.current = storedHash;
+          ++progressRequest.current;
           setUser(userData);
           setAccessHash(storedHash);
           setShowAuthModal(false);
@@ -115,6 +125,8 @@ export default function Home() {
   };
 
   const handleLogout = () => {
+    progressIdentity.current = null;
+    ++progressRequest.current;
     setUser(null);
     setAccessHash(null);
     setCurrentModule(null);
@@ -213,6 +225,7 @@ export default function Home() {
                     </code>
                   </div>
                   <button
+                    aria-label="Abmelden"
                     onClick={handleLogout}
                     className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                   >
