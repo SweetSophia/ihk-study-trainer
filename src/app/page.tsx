@@ -8,6 +8,7 @@ import AuthModal from './components/AuthModal';
 import ThemeSelector from './components/ThemeSelector';
 import ProgressDashboard from './components/ProgressDashboard';
 import SqlTrainer from './components/SqlTrainer';
+import DatabaseDesignTrainer from './components/DatabaseDesignTrainer';
 import NetworkPlanningTrainer from './components/NetworkPlanningTrainer';
 import { Question, User as UserType } from './types';
 import {
@@ -131,7 +132,7 @@ export default function Home() {
 
   const generateNewQuestion = (module: string) => {
     // Dedicated trainers do not use the exact-answer question registry.
-    if (!isModuleId(module) || module === 'sql' || module === 'ap2NetworkPlanning') return;
+    if (!isModuleId(module) || module === 'sql' || module === 'ap2NetworkPlanning' || module === 'ap2DatabaseDesign') return;
     const question = GENERATORS[module]();
     setCurrentQuestion(question);
   };
@@ -268,7 +269,14 @@ export default function Home() {
 
           {/* Main Study Area */}
           <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
-            {currentModule === 'ap2NetworkPlanning' ? (
+            {currentModule === 'ap2DatabaseDesign' ? (
+              <DatabaseDesignTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
+                onAttempt={correct => {
+                  if (accessHash) updateProgress(accessHash, 'ap2DatabaseDesign', correct)
+                    .then(() => loadProgress(accessHash))
+                    .catch(err => console.error('Error updating progress:', err));
+                }} />
+            ) : currentModule === 'ap2NetworkPlanning' ? (
               <NetworkPlanningTrainer
                 isAuthenticated={!!accessHash}
                 onAttempt={(correct) => {

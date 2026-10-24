@@ -5,6 +5,17 @@ export type SqlGrading =
   | { kind: 'mutation'; operation: 'Insert' | 'Update' | 'Delete' };
 
 type GradedExercise = { setup_sql: string; solution_query: string; grading: SqlGrading };
+class SqlAnswerError extends Error {}
+
+function isLearnerError(error: unknown): boolean {
+  if (error instanceof SqlAnswerError) return true;
+  // SQLSTATE classes for unsupported SQL, data/constraint errors, cardinality,
+  // syntax/access rules and check-option violations. Engine/resource failures
+  // (including errors without SQLSTATE) must not consume a learner attempt.
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === 'string' && /^(0A|21|22|23|42|44)[A-Z0-9]{3}$/.test(code);
+}
+
 type Plan = { Operation?: string; Plans?: Plan[] };
 
 function canonical(value: unknown): string {
@@ -30,7 +41,7 @@ function resultSignature(result: Results<unknown>, ordered: boolean): string {
   // and equivalent result values returned under different PostgreSQL type OIDs.
   const fields = result.fields.map(field => field.name).sort();
   if (new Set(result.fields.map(field => field.name)).size !== result.fields.length) {
-    throw new Error('Mehrdeutige Spaltennamen werden nicht unterstützt. Bitte eindeutige Aliase verwenden.');
+    throw new SqlAnswerError('Mehrdeutige Spaltennamen werden nicht unterstützt. Bitte eindeutige Aliase verwenden.');
   }
   return canonical({ rows, fields });
 }
@@ -47,10 +58,10 @@ async function execute(db: PGlite, sql: string, grading: SqlGrading): Promise<Re
     const explained = await tx.query<{ 'QUERY PLAN': { Plan: Plan }[] }>(`EXPLAIN (FORMAT JSON) ${sql}`);
     const plan = explained.rows[0]?.['QUERY PLAN']?.[0]?.Plan;
     if (!plan || (grading.kind === 'select' ? hasMutation(plan) : plan.Operation !== grading.operation)) {
-      throw new Error('Nicht unterstützte Query: erwartet wird ' + (grading.kind === 'select' ? 'SELECT.' : `${grading.operation.toUpperCase()}.`));
+      throw new SqlAnswerError('Nicht unterstützte Query: erwartet wird ' + (grading.kind === 'select' ? 'SELECT.' : `${grading.operation.toUpperCase()}.`));
     }
     const result = await tx.query(sql);
-    if (grading.kind === 'select' && result.fields.length === 0) throw new Error('Eine SELECT-Ergebnismenge wird erwartet.');
+    if (grading.kind === 'select' && result.fields.length === 0) throw new SqlAnswerError('Eine SELECT-Ergebnismenge wird erwartet.');
     return result;
   });
 }
@@ -72,7 +83,7 @@ async function snapshot(db: PGlite | Transaction): Promise<string> {
 /** Compare one SELECT or INSERT/UPDATE/DELETE against the reference on fresh fixtures.
  * This checks equivalence on the generated data, not correctness for every possible database.
  */
-export async function gradeSqlAnswer(exercise: GradedExercise, query: string): Promise<{ correct: boolean; message?: string }> {
+export async function gradeSqlAnswer(exercise: GradedExercise, query: string, options: { rejectInfrastructureErrors?: boolean } = {}): Promise<{ correct: boolean; message?: string }> {
   const grading = exercise.grading;
   if (!grading || (grading.kind !== 'select' && grading.kind !== 'mutation') ||
       (grading.kind === 'select' && typeof grading.ordered !== 'boolean') ||
@@ -94,6 +105,7 @@ export async function gradeSqlAnswer(exercise: GradedExercise, query: string): P
         }
         return { signature, initial };
       } catch (error) {
+        if (!reference && options.rejectInfrastructureErrors && !isLearnerError(error)) throw error;
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(reference ? `Die generierte Musterlösung enthält einen Fehler: ${message}` : `SQL Fehler: ${message}`);
       }
