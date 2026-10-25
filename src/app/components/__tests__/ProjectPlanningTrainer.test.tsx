@@ -27,3 +27,10 @@ it('completed guest checks do not score and identity remount clears session',()=
  expect(screen.getByText(/Beim Anmelden/)).toBeInTheDocument();changeAnswers();fireEvent.click(screen.getByRole('button',{name:'Änderung prüfen'}));expect(screen.getByText(/Änderung: Korrekt/)).toBeInTheDocument();expect(attempt).not.toHaveBeenCalled();
  r.rerender(<ProjectPlanningTrainer key="account" isAuthenticated onAttempt={attempt}/>);expect(screen.getByLabelText('Änderung: Projektdauer')).toHaveValue('');
 });
+
+it('shows the same changed schedule that accepts the answer',()=>{
+ const attempt=vi.fn();render(<ProjectPlanningTrainer isAuthenticated onAttempt={attempt}/>);
+ expect(screen.getByRole('heading',{name:'2. Änderung: C dauert jetzt 5 Arbeitstage'})).toBeInTheDocument();
+ changeAnswers();fireEvent.click(screen.getByRole('button',{name:'Änderung prüfen'}));expect(attempt).toHaveBeenCalledExactlyOnceWith(true);
+ fireEvent.click(screen.getByRole('button',{name:'Änderung: Lösung anzeigen'}));expect(screen.getByText('Lösung für diese festen Annahmen: 12 Arbeitstage; kritisch: A, C, D, E, F.')).toBeInTheDocument();
+});

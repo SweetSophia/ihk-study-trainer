@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACTIVITIES, calculateSchedule, validateProjectAnswers, type ProjectAnswers } from '../projectPlanning';
+import { ACTIVITIES, getProjectActivities, calculateSchedule, validateProjectAnswers, type ProjectAnswers } from '../projectPlanning';
 const baseline = { A:[0,2,0,2,0], B:[2,6,2,6,0], C:[2,5,3,6,1], D:[6,8,6,8,0], E:[8,10,8,10,0], F:[10,11,10,11,0] };
 export function answers(): ProjectAnswers {
  return { rows:Object.fromEntries(Object.entries(baseline).map(([id,v])=>[id,Object.fromEntries(['es','ef','ls','lf','float'].map((k,i)=>[k,String(v[i])]))])),duration:'11',critical:['F','D','A','E','B'] };
@@ -17,4 +17,14 @@ describe('project schedule',()=>{
  it('checks the changed summary without requiring baseline entries',()=>expect(validateProjectAnswers({rows:{},duration:'12',critical:['A','C','D','E','F']},true).valid).toBe(true));
  it('rejects missing and duplicate critical activities',()=>{const a=answers();a.critical=['A','B','D','E','E'];expect(validateProjectAnswers(a,false).valid).toBe(false);});
  it('rejects invalid authored graphs',()=>{expect(()=>calculateSchedule([{id:'A',label:'a',duration:1,predecessors:['A']}])).toThrow();expect(()=>calculateSchedule([{id:'A',label:'a',duration:-1,predecessors:[]}])).toThrow();});
+});
+
+it.each(['toString','constructor','__proto__'])('schedules prototype-colliding activity %s as an own row',id=>{
+ const s=calculateSchedule([{id,label:'First',duration:2,predecessors:[]},{id:'end',label:'End',duration:1,predecessors:[id]}]);
+ expect(s.duration).toBe(3);expect(s.critical).toEqual([id,'end']);expect(Object.hasOwn(s.rows,id)).toBe(true);expect(s.rows[id]).toEqual({es:0,ef:2,ls:0,lf:2,float:0});
+});
+it('builds the changed scenario without altering the original activities',()=>{
+ const changed=getProjectActivities(true);expect(changed.find(a=>a.id==='C')?.duration).toBe(5);
+ expect(getProjectActivities(false)).toEqual(ACTIVITIES);expect(ACTIVITIES.find(a=>a.id==='C')?.duration).toBe(3);
+ expect(changed.filter(a=>a.id!=='C')).toEqual(ACTIVITIES.filter(a=>a.id!=='C'));
 });

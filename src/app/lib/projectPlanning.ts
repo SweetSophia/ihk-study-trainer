@@ -7,15 +7,19 @@ export const ACTIVITIES: readonly Activity[] = [
  {id:'E',label:'Wiederherstellung testen',duration:2,predecessors:['D']},
  {id:'F',label:'Übergabe',duration:1,predecessors:['E']},
 ];
+export const PROJECT_CHANGE = { activityId: 'C', duration: 5 } as const;
+export function getProjectActivities(changed: boolean): readonly Activity[] {
+ return changed ? ACTIVITIES.map(a=>a.id===PROJECT_CHANGE.activityId?{...a,duration:PROJECT_CHANGE.duration}:a) : ACTIVITIES;
+}
 export const FIELDS = {es:'FAZ',ef:'FEZ',ls:'SAZ',lf:'SEZ',float:'Gesamtpuffer'} as const;
 export type Timing = Record<keyof typeof FIELDS, number>;
 export type ProjectAnswers = {rows:Record<string,Record<string,string>>;duration:string;critical:string[]};
 export function calculateSchedule(activities: readonly Activity[]): {rows:Record<string,Timing>;duration:number;critical:string[]} {
  const ids=new Set(activities.map(a=>a.id));
  if(!activities.length || ids.size!==activities.length || activities.some(a=>!Number.isSafeInteger(a.duration)||a.duration<=0||a.predecessors.some(p=>!ids.has(p)))) throw new Error('Ungültige Vorgänge.');
- const rows:Record<string,Timing>={};const ordered:Activity[]=[];
+ const rows:Record<string,Timing>=Object.create(null);const ordered:Activity[]=[];
  while(ordered.length<activities.length){
-  const ready=activities.filter(a=>!rows[a.id]&&a.predecessors.every(p=>rows[p]));
+  const ready=activities.filter(a=>!Object.hasOwn(rows,a.id)&&a.predecessors.every(p=>Object.hasOwn(rows,p)));
   if(!ready.length) throw new Error('Zyklische Abhängigkeiten.');
   for(const a of ready){const es=Math.max(0,...a.predecessors.map(p=>rows[p].ef));rows[a.id]={es,ef:es+a.duration,ls:0,lf:0,float:0};ordered.push(a);}
  }
@@ -29,7 +33,7 @@ export function calculateSchedule(activities: readonly Activity[]): {rows:Record
  return {rows,duration,critical:activities.filter(a=>rows[a.id].float===0).map(a=>a.id)};
 }
 export function validateProjectAnswers(answers:ProjectAnswers,changed:boolean):{valid:boolean;errors:Record<string,string>} {
- const expected=calculateSchedule(ACTIVITIES.map(a=>changed&&a.id==='C'?{...a,duration:5}:a));
+ const expected=calculateSchedule(getProjectActivities(changed));
  const errors:Record<string,string>={};
  function check(key:string,value:string|undefined,want:number){
   const text=value?.trim()??'';
