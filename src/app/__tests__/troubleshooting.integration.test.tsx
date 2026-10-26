@@ -43,6 +43,7 @@ it('wires troubleshooting progress once, resets guest input on login and preserv
  fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Fehlersuche/}))[0]);
  fireEvent.change(screen.getByLabelText('Begründete Korrektur'),{target:{value:'restore-profile'}});
  fireEvent.click(screen.getByRole('button',{name:'Maßnahme prüfen'}));expect(updateProgress).not.toHaveBeenCalled();
+ expect(screen.getByLabelText('Begründete Korrektur')).toHaveValue('restore-profile');
  fireEvent.click(screen.getByRole('button',{name:'Test login'}));await waitFor(()=>expect(screen.getByLabelText('Begründete Korrektur')).toHaveValue(''));
  fireEvent.change(screen.getByLabelText('Begründete Korrektur'),{target:{value:'restore-profile'}});fireEvent.change(screen.getByLabelText('Anschließende Verifikation'),{target:{value:'normal-dns-https'}});
  const trainer=within(screen.getByRole('region',{name:'AP2 Fehlersuche: Namensauflösung oder Verbindung?'}));

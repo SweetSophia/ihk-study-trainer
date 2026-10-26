@@ -25,7 +25,7 @@ export const VERIFICATIONS = [
 export function validateDiagnosis(diagnosis: string, classifications: Record<string,string>): Validation {
  const errors: Record<string,string> = {};
  if(diagnosis !== 'local-override') errors.diagnosis = 'Wähle die Diagnose, die durch den Profilvergleich und die Kontrollprüfungen gestützt wird.';
- for(const claim of CLAIMS) if(classifications[claim.id] !== claim.expected) errors[claim.id] = claim.explanation;
+ for(const claim of CLAIMS) if(!Object.hasOwn(classifications,claim.id) || classifications[claim.id] !== claim.expected) errors[claim.id] = claim.explanation;
  return {valid:Object.keys(errors).length===0,errors};
 }
 export function validateCorrection(correction: string, verification: string): Validation {
