@@ -8,6 +8,7 @@ import AuthModal from './components/AuthModal';
 import ThemeSelector from './components/ThemeSelector';
 import ProgressDashboard from './components/ProgressDashboard';
 import SqlTrainer from './components/SqlTrainer';
+import TroubleshootingTrainer from './components/TroubleshootingTrainer';
 import AlgorithmTracingTrainer from './components/AlgorithmTracingTrainer';
 import ProjectPlanningTrainer from './components/ProjectPlanningTrainer';
 import DatabaseDesignTrainer from './components/DatabaseDesignTrainer';
@@ -146,7 +147,7 @@ export default function Home() {
 
   const generateNewQuestion = (module: string) => {
     // Dedicated trainers do not use the exact-answer question registry.
-    if (!isModuleId(module) || module === 'sql' || module === 'ap2NetworkPlanning' || module === 'ap2DatabaseDesign' || module === 'ap2ProjectPlanning' || module === 'ap2AlgorithmTracing') return;
+    if (!isModuleId(module) || module === 'sql' || module === 'ap2NetworkPlanning' || module === 'ap2DatabaseDesign' || module === 'ap2ProjectPlanning' || module === 'ap2AlgorithmTracing' || module === 'ap2Troubleshooting') return;
     const question = GENERATORS[module]();
     setCurrentQuestion(question);
   };
@@ -284,7 +285,14 @@ export default function Home() {
 
           {/* Main Study Area */}
           <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
-            {currentModule === 'ap2AlgorithmTracing' ? (
+            {currentModule === 'ap2Troubleshooting' ? (
+              <TroubleshootingTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
+                onAttempt={correct => {
+                  if (accessHash) updateProgress(accessHash, 'ap2Troubleshooting', correct)
+                    .then(() => loadProgress(accessHash))
+                    .catch(err => console.error('Error updating progress:', err));
+                }} />
+            ) : currentModule === 'ap2AlgorithmTracing' ? (
               <AlgorithmTracingTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
                 onAttempt={correct => {
                   if (accessHash) updateProgress(accessHash, 'ap2AlgorithmTracing', correct)

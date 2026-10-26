@@ -29,7 +29,7 @@ import { generateRaidQuestion } from './raid';
  * Both have dedicated trainers. Deriving this from `ModuleId` means
  * a missing drill generator becomes a compile error.
  */
-export type RegistryModuleId = Exclude<ModuleId, 'sql' | 'ap2NetworkPlanning' | 'ap2DatabaseDesign' | 'ap2ProjectPlanning' | 'ap2AlgorithmTracing'>;
+export type RegistryModuleId = Exclude<ModuleId, 'sql' | 'ap2NetworkPlanning' | 'ap2DatabaseDesign' | 'ap2ProjectPlanning' | 'ap2AlgorithmTracing' | 'ap2Troubleshooting'>;
 
 /**
  * Generate a unique question id with a stable module prefix.
