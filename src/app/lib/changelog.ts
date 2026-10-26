@@ -7,10 +7,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
-    date: '28/06/2026',
-    summary: 'Confetti, UX, Upstash, Security, Subnetting',
+    date: '23/10/2026',
+    summary: 'AP2 Netzwerkplanung: Eigene Übungsaufgabe mit Teilnetzen, VLANs und Verkehrsregeln. Gültige alternative Netzpläne werden akzeptiert; Begründungen prüfst du anhand einer Selbstbewertung.',
     highlight: true,
     tag: 'Aktuell',
+  },
+  {
+    date: '20/10/2026',
+    summary: 'Antwortprüfung: IPv4-Adressen und ganzzahlige Ergebnisse werden genauer geprüft. Aufgaben zur Netzaggregation verwenden passend ausgerichtete Teilnetze.',
+  },
+  {
+    date: '20/10/2026',
+    summary: 'SQL-Trainer: Start im Browser repariert, Übungsdaten vollständig geladen und Lösungen auf getrennten Ausgangsdaten geprüft. Sortierung und Datenänderungen werden je nach Aufgabe berücksichtigt.',
+  },
+  {
+    date: '20/10/2026',
+    summary: 'KI-Anfragen: Bei einer Zeitüberschreitung der Anfragelimit-Prüfung wird die Anfrage vorsorglich abgewiesen.',
+  },
+  {
+    date: '28/06/2026',
+    summary: 'Confetti, UX, Upstash, Security, Subnetting',
   },
   { 
     date: '08/04/2026',
