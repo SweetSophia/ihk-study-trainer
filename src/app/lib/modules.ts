@@ -60,6 +60,7 @@ export const BASE_MODULES = [
   { id: 'imageTransferCombo', name: 'Bild-Transfer', icon: ImageIcon, description: 'Bild + Übertragung' },
   { id: 'overhead', name: 'Overhead', icon: Calculator, description: 'Protokoll' },
   { id: 'subnetting', name: 'Subnetting', icon: Network, description: 'IP-Subnetze' },
+  { id: 'ap2AlgorithmTracing', name: 'AP2 Algorithmen', icon: Terminal, description: 'Ablauf · Grenzfälle' },
   { id: 'ap2ProjectPlanning', name: 'AP2 Projektplanung', shortName: 'AP2 Projekt', icon: Layers, description: 'Ablauf · Puffer' },
   { id: 'ap2DatabaseDesign', name: 'AP2 Datenbankentwurf & SQL', shortName: 'AP2 Datenbank', icon: Database, description: 'Modell · SQL' },
   { id: 'ap2NetworkPlanning', name: 'AP2 Netzwerkplanung', shortName: 'AP2 Netzwerk', icon: Network, description: 'Teilnetze · VLANs' },

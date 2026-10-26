@@ -8,7 +8,7 @@ describe('generators registry', () => {
     // `Record<RegistryModuleId, () => Question>`; this runtime check
     // catches any future widening of that type.
     for (const m of BASE_MODULES) {
-      if (m.id === 'ap2NetworkPlanning' || m.id === 'ap2DatabaseDesign' || m.id === 'ap2ProjectPlanning') continue;
+      if (m.id === 'ap2NetworkPlanning' || m.id === 'ap2DatabaseDesign' || m.id === 'ap2ProjectPlanning' || m.id === 'ap2AlgorithmTracing') continue;
       expect(GENERATORS[m.id], `missing generator for ${m.id}`).toBeDefined();
     }
   });
