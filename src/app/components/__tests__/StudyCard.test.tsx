@@ -209,9 +209,17 @@ describe('StudyCard – welcome screen (no question)', () => {
     );
     await userEvent.click(screen.getByText('Was ist neu?'));
     // Full descriptions remain readable, and only the newest release is current.
+    // Deliberate release marker for this content refresh; update it with the next release.
     expect(CHANGELOG_ENTRIES[0].date).toBe('26/10/2026');
     for (const entry of CHANGELOG_ENTRIES) {
-      expect(screen.getByText(entry.summary, { exact: true })).toBeInTheDocument();
+      const summary = screen.getByText(entry.summary, { exact: true });
+      expect(summary).toBeInTheDocument();
+      const row = summary.closest('div.rounded-lg');
+      if (entry === CHANGELOG_ENTRIES[0]) {
+        expect(row).toHaveClass('bg-emerald-500/10', 'border-emerald-500/20');
+      } else {
+        expect(row).not.toHaveClass('bg-emerald-500/10');
+      }
     }
     expect(screen.getAllByText('Aktuell', { exact: true })).toHaveLength(1);
     expect(CHANGELOG_ENTRIES.filter(entry => entry.highlight)).toEqual([CHANGELOG_ENTRIES[0]]);

@@ -47,6 +47,8 @@ Beim AP2-SQL-Training laufen Prüfungen in wegwerfbaren Browser-Datenbanken mit 
 
 ### 26 Lernmodule (25 direkt verfügbar + 1 nach Anmeldung)
 
+Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist anders angeordnet.
+
 1. **Übertragungszeit** – Übertragungsdauer aus Datenmenge und Bandbreite berechnen
 2. **Bildgröße** – Speicherbedarf unkomprimierter Bilder berechnen
 3. **Bild-Transfer** – Bildgröße und Übertragungszeit in einer kombinierten Aufgabe lösen
@@ -130,7 +132,7 @@ UPSTASH_REDIS_REST_TOKEN=dein_upstash_token
 # würde der Hash (und damit das Login-Credential) roh im Upstash-Keyspace
 # und im Analytics-Dashboard landen. 32+ Bytes zufälliges base64 reichen.
 # Rotation invalidiert nur die Rate-Limit-Buckets, NICHT die User-Accounts.
-# Pflicht in Production (sonst startet der Server-Action-Helper nicht).
+# Für die Rate-Limit-Prüfung in Production erforderlich.
 RATE_LIMIT_PEPPER=hier_den_generierten_zufallswert_eintragen
 ```
 
@@ -142,12 +144,12 @@ Den Pepper separat mit `openssl rand -base64 32` erzeugen und den ausgegebenen W
 - **Ohne `GROQ_API_KEY`** kann das separate SQL-Modul keine KI-Aufgaben erzeugen. Die fünf festen AP2-Szenarien einschließlich ihrer SQL-Prüfungen benötigen diesen Schlüssel nicht.
 - Die KI-Server-Action prüft Account-IDs über Supabase; lokaler Fallback allein ersetzt diese Prüfung nicht. Für KI-SQL sind daher auch eine eingerichtete Supabase-Datenbank und eine dort gültige Account-ID nötig.
 - **Ohne Upstash-Env-Vars** läuft der Rate-Limiter In-Memory (nur für lokales Dev praktikabel; auf Vercel ist er dann nicht multi-instance-sicher und es erscheint eine Warnung im Log).
-- **Ohne `RATE_LIMIT_PEPPER`** wirft der Rate-Limiter in Production einen Fehler beim ersten Request; im Dev wird `dev:<hash>` als Identifier verwendet (kollidiert nie mit Production-HMACs).
+- **Ohne `RATE_LIMIT_PEPPER`** wirft der Rate-Limiter in Production einen Fehler, sobald eine SQL-Anfrage die Rate-Limit-Prüfung erreicht; im Dev wird `dev:<hash>` als Identifier verwendet (kollidiert nie mit Production-HMACs).
 - Für Produktionsbetrieb sollten Supabase, Upstash und der Pepper korrekt eingerichtet sein.
 
 ## Datenbank-Setup
 
-Für eine neue Supabase-Instanz enthält `database/schema.sql` Tabellen, RLS-Regeln und RPC-Funktionen für die Supabase-gestützte Variante. Das Schema nicht ungeprüft erneut auf eine bereits eingerichtete Datenbank anwenden. Die Tabellen sind:
+Für eine neue Supabase-Instanz enthält `database/schema.sql` die Tabellen und sechs `SECURITY DEFINER`-RPC-Funktionen. Row Level Security wird auf allen drei Tabellen aktiviert; separate Policies (`CREATE POLICY`) werden nicht angelegt. Die App greift über die RPC-Funktionen zu; direkter Tabellenzugriff ist für die normalen Clientrollen ohne Policies standardmäßig gesperrt. Das Schema nicht ungeprüft erneut auf eine bereits eingerichtete Datenbank anwenden. Die Tabellen sind:
 
 - `users` – Benutzer mit `access_hash`
 - `progress` – Fortschritt pro Modul
