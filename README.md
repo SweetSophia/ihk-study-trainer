@@ -2,36 +2,52 @@
 
 Interaktiver Lernassistent für die IHK-Prüfung zum **Fachinformatiker Systemintegration**.
 
-Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud-Grundlagen, kaufmännische Kalkulation sowie einen SQL-Trainer in einer Oberfläche mit Schritt-für-Schritt-Lösungen und Fortschritts-Tracking.
+Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud-Grundlagen, kaufmännische Kalkulation sowie fünf zusammenhängende AP2-Szenarien und einen SQL-Trainer in einer Oberfläche mit Schritt-für-Schritt-Lösungen und Fortschritts-Tracking.
 
 🔗 **Live URL**: https://ihk-study-trainer.vercel.app
 
-> Hinweis: Das **SQL-Modul** ist nur für angemeldete Nutzer sichtbar und nutzbar.
+> Die AP2-Szenarien sind eigene Übungen mit Schwerpunkt Baden-Württemberg, keine Original-Prüfungsaufgaben und kein offiziell von der IHK bestätigtes Angebot.
+
+> Das separate, KI-gestützte **SQL-Modul** erfordert eine Anmeldung. **AP2 Datenbankentwurf & SQL** ist dagegen auch als Gast nutzbar und benötigt keinen KI-Dienst.
 
 ## Highlights
 
-- **18 Lernmodule** für typische IHK-Themen
-- **Dynamisch generierte Aufgaben** statt statischer Fragenlisten
+- **26 Lernmodule** (25 ohne Anmeldung zugänglich + das separate SQL-Modul nach Anmeldung) für typische IHK-Themen
+- **Generierte Einzelaufgaben und feste AP2-Szenarien** für Rechenwege, Planung und begründete Entscheidungen
 - **Schritt-für-Schritt-Lösungen** für Rechen- und Verständnisaufgaben
 - **Fortschritts-Tracking pro Modul** inklusive Genauigkeit und Lern-Streaks
 - **"Fehler üben"-Modus**, um gezielt schwache Themen zu wiederholen
-- **Hash-basierte Anmeldung** ohne E-Mail/Passwort-Flow
+- **Anmeldung per persönlicher Account-ID** ohne E-Mail/Passwort-Flow
 - **Mobile-first UI** mit Dark Mode und klarer Karten-Navigation
-- **SQL-Training mit KI-generierten Aufgaben** und lokaler Ausführung in einer PGlite-Sandbox
+- **SQL im Browser** mit PGlite: feste AP2-Aufgaben sowie ein separates Modul mit KI-generierten Übungen
 
 ## Neuere Module & Erweiterungen
 
-Diese Module wurden in den letzten Ausbauschritten ergänzt bzw. deutlich erweitert:
+### Fünf AP2-Szenarien
 
-- **Bild-Transfer** – kombiniert Bildgrößen- und Übertragungszeit-Aufgaben in einem IHK-typischen Rechenweg
-- **Linux** – trainiert Befehle als *Befehl → Beschreibung* und *Beschreibung → Befehl*
-- **Cloud** – deckt Service-Modelle, Deployment-Modelle, Security, Networking und moderne Architektur ab
-- **Handelskalkulation** – enthält Vorwärts-, Rückwärts- und Differenzkalkulation
-- **SQL** – erzeugt variable SQL-Übungen per KI und prüft Lösungen lokal gegen eine temporäre PostgreSQL-kompatible Datenbank
+- **Netzwerkplanung** – Teilnetze und VLANs für Büro, Werkstatt und Gäste planen. Alternative gültige, ausreichend große und überlappungsfreie Aufteilungen werden akzeptiert; die Begründung der Verkehrsregeln bleibt Selbstbewertung.
+- **Datenbankentwurf & SQL** – Geräte, Standorte und Wartungen modellieren, danach drei SQL-Aufgaben auf einem vorgegebenen Lehrschema lösen: geordnete Abfrage, Wartungsanzahl einschließlich Geräten ohne Wartungen und gezieltes UPDATE. Gleichwertige Lösungen werden anhand von zwei synthetischen Datensätzen und aufgabenspezifischen Ergebnis-/Änderungsregeln geprüft.
+- **Projektplanung** – einen Backup-Rollout mit Abhängigkeiten, frühesten/spätesten Zeitpunkten, Gesamtpuffern und kritischen Vorgängen berechnen; anschließend die Auswirkung einer Verzögerung untersuchen.
+- **Algorithmen** – vorgegebenen Pseudocode zur Speicherüberwachung von fünf Servern nachvollziehen: Zähler, geordnete Warnungen und einen Grenzfehler prüfen. Es wird kein eingegebener Programmcode ausgeführt.
+- **Fehlersuche** – in einem synthetischen DNS-Vorfall belegte und unbelegte Aussagen unterscheiden, eine begrenzte Profilkorrektur und passende Verifikation auswählen. Fehlende Ping-Antworten allein beweisen keine allgemeine Unerreichbarkeit; es werden keine echten Netzwerkbefehle ausgeführt.
+
+Die objektiven Prüfungen liefern Rückmeldung; schriftliche Begründungen und Rubriken werden ausdrücklich selbst bewertet. Pro Durchlauf zählt nur der erste abgeschlossene objektive Check je Abschnitt bzw. SQL-Aufgabe: Netzwerkplanung einmal, Datenbank/SQL bis zu dreimal, Projektplanung, Algorithmen und Fehlersuche jeweils bis zu zweimal. Wiederholungen und Selbstbewertung vergeben keine zusätzlichen Punkte; eine vorher aufgedeckte Lösung macht den zugehörigen Teil ungewertet. Als Gast wird kein AP2-Fortschritt gespeichert. Sitzungseingaben werden nicht als Aufgabenentwurf gespeichert und gehen beim Verlassen verloren. Datenbank/SQL, Projektplanung, Algorithmen und Fehlersuche setzen den Durchlauf auch beim Anmelden oder Kontowechsel zurück und zeigen dafür einen Hinweis.
+
+Beim AP2-SQL-Training laufen Prüfungen in wegwerfbaren Browser-Datenbanken mit Worker-Abbruch und einer 30-Sekunden-Frist. Pausierte Browser können Timer verzögern; dies ist keine harte Echtzeit- oder Speichergrenze.
+
+### Weitere Erweiterungen und Verbesserungen
+
+- **RAID-Rechner** mit visueller Laufwerksdarstellung, Kapazität und Ausfallsicherheit
+- **Subnetting-Visualisierung** nach der Prüfung oder beim Öffnen der Lösung sowie **OSI-Sortierübung** mit Tastaturbedienung
+- Getrennte Vorwärts- und Rückwärtskalkulation neben gemischter Handelskalkulation
+- Genauere Prüfung diskreter Zahlen und Netzwerkangaben, korrekt ausgerichtete Aggregationsnetze und SQL-Bewertung mit getrennten Testdatenbanken
+- Verbesserte SQL-Fehlermeldungen, Schutz vor veralteten Fortschrittsantworten und zugängliche Rückmeldungen in den neuen Trainern
 
 ## Lernmodule
 
-### 18 Lernmodule (17 direkt verfügbar + 1 Auth-only)
+### 26 Lernmodule (25 direkt verfügbar + 1 nach Anmeldung)
+
+Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist anders angeordnet.
 
 1. **Übertragungszeit** – Übertragungsdauer aus Datenmenge und Bandbreite berechnen
 2. **Bildgröße** – Speicherbedarf unkomprimierter Bilder berechnen
@@ -50,7 +66,15 @@ Diese Module wurden in den letzten Ausbauschritten ergänzt bzw. deutlich erweit
 15. **Linux** – Linux-Befehle und typische Admin-Kommandos üben
 16. **Cloud** – Cloud-Computing-Konzepte, Provider-Modelle und Sicherheitsgrundlagen wiederholen
 17. **Handelskalkulation** – Vorwärts-, Rückwärts- und Differenzkalkulation Schritt für Schritt lösen
-18. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
+18. **Vorwärtskalkulation** – vom Listeneinkaufspreis zum Bruttoverkaufspreis
+19. **Rückwärtskalkulation** – vom Bruttoverkaufspreis zurück zum Listeneinkaufspreis
+20. **RAID-Rechner** – Kapazität und Ausfallsicherheit von RAID-Verbünden
+21. **AP2 Netzwerkplanung** – Teilnetze, VLANs und Verkehrsregeln
+22. **AP2 Datenbankentwurf & SQL** – Modellierung und ausführbare SQL-Aufgaben
+23. **AP2 Projektplanung** – Abhängigkeiten, Puffer und Verzögerungen
+24. **AP2 Algorithmen** – Ablauf und Grenzfälle nachvollziehen
+25. **AP2 Fehlersuche** – DNS-Evidenz, Korrektur und Verifikation
+26. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
 
 ## UI & Lernerlebnis
 
@@ -82,7 +106,7 @@ git clone https://github.com/SweetSophia/ihk-study-trainer.git
 cd ihk-study-trainer
 
 # Dependencies installieren
-npm install
+npm ci
 
 # Development Server starten
 npm run dev
@@ -108,25 +132,40 @@ UPSTASH_REDIS_REST_TOKEN=dein_upstash_token
 # würde der Hash (und damit das Login-Credential) roh im Upstash-Keyspace
 # und im Analytics-Dashboard landen. 32+ Bytes zufälliges base64 reichen.
 # Rotation invalidiert nur die Rate-Limit-Buckets, NICHT die User-Accounts.
-# Pflicht in Production (sonst startet der Server-Action-Helper nicht).
-RATE_LIMIT_PEPPER=$(openssl rand -base64 32)
+# Für die Rate-Limit-Prüfung in Production erforderlich.
+RATE_LIMIT_PEPPER=hier_den_generierten_zufallswert_eintragen
 ```
+
+Den Pepper separat mit `openssl rand -base64 32` erzeugen und den ausgegebenen Wert in `.env.local` eintragen. Shell-Ausdrücke werden in dieser Datei nicht als Befehle ausgeführt.
 
 ### Hinweise zur lokalen Nutzung
 
 - **Ohne Supabase-Konfiguration** nutzt die App lokale Fallback-Speicherung für Fortschritt/Anmeldung.
-- **Ohne `GROQ_API_KEY`** ist das SQL-Modul nicht funktionsfähig.
+- **Ohne `GROQ_API_KEY`** kann das separate SQL-Modul keine KI-Aufgaben erzeugen. Die fünf festen AP2-Szenarien einschließlich ihrer SQL-Prüfungen benötigen diesen Schlüssel nicht.
+- Die KI-Server-Action prüft Account-IDs über Supabase; lokaler Fallback allein ersetzt diese Prüfung nicht. Für KI-SQL sind daher auch eine eingerichtete Supabase-Datenbank und eine dort gültige Account-ID nötig.
 - **Ohne Upstash-Env-Vars** läuft der Rate-Limiter In-Memory (nur für lokales Dev praktikabel; auf Vercel ist er dann nicht multi-instance-sicher und es erscheint eine Warnung im Log).
-- **Ohne `RATE_LIMIT_PEPPER`** wirft der Rate-Limiter in Production einen Fehler beim ersten Request; im Dev wird `dev:<hash>` als Identifier verwendet (kollidiert nie mit Production-HMACs).
+- **Ohne `RATE_LIMIT_PEPPER`** wirft der Rate-Limiter in Production einen Fehler, sobald eine SQL-Anfrage die Rate-Limit-Prüfung erreicht; im Dev wird `dev:<hash>` als Identifier verwendet (kollidiert nie mit Production-HMACs).
 - Für Produktionsbetrieb sollten Supabase, Upstash und der Pepper korrekt eingerichtet sein.
 
 ## Datenbank-Setup
 
-Die Datei `database/schema.sql` enthält die nötigen Tabellen für die Supabase-gestützte Variante:
+Für eine neue Supabase-Instanz enthält `database/schema.sql` die Tabellen und sechs `SECURITY DEFINER`-RPC-Funktionen. Row Level Security wird auf allen drei Tabellen aktiviert; separate Policies (`CREATE POLICY`) werden nicht angelegt. Die App greift über die RPC-Funktionen zu; direkter Tabellenzugriff ist für die normalen Clientrollen ohne Policies standardmäßig gesperrt. Das Schema nicht ungeprüft erneut auf eine bereits eingerichtete Datenbank anwenden. Die Tabellen sind:
 
 - `users` – Benutzer mit `access_hash`
 - `progress` – Fortschritt pro Modul
 - `question_history` – Verlauf beantworteter Fragen
+
+## Verifikation
+
+```bash
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
+npm run start
+```
+
+Die AP2-Erweiterungen wurden mit Unit-/Komponententests, Seitenintegration sowie Desktop-/Mobile-Prüfungen eines lokalen Produktions-Builds geprüft. Das bestätigt keine durchgängige Prüfung der Live-Account-Persistenz; diese bleibt separat zu verifizieren. Browser-Fallback und Supabase-Speicherung sind unterschiedliche Betriebsarten.
 
 ## Projektstruktur
 
@@ -138,8 +177,11 @@ Die Datei `database/schema.sql` enthält die nötigen Tabellen für die Supabase
 │   │   ├── actions/               # Server Actions (z. B. SQL-Generierung)
 │   │   ├── components/            # React Components
 │   │   ├── lib/
-│   │   │   ├── generators/        # 17 Fragen-Generatoren
-│   │   │   ├── answerValidation.ts# Strukturierte Antwortvalidierung
+│   │   │   ├── generators/        # Generatoren für Einzelaufgaben
+│   │   │   ├── answerValidation.ts # Strukturierte Antwortvalidierung
+│   │   │   ├── modules.ts          # Modulkatalog
+│   │   │   ├── changelog.ts        # „Was ist neu?“
+│   │   │   ├── databaseWorkerClient.ts # AP2-SQL-Prüfungen im Worker
 │   │   │   ├── auth.ts            # Authentifizierung + Fortschritt
 │   │   │   ├── moduleIds.ts       # Legacy/kanonische Modul-IDs
 │   │   │   └── supabase.ts        # Supabase Client
@@ -153,13 +195,7 @@ Die Datei `database/schema.sql` enthält die nötigen Tabellen für die Supabase
 
 ## Deployment
 
-Automatisches Deployment erfolgt bei jedem Push auf `main`.
-
-```bash
-git add .
-git commit -m "Update README"
-git push origin main
-```
+Vercel erstellt für Pull Requests eine Vorschau und nach Änderungen auf `main` automatisch das Produktions-Deployment. Änderungen über einen geprüften Pull Request integrieren; Vorschau und Produktionsstatus getrennt kontrollieren. Die Bereitstellung ersetzt keine Prüfung der externen Dienste oder der Live-Persistenz.
 
 ## Lizenz
 
