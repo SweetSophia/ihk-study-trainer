@@ -1,3 +1,4 @@
+import { CHANGELOG_ENTRIES } from '../../lib/changelog';
 import type { HTMLAttributes, ButtonHTMLAttributes } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
@@ -207,8 +208,15 @@ describe('StudyCard – welcome screen (no question)', () => {
       />,
     );
     await userEvent.click(screen.getByText('Was ist neu?'));
-    // Should now reveal the most recent changelog entry.
-    expect(screen.getByText(/Confetti, UX, Upstash/)).toBeInTheDocument();
+    // Full descriptions remain readable, and only the newest release is current.
+    expect(CHANGELOG_ENTRIES[0].date).toBe('26/10/2026');
+    for (const entry of CHANGELOG_ENTRIES) {
+      expect(screen.getByText(entry.summary, { exact: true })).toBeInTheDocument();
+    }
+    expect(screen.getAllByText('Aktuell', { exact: true })).toHaveLength(1);
+    expect(CHANGELOG_ENTRIES.filter(entry => entry.highlight)).toEqual([CHANGELOG_ENTRIES[0]]);
+    expect(CHANGELOG_ENTRIES.filter(entry => entry.tag === 'Aktuell')).toEqual([CHANGELOG_ENTRIES[0]]);
+    expect(screen.getByText('Aktuell').parentElement).toHaveTextContent('26/10/2026');
   });
 });
 
