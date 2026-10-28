@@ -12,7 +12,7 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 
 ## Highlights
 
-- **27 Lernmodule** (26 ohne Anmeldung zugänglich + das separate SQL-Modul nach Anmeldung) für typische IHK-Themen
+- **28 Lernmodule** (27 ohne Anmeldung zugänglich + das separate SQL-Modul nach Anmeldung) für typische IHK-Themen
 - **Generierte Einzelaufgaben und feste AP2-Szenarien** für Rechenwege, Planung und begründete Entscheidungen
 - **Schritt-für-Schritt-Lösungen** für Rechen- und Verständnisaufgaben
 - **Fortschritts-Tracking pro Modul** inklusive Genauigkeit und Lern-Streaks
@@ -23,7 +23,7 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 
 ## Neuere Module & Erweiterungen
 
-### Sechs AP2-Szenarien
+### Sieben AP2-Szenarien
 
 - **Netzwerkplanung** – Teilnetze und VLANs für Büro, Werkstatt und Gäste planen. Alternative gültige, ausreichend große und überlappungsfreie Aufteilungen werden akzeptiert; die Begründung der Verkehrsregeln bleibt Selbstbewertung.
 - **Datenbankentwurf & SQL** – Geräte, Standorte und Wartungen modellieren, danach drei SQL-Aufgaben auf einem vorgegebenen Lehrschema lösen: geordnete Abfrage, Wartungsanzahl einschließlich Geräten ohne Wartungen und gezieltes UPDATE. Gleichwertige Lösungen werden anhand von zwei synthetischen Datensätzen und aufgabenspezifischen Ergebnis-/Änderungsregeln geprüft.
@@ -32,7 +32,9 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 - **Fehlersuche** – in einem synthetischen DNS-Vorfall belegte und unbelegte Aussagen unterscheiden, eine begrenzte Profilkorrektur und passende Verifikation auswählen. Fehlende Ping-Antworten allein beweisen keine allgemeine Unerreichbarkeit; es werden keine echten Netzwerkbefehle ausgeführt.
 - **Wirtschaftlichkeit** – zwei fiktive Dateidienst-Angebote anhand fester Netto-Anfangs- und Monatskosten vergleichen: Gesamtkosten nach 36 Monaten und erster vollständig abgerechneter Monat mit strikt günstigeren Serverkosten. Exakte Cent-Prüfung; Betrieb, Wiederherstellung und Vertragsbedingungen bleiben Selbstbewertung. Das vereinfachte Kostenmodell ist ausdrücklich keine vollständige reale Betriebskostenanalyse.
 
-Die objektiven Prüfungen liefern Rückmeldung; schriftliche Begründungen und Rubriken werden ausdrücklich selbst bewertet. Pro Durchlauf zählt nur der erste abgeschlossene objektive Check je Abschnitt bzw. SQL-Aufgabe: Netzwerkplanung einmal, Datenbank/SQL bis zu dreimal, Projektplanung, Algorithmen, Fehlersuche und Wirtschaftlichkeit jeweils bis zu zweimal. Wiederholungen und Selbstbewertung vergeben keine zusätzlichen Punkte; eine vorher aufgedeckte Lösung macht den zugehörigen Teil ungewertet. Als Gast wird kein AP2-Fortschritt gespeichert. Sitzungseingaben werden nicht als Aufgabenentwurf gespeichert und gehen beim Verlassen verloren. Datenbank/SQL, Projektplanung, Algorithmen, Fehlersuche und Wirtschaftlichkeit setzen den Durchlauf auch beim Anmelden oder Kontowechsel zurück. Projektplanung, Algorithmen, Fehlersuche und Wirtschaftlichkeit zeigen dafür einen dauerhaften Hinweis; Datenbank/SQL zeigt den Hinweis zur Anmeldung nur im Gastmodus.
+- **Datensicherung** – mögliches Datenverlustfenster und Ausfalldauer mit vorgegebenen RPO-/RTO-Zielen vergleichen; eine vollständige Voll-/Inkrementalkette zum neuesten rekonstruierbaren Datenstand wählen. Beide gültigen Alternativen werden akzeptiert. Betriebsfreigabe bleibt Selbstbewertung; es werden keine echten Wiederherstellungen ausgeführt.
+
+Die objektiven Prüfungen liefern Rückmeldung; schriftliche Begründungen und Rubriken werden ausdrücklich selbst bewertet. Pro Durchlauf zählt nur der erste abgeschlossene objektive Check je Abschnitt bzw. SQL-Aufgabe: Netzwerkplanung einmal, Datenbank/SQL bis zu dreimal, Projektplanung, Algorithmen, Fehlersuche, Wirtschaftlichkeit und Datensicherung jeweils bis zu zweimal. Wiederholungen und Selbstbewertung vergeben keine zusätzlichen Punkte; eine vorher aufgedeckte Lösung macht den zugehörigen Teil ungewertet. Als Gast wird kein AP2-Fortschritt gespeichert. Sitzungseingaben werden nicht als Aufgabenentwurf gespeichert und gehen beim Verlassen verloren. Datenbank/SQL, Projektplanung, Algorithmen, Fehlersuche, Wirtschaftlichkeit und Datensicherung setzen den Durchlauf auch beim Anmelden oder Kontowechsel zurück. Projektplanung, Algorithmen, Fehlersuche, Wirtschaftlichkeit und Datensicherung zeigen dafür einen dauerhaften Hinweis; Datenbank/SQL zeigt den Hinweis zur Anmeldung nur im Gastmodus.
 
 Beim AP2-SQL-Training laufen Prüfungen in wegwerfbaren Browser-Datenbanken mit Worker-Abbruch und einer 30-Sekunden-Frist. Pausierte Browser können Timer verzögern; dies ist keine harte Echtzeit- oder Speichergrenze.
 
@@ -46,7 +48,7 @@ Beim AP2-SQL-Training laufen Prüfungen in wegwerfbaren Browser-Datenbanken mit 
 
 ## Lernmodule
 
-### 27 Lernmodule (26 direkt verfügbar + 1 nach Anmeldung)
+### 28 Lernmodule (27 direkt verfügbar + 1 nach Anmeldung)
 
 Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist anders angeordnet.
 
@@ -76,7 +78,8 @@ Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist an
 24. **AP2 Algorithmen** – Ablauf und Grenzfälle nachvollziehen
 25. **AP2 Fehlersuche** – DNS-Evidenz, Korrektur und Verifikation
 26. **AP2 Wirtschaftlichkeit** – IT-Kosten über einen festen Zeitraum und die Monatsgrenze vergleichen
-27. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
+27. **AP2 Datensicherung** – RPO/RTO und vollständige Wiederherstellungsketten
+28. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
 
 ## UI & Lernerlebnis
 

@@ -9,9 +9,13 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   // New AP2 releases use UTC merge dates; older entries retain their originally recorded dates.
   {
     date: '28/10/2026',
-    summary: 'AP2 Wirtschaftlichkeit: fiktive IT-Angebote mit festen Netto-Anfangs- und Monatskosten vergleichen, Gesamtkosten nach 36 Monaten und den ersten strikt günstigeren Monat bestimmen. Zwei objektive Prüfungen und unbewertete Begründung zu Betrieb und Vertragsbedingungen. Lokaler Ersatzspeicher trennt neue Fortschritte pro Account und koordiniert parallele Tabs; alte unzugeordnete Daten bleiben erhalten.',
+    summary: 'AP2 Datensicherung: mögliches Datenverlustfenster und Ausfalldauer mit RPO/RTO vergleichen und vollständige Wiederherstellungsketten aus Voll- und inkrementellen Sicherungen prüfen. Alternative gültige Ketten werden akzeptiert; die Betriebsfreigabe bleibt Selbstbewertung. Eigene fiktive Übung ohne echte Wiederherstellungsbefehle.',
     highlight: true,
     tag: 'Aktuell',
+  },
+  {
+    date: '28/10/2026',
+    summary: 'AP2 Wirtschaftlichkeit: fiktive IT-Angebote mit festen Netto-Anfangs- und Monatskosten vergleichen, Gesamtkosten nach 36 Monaten und den ersten strikt günstigeren Monat bestimmen. Zwei objektive Prüfungen und unbewertete Begründung zu Betrieb und Vertragsbedingungen. Lokaler Ersatzspeicher trennt neue Fortschritte pro Account und koordiniert parallele Tabs; alte unzugeordnete Daten bleiben erhalten.',
   },
   {
     date: '26/10/2026',

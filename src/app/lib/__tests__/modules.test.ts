@@ -9,14 +9,15 @@ import {
 } from '../modules';
 
 describe('modules registry', () => {
-  it('contains all 26 base modules including six AP2 scenarios', () => {
-    expect(BASE_MODULES).toHaveLength(26);
+  it('contains all 27 base modules including seven AP2 scenarios', () => {
+    expect(BASE_MODULES).toHaveLength(27);
     expect(BASE_MODULES.map(module => module.id)).toContain('ap2NetworkPlanning');
     expect(BASE_MODULES.map(module => module.id)).toContain('ap2DatabaseDesign');
     expect(BASE_MODULES.map(module => module.id)).toContain('ap2ProjectPlanning');
     expect(BASE_MODULES.map(module => module.id)).toContain('ap2AlgorithmTracing');
     expect(BASE_MODULES.map(module => module.id)).toContain('ap2Troubleshooting');
     expect(BASE_MODULES.map(module => module.id)).toContain('ap2CostComparison');
+    expect(BASE_MODULES.map(module => module.id)).toContain('ap2BackupRecovery');
   });
 
   it('contains unique module ids', () => {

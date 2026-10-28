@@ -211,6 +211,7 @@ describe('StudyCard – welcome screen (no question)', () => {
     // Full descriptions remain readable, and only the newest release is current.
     // Deliberate release marker for this content refresh; update it with the next release.
     expect(CHANGELOG_ENTRIES[0].date).toBe('28/10/2026');
+    expect(CHANGELOG_ENTRIES[0].summary).toContain('AP2 Datensicherung');
     for (const entry of CHANGELOG_ENTRIES) {
       const summary = screen.getByText(entry.summary, { exact: true });
       expect(summary).toBeInTheDocument();

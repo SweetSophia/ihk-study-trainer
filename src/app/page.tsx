@@ -10,6 +10,7 @@ import ProgressDashboard from './components/ProgressDashboard';
 import SqlTrainer from './components/SqlTrainer';
 import TroubleshootingTrainer from './components/TroubleshootingTrainer';
 import AlgorithmTracingTrainer from './components/AlgorithmTracingTrainer';
+import BackupRecoveryTrainer from './components/BackupRecoveryTrainer';
 import CostComparisonTrainer from './components/CostComparisonTrainer';
 import ProjectPlanningTrainer from './components/ProjectPlanningTrainer';
 import DatabaseDesignTrainer from './components/DatabaseDesignTrainer';
@@ -174,7 +175,7 @@ export default function Home() {
 
   const generateNewQuestion = (module: string) => {
     // Dedicated trainers do not use the exact-answer question registry.
-    if (!isModuleId(module) || module === 'sql' || module === 'ap2NetworkPlanning' || module === 'ap2DatabaseDesign' || module === 'ap2ProjectPlanning' || module === 'ap2AlgorithmTracing' || module === 'ap2Troubleshooting' || module === 'ap2CostComparison') return;
+    if (!isModuleId(module) || module === 'sql' || module === 'ap2NetworkPlanning' || module === 'ap2DatabaseDesign' || module === 'ap2ProjectPlanning' || module === 'ap2AlgorithmTracing' || module === 'ap2Troubleshooting' || module === 'ap2CostComparison' || module === 'ap2BackupRecovery') return;
     const question = GENERATORS[module]();
     setCurrentQuestion(question);
   };
@@ -311,7 +312,12 @@ export default function Home() {
 
           {/* Main Study Area */}
           <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
-            {currentModule === 'ap2CostComparison' ? (
+            {currentModule === 'ap2BackupRecovery' ? (
+              <BackupRecoveryTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
+                onAttempt={correct => {
+                  if (accessHash) recordProgress(accessHash, 'ap2BackupRecovery', correct);
+                }} />
+            ) : currentModule === 'ap2CostComparison' ? (
               <CostComparisonTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
                 onAttempt={correct => {
                   if (accessHash) recordProgress(accessHash, 'ap2CostComparison', correct);
