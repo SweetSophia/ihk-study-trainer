@@ -54,3 +54,12 @@ it('wires cost checks, preserves other progress and resets completed guest work 
  expect(screen.getByTestId('progress')).toHaveTextContent('subnetting');
  fireEvent.click(screen.getAllByRole('button',{name:/Subnetting/})[0]);expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
 }, 15000);
+
+it('shows the shared persistence failure warning for a cost attempt without retrying it',async()=>{
+ vi.mocked(updateProgress).mockRejectedValueOnce(new Error('Lokaler Fortschritt konnte nicht gespeichert werden.'));
+ render(<Home/>);fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Kosten/}))[0]);
+ fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));
+ expect(await screen.findByRole('alert')).toHaveTextContent('Fortschritt konnte nicht gespeichert werden');
+ expect(screen.getByTestId('progress')).toHaveTextContent('subnetting');
+ fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));expect(updateProgress).toHaveBeenCalledTimes(1);
+},15000);

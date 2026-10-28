@@ -33,11 +33,13 @@ export default function Home() {
   const [currentModule, setCurrentModule] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [progress, setProgress] = useState<{ module: string; questions_attempted: number; questions_correct: number; streak_days?: number | null }[]>([]);
+  const [progressError, setProgressError] = useState<{ kind: 'load' | 'write'; message: string } | null>(null);
   const [streakDays, setStreakDays] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const progressIdentity = useRef<string | null>(null);
   const progressRequest = useRef(0);
+  const progressSession = useRef(0);
 
   const loadProgress = useCallback(async (hash: string) => {
     if (progressIdentity.current !== hash) return;
@@ -45,22 +47,42 @@ export default function Home() {
     try {
       const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days?: number | null }[] = await getAllProgress(hash);
       if (progressIdentity.current !== hash || request !== progressRequest.current) return;
+      setProgressError(previous => previous?.kind === 'load' ? null : previous);
       setProgress(userProgress);
       
       // Calculate streak (simplified)
       const maxStreak = Math.max(0, ...userProgress.map(p => p.streak_days ?? 0));
       setStreakDays(maxStreak);
-    } catch (error) {
-      console.error('Error loading progress:', error);
+    } catch {
+      if (progressIdentity.current === hash && request === progressRequest.current) {
+        setProgressError(previous => previous?.kind === 'write' ? previous : { kind: 'load', message: 'Fortschritt konnte nicht geladen werden. Bitte den Browserspeicher prüfen.' });
+      }
     }
   }, []);
+
+  const recordProgress = useCallback(async (hash: string, module: string, correct: boolean) => {
+    const session = progressSession.current;
+    try {
+      await updateProgress(hash, module, correct);
+      if (progressIdentity.current !== hash || progressSession.current !== session) return;
+      await loadProgress(hash);
+    } catch {
+      if (progressIdentity.current === hash && progressSession.current === session) {
+        setProgressError({ kind: 'write', message: 'Fortschritt konnte nicht gespeichert werden. Spätere erfolgreiche Prüfungen tragen den betroffenen Versuch nicht automatisch nach; bitte den Browserspeicher prüfen.' });
+      }
+    }
+  }, [loadProgress]);
 
   const handleLogin = useCallback(async (hash: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const userData = await getUserByHash(hash);
       if (userData) {
+        ++progressSession.current;
         progressIdentity.current = hash;
         ++progressRequest.current;
+        setProgressError(null);
+        setProgress([]);
+        setStreakDays(0);
         setUser(userData);
         setAccessHash(hash);
         localStorage.setItem('ihk_access_hash', hash);
@@ -93,6 +115,7 @@ export default function Home() {
       try {
         const userData = await getUserByHash(storedHash);
         if (userData) {
+          ++progressSession.current;
           progressIdentity.current = storedHash;
           ++progressRequest.current;
           setUser(userData);
@@ -129,13 +152,16 @@ export default function Home() {
   };
 
   const handleLogout = () => {
+    ++progressSession.current;
     progressIdentity.current = null;
     ++progressRequest.current;
+    setProgressError(null);
     setUser(null);
     setAccessHash(null);
     setCurrentModule(null);
     setCurrentQuestion(null);
     setProgress([]);
+    setStreakDays(0);
     localStorage.removeItem('ihk_access_hash');
     setShowAuthModal(true);
   };
@@ -159,13 +185,11 @@ export default function Home() {
     const correct = validateQuestionAnswers(currentQuestion, answers);
 
     if (accessHash) {
-      updateProgress(accessHash, currentQuestion.module, correct)
-        .then(() => loadProgress(accessHash))
-        .catch((err) => console.error('Error updating progress:', err));
+      recordProgress(accessHash, currentQuestion.module, correct);
     }
 
     return correct;
-  }, [currentQuestion, accessHash, loadProgress]);
+  }, [currentQuestion, accessHash, recordProgress]);
 
   const handleNextQuestion = () => {
     if (currentModule) {
@@ -252,6 +276,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {progressError && <p role="alert" className="mb-4 rounded-lg border border-amber-700 bg-amber-950/30 p-3 text-amber-200">{progressError.message}</p>}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Sidebar - Progress */}
           <div className="lg:col-span-4 xl:col-span-3 2xl:col-span-3 space-y-6 min-w-[280px]">
@@ -289,46 +314,34 @@ export default function Home() {
             {currentModule === 'ap2CostComparison' ? (
               <CostComparisonTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
                 onAttempt={correct => {
-                  if (accessHash) updateProgress(accessHash, 'ap2CostComparison', correct)
-                    .then(() => loadProgress(accessHash))
-                    .catch(err => console.error('Error updating progress:', err));
+                  if (accessHash) recordProgress(accessHash, 'ap2CostComparison', correct);
                 }} />
             ) : currentModule === 'ap2Troubleshooting' ? (
               <TroubleshootingTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
                 onAttempt={correct => {
-                  if (accessHash) updateProgress(accessHash, 'ap2Troubleshooting', correct)
-                    .then(() => loadProgress(accessHash))
-                    .catch(err => console.error('Error updating progress:', err));
+                  if (accessHash) recordProgress(accessHash, 'ap2Troubleshooting', correct);
                 }} />
             ) : currentModule === 'ap2AlgorithmTracing' ? (
               <AlgorithmTracingTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
                 onAttempt={correct => {
-                  if (accessHash) updateProgress(accessHash, 'ap2AlgorithmTracing', correct)
-                    .then(() => loadProgress(accessHash))
-                    .catch(err => console.error('Error updating progress:', err));
+                  if (accessHash) recordProgress(accessHash, 'ap2AlgorithmTracing', correct);
                 }} />
             ) : currentModule === 'ap2ProjectPlanning' ? (
               <ProjectPlanningTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
                 onAttempt={correct => {
-                  if (accessHash) updateProgress(accessHash, 'ap2ProjectPlanning', correct)
-                    .then(() => loadProgress(accessHash))
-                    .catch(err => console.error('Error updating progress:', err));
+                  if (accessHash) recordProgress(accessHash, 'ap2ProjectPlanning', correct);
                 }} />
             ) : currentModule === 'ap2DatabaseDesign' ? (
               <DatabaseDesignTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
                 onAttempt={correct => {
-                  if (accessHash) updateProgress(accessHash, 'ap2DatabaseDesign', correct)
-                    .then(() => loadProgress(accessHash))
-                    .catch(err => console.error('Error updating progress:', err));
+                  if (accessHash) recordProgress(accessHash, 'ap2DatabaseDesign', correct);
                 }} />
             ) : currentModule === 'ap2NetworkPlanning' ? (
               <NetworkPlanningTrainer
                 isAuthenticated={!!accessHash}
                 onAttempt={(correct) => {
                   if (accessHash) {
-                    updateProgress(accessHash, 'ap2NetworkPlanning', correct)
-                      .then(() => loadProgress(accessHash))
-                      .catch((err) => console.error('Error updating progress:', err));
+                    recordProgress(accessHash, 'ap2NetworkPlanning', correct);
                   }
                 }}
               />
@@ -337,16 +350,12 @@ export default function Home() {
                 accessHash={accessHash}
                 onCorrect={() => {
                   if (accessHash) {
-                    updateProgress(accessHash, 'sql', true)
-                      .then(() => loadProgress(accessHash))
-                      .catch((err) => console.error('Error updating progress:', err));
+                    recordProgress(accessHash, 'sql', true);
                   }
                 }}
                 onIncorrect={() => {
                   if (accessHash) {
-                    updateProgress(accessHash, 'sql', false)
-                      .then(() => loadProgress(accessHash))
-                      .catch((err) => console.error('Error updating progress:', err));
+                    recordProgress(accessHash, 'sql', false);
                   }
                 }}
               />

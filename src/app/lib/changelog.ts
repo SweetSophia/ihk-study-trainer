@@ -10,7 +10,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   // Pending feature entry: confirm its UTC release date before merging (the PR may remain open across days).
   {
     date: '28/10/2026',
-    summary: 'AP2 Wirtschaftlichkeit: fiktive IT-Angebote mit festen Netto-Anfangs- und Monatskosten vergleichen, Gesamtkosten nach 36 Monaten und den ersten strikt günstigeren Monat bestimmen. Zwei objektive Prüfungen und unbewertete Begründung zu Betrieb und Vertragsbedingungen.',
+    summary: 'AP2 Wirtschaftlichkeit: fiktive IT-Angebote mit festen Netto-Anfangs- und Monatskosten vergleichen, Gesamtkosten nach 36 Monaten und den ersten strikt günstigeren Monat bestimmen. Zwei objektive Prüfungen und unbewertete Begründung zu Betrieb und Vertragsbedingungen. Lokaler Ersatzspeicher trennt neue Fortschritte pro Account und koordiniert parallele Tabs; alte unzugeordnete Daten bleiben erhalten.',
     highlight: true,
     tag: 'Aktuell',
   },
