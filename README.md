@@ -140,7 +140,8 @@ Den Pepper separat mit `openssl rand -base64 32` erzeugen und den ausgegebenen W
 
 ### Hinweise zur lokalen Nutzung
 
-- **Ohne Supabase-Konfiguration** nutzt die App lokale Fallback-Speicherung für Fortschritt/Anmeldung.
+- **Ohne Supabase-Konfiguration** nutzt die App lokale Fallback-Speicherung für Fortschritt/Anmeldung. Neuer Fortschritt wird pro Account-ID getrennt gespeichert; parallele Schreibzugriffe werden mit [Web Locks](https://developer.mozilla.org/en-US/docs/Web/API/Web_Locks_API) koordiniert (HTTPS bzw. localhost erforderlich). Ohne diese API oder bei Speicherfehlern wird kein ungesicherter Schreibversuch verwendet; die App zeigt eine Fehlermeldung.
+- Der alte lokale Schlüssel `ihk_progress` bleibt unverändert und keinem Account zugeordnet. Er wird weder automatisch übernommen noch gelöscht; neue Account-Zähler beginnen getrennt. Das betrifft nur den lokalen Fallback, nicht die Supabase-Speicherung.
 - **Ohne `GROQ_API_KEY`** kann das separate SQL-Modul keine KI-Aufgaben erzeugen. Die fünf festen AP2-Szenarien einschließlich ihrer SQL-Prüfungen benötigen diesen Schlüssel nicht.
 - Die KI-Server-Action prüft Account-IDs über Supabase; lokaler Fallback allein ersetzt diese Prüfung nicht. Für KI-SQL sind daher auch eine eingerichtete Supabase-Datenbank und eine dort gültige Account-ID nötig.
 - **Ohne Upstash-Env-Vars** läuft der Rate-Limiter In-Memory (nur für lokales Dev praktikabel; auf Vercel ist er dann nicht multi-instance-sicher und es erscheint eine Warnung im Log).
