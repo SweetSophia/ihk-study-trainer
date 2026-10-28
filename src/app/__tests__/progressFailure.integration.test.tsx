@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import Home from '../page';
 vi.mock('../lib/databaseWorkerClient', () => ({ checkDatabaseTask: vi.fn() }));
 import { getAllProgress, getUserByHash, updateProgress } from '../lib/auth';
@@ -38,14 +38,15 @@ beforeEach(() => {
 });
 
 
-it('reports a failed progress write and clears it after a successful attempt',async()=>{
+it('keeps a failed-attempt warning after a later successful write',async()=>{
  vi.mocked(updateProgress).mockRejectedValueOnce(new Error('Lokaler Fortschritt konnte nicht gespeichert werden.'));
  render(<Home/>);fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Projekt/}))[0]);
  fireEvent.click(screen.getByRole('button',{name:'Basisplan prüfen'}));
  expect(await screen.findByRole('alert')).toHaveTextContent('Fortschritt konnte nicht gespeichert werden');
  expect(screen.getByTestId('progress')).toHaveTextContent('subnetting');
  fireEvent.click(screen.getByRole('button',{name:'Neuer Durchlauf'}));fireEvent.click(screen.getByRole('button',{name:'Basisplan prüfen'}));
- await waitFor(()=>expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+ await waitFor(()=>expect(updateProgress).toHaveBeenCalledTimes(2));
+ expect(screen.getByRole('alert')).toHaveTextContent('Fortschritt konnte nicht');
 },15000);
 it('does not display an old account write failure after logout',async()=>{
  let reject!:(e:Error)=>void;vi.mocked(updateProgress).mockReturnValueOnce(new Promise((_,r)=>{reject=r;}));
@@ -67,4 +68,23 @@ it('clears prior account counters and streak even when the next account cannot l
  fireEvent.click(screen.getByRole('button',{name:'Test login'}));
  expect(await screen.findByRole('alert')).toHaveTextContent('Fortschritt konnte nicht geladen werden');
  expect(screen.getByTestId('progress')).toHaveAttribute('data-streak','0');expect(screen.getByTestId('progress')).toHaveTextContent('[]');
+},15000);
+
+it('ignores an old write rejection after logout and relogin to the same account',async()=>{
+ localStorage.setItem('ihk_access_hash','other-user-hash');
+ let reject!:(e:Error)=>void;vi.mocked(updateProgress).mockReturnValueOnce(new Promise((_,r)=>{reject=r;}));
+ render(<Home/>);fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Projekt/}))[0]);fireEvent.click(screen.getByRole('button',{name:'Basisplan prüfen'}));
+ fireEvent.click(screen.getByRole('button',{name:'Abmelden'}));fireEvent.click(screen.getByRole('button',{name:'Test login'}));
+ await waitFor(()=>expect(screen.getByTestId('progress')).toHaveTextContent('subnetting'));
+ await act(async()=>{reject(new Error('old write'));});expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+},15000);
+it('an old same-account success cannot clear a new warning or refresh the new session',async()=>{
+ localStorage.setItem('ihk_access_hash','other-user-hash');
+ let resolve!:(value:null)=>void;vi.mocked(updateProgress).mockReturnValueOnce(new Promise(r=>{resolve=r;})).mockRejectedValueOnce(new Error('new write'));
+ render(<Home/>);fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Projekt/}))[0]);fireEvent.click(screen.getByRole('button',{name:'Basisplan prüfen'}));
+ fireEvent.click(screen.getByRole('button',{name:'Abmelden'}));fireEvent.click(screen.getByRole('button',{name:'Test login'}));
+ await waitFor(()=>expect(screen.getByTestId('progress')).toHaveTextContent('subnetting'));
+ fireEvent.click(screen.getAllByRole('button',{name:/AP2 Projekt/})[0]);fireEvent.click(screen.getByRole('button',{name:'Basisplan prüfen'}));
+ expect(await screen.findByRole('alert')).toHaveTextContent('Fortschritt konnte nicht');const reads=vi.mocked(getAllProgress).mock.calls.length;
+ await act(async()=>{resolve(null);});expect(screen.getByRole('alert')).toHaveTextContent('Fortschritt konnte nicht');expect(getAllProgress).toHaveBeenCalledTimes(reads);
 },15000);

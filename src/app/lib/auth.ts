@@ -20,9 +20,12 @@ interface LocalProgress {
   last_session: string | null;
 }
 
-function accountProgressKey(accessHash: string): string {
+async function accountProgressKey(accessHash: string): Promise<string> {
   if (accessHash.length !== 12 || !isValidAccessHash(accessHash)) throw new Error('Invalid local account');
-  return `${LOCAL_PROGRESS_PREFIX}${accessHash}`;
+  // Namespace only: do not retain the reusable login credential in progress keys/lock names.
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(accessHash));
+  const account = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  return `${LOCAL_PROGRESS_PREFIX}${account}`;
 }
 
 function isLocalProgress(value: unknown): value is LocalProgress {
@@ -184,7 +187,7 @@ export async function updateProgress(
   // --- localStorage fallback when Supabase is not configured ---
   if (!isSupabaseConfigured) {
     try {
-      const key = accountProgressKey(accessHash);
+      const key = await accountProgressKey(accessHash);
       if (typeof navigator === 'undefined' || !navigator.locks?.request) throw new Error('Locking unavailable');
       // One origin-wide account lock covers the complete read/modify/write, across tabs.
       return await navigator.locks.request(key, () => {
@@ -289,7 +292,7 @@ export async function getAllProgress(accessHash: string) {
   // --- localStorage fallback ---
   if (!isSupabaseConfigured) {
     try {
-      return normalizeProgressModules(loadLocalProgress(accountProgressKey(accessHash)));
+      return normalizeProgressModules(loadLocalProgress(await accountProgressKey(accessHash)));
     } catch {
       throw new Error('Lokaler Fortschritt konnte nicht geladen werden.');
     }

@@ -1,13 +1,15 @@
+import { createHash, webcrypto } from 'node:crypto';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 const setup = vi.hoisted(() => ({ configured: false, rpc: vi.fn() }));
 vi.mock('../supabase', () => ({ get isSupabaseConfigured() { return setup.configured; }, supabase: { rpc: setup.rpc } }));
 import { getAllProgress, updateProgress } from '../auth';
 const first='LocalOnly001', second='LocalOnly002';
-const key=(id:string)=>`ihk_progress_v2:${id}`;
+const key=(id:string)=>`ihk_progress_v2:${createHash('sha256').update(id).digest('hex')}`;
 const legacy=' [ { "module": "subnetting", "questions_attempted": 19, "questions_correct": 12 } ] ';
 // A controllable lock scheduler: production browser checks exercise real cross-tab Web Locks.
 let queue: Promise<unknown>;
 beforeEach(()=>{
+ vi.stubGlobal('crypto',webcrypto);
  localStorage.clear();localStorage.setItem('ihk_progress',legacy);setup.configured=false;setup.rpc.mockReset();queue=Promise.resolve();
  vi.stubGlobal('navigator',{locks:{request:(_name:string,callback:()=>unknown)=>{const next=queue.then(callback);queue=next.catch(()=>{});return next;}}});
 });
@@ -82,4 +84,9 @@ it('rejects lock acquisition failures without reading or writing progress',async
  vi.stubGlobal('navigator',{locks:{request:()=>Promise.reject(new Error(`lock denied ${first}`))}});
  await expect(updateProgress(first,'ports',true)).rejects.toThrow('Lokaler Fortschritt konnte nicht gespeichert werden.');
  expect(localStorage.getItem(key(first))).toBeNull();expect(localStorage.getItem('ihk_progress')).toBe(legacy);
+});
+it('does not retain reusable account IDs in progress keys or records',async()=>{
+ await updateProgress(first,'ports',true);await updateProgress(second,'ports',false);
+ const stored=Array.from({length:localStorage.length},(_,i)=>{const k=localStorage.key(i)!;return k+localStorage.getItem(k);}).join('');
+ expect(stored).not.toContain(first);expect(stored).not.toContain(second);
 });

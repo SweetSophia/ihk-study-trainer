@@ -32,12 +32,13 @@ export default function Home() {
   const [currentModule, setCurrentModule] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [progress, setProgress] = useState<{ module: string; questions_attempted: number; questions_correct: number; streak_days?: number | null }[]>([]);
-  const [progressError, setProgressError] = useState<string | null>(null);
+  const [progressError, setProgressError] = useState<{ kind: 'load' | 'write'; message: string } | null>(null);
   const [streakDays, setStreakDays] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const progressIdentity = useRef<string | null>(null);
   const progressRequest = useRef(0);
+  const progressSession = useRef(0);
 
   const loadProgress = useCallback(async (hash: string) => {
     if (progressIdentity.current !== hash) return;
@@ -45,6 +46,7 @@ export default function Home() {
     try {
       const userProgress: { module: string; questions_attempted: number; questions_correct: number; streak_days?: number | null }[] = await getAllProgress(hash);
       if (progressIdentity.current !== hash || request !== progressRequest.current) return;
+      setProgressError(previous => previous?.kind === 'load' ? null : previous);
       setProgress(userProgress);
       
       // Calculate streak (simplified)
@@ -52,19 +54,20 @@ export default function Home() {
       setStreakDays(maxStreak);
     } catch {
       if (progressIdentity.current === hash && request === progressRequest.current) {
-        setProgressError('Fortschritt konnte nicht geladen werden. Bitte den Browserspeicher prüfen.');
+        setProgressError(previous => previous?.kind === 'write' ? previous : { kind: 'load', message: 'Fortschritt konnte nicht geladen werden. Bitte den Browserspeicher prüfen.' });
       }
     }
   }, []);
 
   const recordProgress = useCallback(async (hash: string, module: string, correct: boolean) => {
+    const session = progressSession.current;
     try {
       await updateProgress(hash, module, correct);
-      if (progressIdentity.current === hash) setProgressError(null);
+      if (progressIdentity.current !== hash || progressSession.current !== session) return;
       await loadProgress(hash);
     } catch {
-      if (progressIdentity.current === hash) {
-        setProgressError('Fortschritt konnte nicht gespeichert werden. Deine Antwortprüfung bleibt nutzbar; bitte den Browserspeicher prüfen.');
+      if (progressIdentity.current === hash && progressSession.current === session) {
+        setProgressError({ kind: 'write', message: 'Fortschritt konnte nicht gespeichert werden. Spätere erfolgreiche Prüfungen tragen den betroffenen Versuch nicht automatisch nach; bitte den Browserspeicher prüfen.' });
       }
     }
   }, [loadProgress]);
@@ -73,6 +76,7 @@ export default function Home() {
     try {
       const userData = await getUserByHash(hash);
       if (userData) {
+        ++progressSession.current;
         progressIdentity.current = hash;
         ++progressRequest.current;
         setProgressError(null);
@@ -110,6 +114,7 @@ export default function Home() {
       try {
         const userData = await getUserByHash(storedHash);
         if (userData) {
+          ++progressSession.current;
           progressIdentity.current = storedHash;
           ++progressRequest.current;
           setUser(userData);
@@ -146,6 +151,7 @@ export default function Home() {
   };
 
   const handleLogout = () => {
+    ++progressSession.current;
     progressIdentity.current = null;
     ++progressRequest.current;
     setProgressError(null);
@@ -269,7 +275,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {progressError && <p role="alert" className="mb-4 rounded-lg border border-amber-700 bg-amber-950/30 p-3 text-amber-200">{progressError}</p>}
+        {progressError && <p role="alert" className="mb-4 rounded-lg border border-amber-700 bg-amber-950/30 p-3 text-amber-200">{progressError.message}</p>}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Sidebar - Progress */}
           <div className="lg:col-span-4 xl:col-span-3 2xl:col-span-3 space-y-6 min-w-[280px]">
