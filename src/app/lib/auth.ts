@@ -9,7 +9,8 @@ import {
 // localStorage helpers - used as fallback when Supabase is not configured
 // ---------------------------------------------------------------------------
 
-const LOCAL_PROGRESS_KEY = 'ihk_progress';
+// The unattributed legacy `ihk_progress` key is deliberately never read or written.
+const LOCAL_PROGRESS_PREFIX = 'ihk_progress_v2:';
 
 interface LocalProgress {
   module: string;
@@ -19,21 +20,36 @@ interface LocalProgress {
   last_session: string | null;
 }
 
-function loadLocalProgress(): LocalProgress[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_PROGRESS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+async function accountProgressKey(accessHash: string): Promise<string> {
+  if (accessHash.length !== 12 || !isValidAccessHash(accessHash)) throw new Error('Invalid local account');
+  // Namespace only: do not retain the reusable login credential in progress keys/lock names.
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(accessHash));
+  const account = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  return `${LOCAL_PROGRESS_PREFIX}${account}`;
 }
 
-function saveLocalProgress(data: LocalProgress[]): void {
-  try {
-    localStorage.setItem(LOCAL_PROGRESS_KEY, JSON.stringify(data));
-  } catch {
-    // storage full or unavailable – silently ignore
+function isLocalProgress(value: unknown): value is LocalProgress {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const row = value as Record<string, unknown>;
+  const count = (n: unknown): n is number => typeof n === 'number' && Number.isSafeInteger(n) && n >= 0;
+  return typeof row.module === 'string' && row.module.length > 0 &&
+    count(row.questions_attempted) && count(row.questions_correct) && row.questions_correct <= row.questions_attempted &&
+    count(row.streak_days) && (row.last_session === null || (typeof row.last_session === 'string' && Number.isFinite(Date.parse(row.last_session))));
+}
+
+function loadLocalProgress(key: string): LocalProgress[] {
+  const raw = localStorage.getItem(key);
+  if (raw === null) return [];
+  const data: unknown = JSON.parse(raw);
+  if (!Array.isArray(data) || !data.every(isLocalProgress) || new Set(data.map(row => row.module)).size !== data.length) {
+    throw new Error('Invalid local progress');
   }
+  return data;
+}
+
+function saveLocalProgress(key: string, data: LocalProgress[]): void {
+  if (!data.every(isLocalProgress)) throw new Error('Invalid local progress');
+  localStorage.setItem(key, JSON.stringify(data));
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +133,8 @@ export async function createUser(hash: string): Promise<User | null> {
  */
 export async function getUserByHash(hash: string): Promise<User | null> {
   if (!isSupabaseConfigured) {
+    // Restored local credentials must satisfy the same format as new UI logins.
+    if (hash.length !== 12 || !isValidAccessHash(hash)) return null;
     // Return mock user for dev mode
     return {
       id: 'mock-' + hash.slice(0, 8),
@@ -170,40 +188,50 @@ export async function updateProgress(
 
   // --- localStorage fallback when Supabase is not configured ---
   if (!isSupabaseConfigured) {
-    const all = loadLocalProgress();
-    let entry = all.find(p => p.module === storedModule);
-    if (!entry) {
-      entry = { module: storedModule, questions_attempted: 0, questions_correct: 0, streak_days: 0, last_session: null };
-      all.push(entry);
-    }
-    entry.questions_attempted += 1;
-    if (wasCorrect) entry.questions_correct += 1;
-
-    // Streak: increment if last session was yesterday, reset to 1 if it was
-    // earlier or missing, leave unchanged if it's the same calendar day (UTC).
-    const todayUTC = new Date().toISOString().slice(0, 10);
-    if (entry.last_session) {
-      const lastUTC = new Date(entry.last_session).toISOString().slice(0, 10);
-      if (lastUTC === todayUTC) {
-        // Same day – streak stays the same
-      } else {
-        const yesterday = new Date();
-        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-        const yesterdayUTC = yesterday.toISOString().slice(0, 10);
-        if (lastUTC === yesterdayUTC) {
-          entry.streak_days = (entry.streak_days || 0) + 1;
-        } else {
-          entry.streak_days = 1; // gap detected – reset
+    try {
+      const key = await accountProgressKey(accessHash);
+      if (typeof navigator === 'undefined' || !navigator.locks?.request) throw new Error('Locking unavailable');
+      // One origin-wide account lock covers the complete read/modify/write, across tabs.
+      return await navigator.locks.request(key, () => {
+        const all = loadLocalProgress(key);
+        let entry = all.find(p => p.module === storedModule);
+        if (!entry) {
+          entry = { module: storedModule, questions_attempted: 0, questions_correct: 0, streak_days: 0, last_session: null };
+          all.push(entry);
         }
-      }
-    } else {
-      entry.streak_days = 1; // first ever session
+        entry.questions_attempted += 1;
+        if (wasCorrect) entry.questions_correct += 1;
+
+        // Streak: increment if last session was yesterday, reset to 1 if it was
+        // earlier or missing, leave unchanged if it's the same calendar day (UTC).
+        const todayUTC = new Date().toISOString().slice(0, 10);
+        if (entry.last_session) {
+          const lastUTC = new Date(entry.last_session).toISOString().slice(0, 10);
+          if (lastUTC === todayUTC) {
+            // Same day – streak stays the same
+          } else {
+            const yesterday = new Date();
+            yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+            const yesterdayUTC = yesterday.toISOString().slice(0, 10);
+            if (lastUTC === yesterdayUTC) {
+              entry.streak_days = (entry.streak_days || 0) + 1;
+            } else {
+              entry.streak_days = 1; // gap detected – reset
+            }
+          }
+        } else {
+          entry.streak_days = 1; // first ever session
+        }
+
+        entry.last_session = new Date().toISOString();
+
+        saveLocalProgress(key, all);
+        return entry;
+      });
+    } catch {
+      // Do not expose credentials through storage/lock exception messages or retry uncertain writes.
+      throw new Error('Lokaler Fortschritt konnte nicht gespeichert werden.');
     }
-
-    entry.last_session = new Date().toISOString();
-
-    saveLocalProgress(all);
-    return entry;
   }
 
   // --- Supabase path – use RPC function ---
@@ -265,7 +293,11 @@ export async function recordQuestionAttempt(
 export async function getAllProgress(accessHash: string) {
   // --- localStorage fallback ---
   if (!isSupabaseConfigured) {
-    return normalizeProgressModules(loadLocalProgress());
+    try {
+      return normalizeProgressModules(loadLocalProgress(await accountProgressKey(accessHash)));
+    } catch {
+      throw new Error('Lokaler Fortschritt konnte nicht geladen werden.');
+    }
   }
 
   try {
