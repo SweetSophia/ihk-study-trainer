@@ -6,7 +6,7 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
-  // Historical release dates are verified UTC merge dates; documentation refreshes are not separate releases.
+  // New AP2 releases use UTC merge dates; older entries retain their originally recorded dates.
   // Pending feature entry: confirm its UTC release date before merging (the PR may remain open across days).
   {
     date: '28/10/2026',

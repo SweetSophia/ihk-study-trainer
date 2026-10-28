@@ -62,7 +62,9 @@ it('reasoning example reveals no graded result and leaves objective checks eligi
  const attempt=vi.fn();render(<CostComparisonTrainer isAuthenticated onAttempt={attempt}/>);
  fireEvent.click(screen.getByRole('button',{name:'Begründungsbeispiel anzeigen'}));
  const example=document.getElementById('cost-reasoning-example')!;
- expect(example).not.toHaveTextContent(/640|spart der eigene Server|zugunsten des eigenen Servers/);
+ // The unscored example stays generic: no numerical results or named choice.
+ expect(example).not.toHaveTextContent(/\d/);
+ expect(example).not.toHaveTextContent(/\bServer\b|\bManaged\s+Service\b/i);
  expect(attempt).not.toHaveBeenCalled();
  fillComparison();fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));
  expect(attempt).toHaveBeenCalledExactlyOnceWith(true);
