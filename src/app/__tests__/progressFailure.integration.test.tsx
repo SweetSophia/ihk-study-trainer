@@ -44,16 +44,17 @@ it('keeps a failed-attempt warning after a later successful write',async()=>{
  fireEvent.click(screen.getByRole('button',{name:'Basisplan prüfen'}));
  expect(await screen.findByRole('alert')).toHaveTextContent('Fortschritt konnte nicht gespeichert werden');
  expect(screen.getByTestId('progress')).toHaveTextContent('subnetting');
+ vi.mocked(getAllProgress).mockResolvedValueOnce([{module:'subnetting',questions_attempted:9,questions_correct:6,streak_days:1,last_session:null}]);
  fireEvent.click(screen.getByRole('button',{name:'Neuer Durchlauf'}));fireEvent.click(screen.getByRole('button',{name:'Basisplan prüfen'}));
- await waitFor(()=>expect(updateProgress).toHaveBeenCalledTimes(2));
+ await waitFor(()=>expect(screen.getByTestId('progress')).toHaveTextContent('\"questions_attempted\":9'));
  expect(screen.getByRole('alert')).toHaveTextContent('Fortschritt konnte nicht');
 },15000);
 it('does not display an old account write failure after logout',async()=>{
  let reject!:(e:Error)=>void;vi.mocked(updateProgress).mockReturnValueOnce(new Promise((_,r)=>{reject=r;}));
  render(<Home/>);fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Projekt/}))[0]);
  fireEvent.click(screen.getByRole('button',{name:'Basisplan prüfen'}));
- fireEvent.click(screen.getByRole('button',{name:'Abmelden'}));reject(new Error('old failure'));
- await waitFor(()=>expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+ fireEvent.click(screen.getByRole('button',{name:'Abmelden'}));await act(async()=>{reject(new Error('old failure'));});
+ expect(screen.queryByRole('alert')).not.toBeInTheDocument();
  fireEvent.click(screen.getByRole('button',{name:'Test login'}));
  await waitFor(()=>expect(screen.getByTestId('progress')).toHaveTextContent('subnetting'));
  expect(screen.queryByRole('alert')).not.toBeInTheDocument();

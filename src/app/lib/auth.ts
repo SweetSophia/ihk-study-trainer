@@ -133,6 +133,8 @@ export async function createUser(hash: string): Promise<User | null> {
  */
 export async function getUserByHash(hash: string): Promise<User | null> {
   if (!isSupabaseConfigured) {
+    // Restored local credentials must satisfy the same format as new UI logins.
+    if (hash.length !== 12 || !isValidAccessHash(hash)) return null;
     // Return mock user for dev mode
     return {
       id: 'mock-' + hash.slice(0, 8),
