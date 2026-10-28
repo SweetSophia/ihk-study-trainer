@@ -2,7 +2,7 @@
 
 Interaktiver Lernassistent für die IHK-Prüfung zum **Fachinformatiker Systemintegration**.
 
-Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud-Grundlagen, kaufmännische Kalkulation sowie fünf zusammenhängende AP2-Szenarien und einen SQL-Trainer in einer Oberfläche mit Schritt-für-Schritt-Lösungen und Fortschritts-Tracking.
+Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud-Grundlagen, kaufmännische Kalkulation sowie sechs zusammenhängende AP2-Szenarien und einen SQL-Trainer in einer Oberfläche mit Schritt-für-Schritt-Lösungen und Fortschritts-Tracking.
 
 🔗 **Live URL**: https://ihk-study-trainer.vercel.app
 
@@ -12,7 +12,7 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 
 ## Highlights
 
-- **26 Lernmodule** (25 ohne Anmeldung zugänglich + das separate SQL-Modul nach Anmeldung) für typische IHK-Themen
+- **27 Lernmodule** (26 ohne Anmeldung zugänglich + das separate SQL-Modul nach Anmeldung) für typische IHK-Themen
 - **Generierte Einzelaufgaben und feste AP2-Szenarien** für Rechenwege, Planung und begründete Entscheidungen
 - **Schritt-für-Schritt-Lösungen** für Rechen- und Verständnisaufgaben
 - **Fortschritts-Tracking pro Modul** inklusive Genauigkeit und Lern-Streaks
@@ -23,7 +23,7 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 
 ## Neuere Module & Erweiterungen
 
-### Fünf AP2-Szenarien
+### Sechs AP2-Szenarien
 
 - **Netzwerkplanung** – Teilnetze und VLANs für Büro, Werkstatt und Gäste planen. Alternative gültige, ausreichend große und überlappungsfreie Aufteilungen werden akzeptiert; die Begründung der Verkehrsregeln bleibt Selbstbewertung.
 - **Datenbankentwurf & SQL** – Geräte, Standorte und Wartungen modellieren, danach drei SQL-Aufgaben auf einem vorgegebenen Lehrschema lösen: geordnete Abfrage, Wartungsanzahl einschließlich Geräten ohne Wartungen und gezieltes UPDATE. Gleichwertige Lösungen werden anhand von zwei synthetischen Datensätzen und aufgabenspezifischen Ergebnis-/Änderungsregeln geprüft.
@@ -31,7 +31,9 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 - **Algorithmen** – vorgegebenen Pseudocode zur Speicherüberwachung von fünf Servern nachvollziehen: Zähler, geordnete Warnungen und einen Grenzfehler prüfen. Es wird kein eingegebener Programmcode ausgeführt.
 - **Fehlersuche** – in einem synthetischen DNS-Vorfall belegte und unbelegte Aussagen unterscheiden, eine begrenzte Profilkorrektur und passende Verifikation auswählen. Fehlende Ping-Antworten allein beweisen keine allgemeine Unerreichbarkeit; es werden keine echten Netzwerkbefehle ausgeführt.
 
-Die objektiven Prüfungen liefern Rückmeldung; schriftliche Begründungen und Rubriken werden ausdrücklich selbst bewertet. Pro Durchlauf zählt nur der erste abgeschlossene objektive Check je Abschnitt bzw. SQL-Aufgabe: Netzwerkplanung einmal, Datenbank/SQL bis zu dreimal, Projektplanung, Algorithmen und Fehlersuche jeweils bis zu zweimal. Wiederholungen und Selbstbewertung vergeben keine zusätzlichen Punkte; eine vorher aufgedeckte Lösung macht den zugehörigen Teil ungewertet. Als Gast wird kein AP2-Fortschritt gespeichert. Sitzungseingaben werden nicht als Aufgabenentwurf gespeichert und gehen beim Verlassen verloren. Datenbank/SQL, Projektplanung, Algorithmen und Fehlersuche setzen den Durchlauf auch beim Anmelden oder Kontowechsel zurück und zeigen dafür einen Hinweis.
+- **Wirtschaftlichkeit** – zwei fiktive Dateidienst-Angebote anhand fester Netto-Anfangs- und Monatskosten vergleichen: Gesamtkosten nach 36 Monaten und erster vollständig abgerechneter Monat mit strikt günstigeren Serverkosten. Exakte Cent-Prüfung; Betrieb, Wiederherstellung und Vertragsbedingungen bleiben Selbstbewertung. Das vereinfachte Kostenmodell ist ausdrücklich keine vollständige reale Betriebskostenanalyse.
+
+Die objektiven Prüfungen liefern Rückmeldung; schriftliche Begründungen und Rubriken werden ausdrücklich selbst bewertet. Pro Durchlauf zählt nur der erste abgeschlossene objektive Check je Abschnitt bzw. SQL-Aufgabe: Netzwerkplanung einmal, Datenbank/SQL bis zu dreimal, Projektplanung, Algorithmen, Fehlersuche und Wirtschaftlichkeit jeweils bis zu zweimal. Wiederholungen und Selbstbewertung vergeben keine zusätzlichen Punkte; eine vorher aufgedeckte Lösung macht den zugehörigen Teil ungewertet. Als Gast wird kein AP2-Fortschritt gespeichert. Sitzungseingaben werden nicht als Aufgabenentwurf gespeichert und gehen beim Verlassen verloren. Datenbank/SQL, Projektplanung, Algorithmen, Fehlersuche und Wirtschaftlichkeit setzen den Durchlauf auch beim Anmelden oder Kontowechsel zurück und zeigen dafür einen Hinweis.
 
 Beim AP2-SQL-Training laufen Prüfungen in wegwerfbaren Browser-Datenbanken mit Worker-Abbruch und einer 30-Sekunden-Frist. Pausierte Browser können Timer verzögern; dies ist keine harte Echtzeit- oder Speichergrenze.
 
@@ -45,7 +47,7 @@ Beim AP2-SQL-Training laufen Prüfungen in wegwerfbaren Browser-Datenbanken mit 
 
 ## Lernmodule
 
-### 26 Lernmodule (25 direkt verfügbar + 1 nach Anmeldung)
+### 27 Lernmodule (26 direkt verfügbar + 1 nach Anmeldung)
 
 Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist anders angeordnet.
 
@@ -74,7 +76,8 @@ Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist an
 23. **AP2 Projektplanung** – Abhängigkeiten, Puffer und Verzögerungen
 24. **AP2 Algorithmen** – Ablauf und Grenzfälle nachvollziehen
 25. **AP2 Fehlersuche** – DNS-Evidenz, Korrektur und Verifikation
-26. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
+26. **AP2 Wirtschaftlichkeit** – IT-Kosten über einen festen Zeitraum und die Monatsgrenze vergleichen
+27. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
 
 ## UI & Lernerlebnis
 
@@ -141,7 +144,7 @@ Den Pepper separat mit `openssl rand -base64 32` erzeugen und den ausgegebenen W
 ### Hinweise zur lokalen Nutzung
 
 - **Ohne Supabase-Konfiguration** nutzt die App lokale Fallback-Speicherung für Fortschritt/Anmeldung.
-- **Ohne `GROQ_API_KEY`** kann das separate SQL-Modul keine KI-Aufgaben erzeugen. Die fünf festen AP2-Szenarien einschließlich ihrer SQL-Prüfungen benötigen diesen Schlüssel nicht.
+- **Ohne `GROQ_API_KEY`** kann das separate SQL-Modul keine KI-Aufgaben erzeugen. Die sechs festen AP2-Szenarien einschließlich ihrer SQL-Prüfungen benötigen diesen Schlüssel nicht.
 - Die KI-Server-Action prüft Account-IDs über Supabase; lokaler Fallback allein ersetzt diese Prüfung nicht. Für KI-SQL sind daher auch eine eingerichtete Supabase-Datenbank und eine dort gültige Account-ID nötig.
 - **Ohne Upstash-Env-Vars** läuft der Rate-Limiter In-Memory (nur für lokales Dev praktikabel; auf Vercel ist er dann nicht multi-instance-sicher und es erscheint eine Warnung im Log).
 - **Ohne `RATE_LIMIT_PEPPER`** wirft der Rate-Limiter in Production einen Fehler, sobald eine SQL-Anfrage die Rate-Limit-Prüfung erreicht; im Dev wird `dev:<hash>` als Identifier verwendet (kollidiert nie mit Production-HMACs).
