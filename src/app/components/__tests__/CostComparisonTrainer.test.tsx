@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import CostComparisonTrainer from '../CostComparisonTrainer';
+import { COST_FIELDS, parseEuroCents } from '../../lib/costComparison';
 const amounts = ['9120','9760','640'];
 function fillComparison() {
  const form=screen.getByRole('region',{name:'1. Kosten nach 36 Monaten'});
@@ -90,4 +91,18 @@ it('a populated wrong first submission consumes the attempt even after correctio
  fillComparison();fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));
  fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich: Lösung anzeigen'}));
  fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));expect(attempt).toHaveBeenCalledExactlyOnceWith(false);
+});
+
+it('prints solution-row amounts in the plain format accepted by the inputs',()=>{
+ render(<CostComparisonTrainer isAuthenticated={false} onAttempt={vi.fn()}/>);
+ for(const [section,action] of [['comparison','Kostenvergleich'],['crossover','Monatsgrenze']] as const){
+  fireEvent.click(screen.getByRole('button',{name:`${action}: Lösung anzeigen`}));
+  const panel=document.getElementById(`cost-${section}-solution`)!;
+  for(const field of COST_FIELDS[section]){
+   const row=within(panel).getByText(text=>text.startsWith(`${field.label}: `));
+   const amount=row.textContent!.slice(field.label.length+2);
+   expect(parseEuroCents(amount)).toBe(field.expected);
+  }
+ }
+ expect(screen.getByText('Eigener Server nach 36 Monaten (€): 9120,00',{exact:true})).toBeInTheDocument();
 });

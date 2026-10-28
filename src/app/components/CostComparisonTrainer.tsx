@@ -6,7 +6,7 @@ import { COST_FIELDS, validateCostAnswers, type CostAnswers, type CostSection } 
 type Props = { isAuthenticated: boolean; onAttempt: (correct: boolean) => void };
 const inputClass = 'w-full min-w-0 rounded-lg border border-slate-600 bg-slate-950 p-2 text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
 const buttonClass = 'rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
-const euro = (cents: number) => (cents / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+const euro = (cents: number) => (cents / 100).toLocaleString('de-DE', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function ObjectiveSection({ section, isAuthenticated, onAttempt }: Props & { section: CostSection }) {
   const [answers, setAnswers] = useState<CostAnswers>({});
