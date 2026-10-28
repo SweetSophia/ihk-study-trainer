@@ -57,3 +57,35 @@ it('completed guest checks never score, identity remount resets dirty inputs, re
  expect(screen.getByRole('button',{name:'Monatsgrenze: Lösung anzeigen'})).toHaveAttribute('aria-expanded','false');
  fillCrossover();fireEvent.click(screen.getByRole('button',{name:'Monatsgrenze prüfen'}));expect(attempt).toHaveBeenCalledExactlyOnceWith(true);
 });
+
+it('reasoning example reveals no graded result and leaves objective checks eligible',()=>{
+ const attempt=vi.fn();render(<CostComparisonTrainer isAuthenticated onAttempt={attempt}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Begründungsbeispiel anzeigen'}));
+ const example=document.getElementById('cost-reasoning-example')!;
+ expect(example).not.toHaveTextContent(/640|spart der eigene Server|zugunsten des eigenen Servers/);
+ expect(attempt).not.toHaveBeenCalled();
+ fillComparison();fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));
+ expect(attempt).toHaveBeenCalledExactlyOnceWith(true);
+});
+it('names each status announcement for wrong, edited and correct answers',()=>{
+ render(<CostComparisonTrainer isAuthenticated={false} onAttempt={vi.fn()}/>);
+ const comparison=screen.getByRole('region',{name:'1. Kosten nach 36 Monaten'});
+ const crossover=screen.getByRole('region',{name:'2. Erster günstigerer Monat'});
+ fireEvent.click(within(comparison).getByRole('button',{name:'Kostenvergleich prüfen'}));
+ expect(within(comparison).getByRole('status')).toHaveTextContent('Kostenvergleich: Bitte die markierten Eingaben prüfen.');
+ fireEvent.click(within(crossover).getByRole('button',{name:'Monatsgrenze prüfen'}));
+ expect(within(crossover).getByRole('status')).toHaveTextContent('Monatsgrenze: Bitte die markierten Eingaben prüfen.');
+ fillComparison();expect(within(comparison).getByRole('status')).toHaveTextContent('Kostenvergleich: Noch keine aktuelle Prüfung.');
+ fireEvent.click(within(comparison).getByRole('button',{name:'Kostenvergleich prüfen'}));
+ fillCrossover();fireEvent.click(within(crossover).getByRole('button',{name:'Monatsgrenze prüfen'}));
+ expect(within(comparison).getByRole('status')).toHaveTextContent('Kostenvergleich: Korrekt');
+ expect(within(crossover).getByRole('status')).toHaveTextContent('Monatsgrenze: Korrekt');
+});
+it('a populated wrong first submission consumes the attempt even after correction or later reveal',()=>{
+ const attempt=vi.fn();render(<CostComparisonTrainer isAuthenticated onAttempt={attempt}/>);
+ fillComparison();fireEvent.change(screen.getByLabelText('Absoluter Kostenunterschied nach 36 Monaten (€)'),{target:{value:'641'}});
+ fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));expect(attempt).toHaveBeenCalledExactlyOnceWith(false);
+ fillComparison();fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));
+ fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich: Lösung anzeigen'}));
+ fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));expect(attempt).toHaveBeenCalledExactlyOnceWith(false);
+});

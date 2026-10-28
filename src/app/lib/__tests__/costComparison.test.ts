@@ -31,3 +31,16 @@ it('reports every missing field and incorrect boundary cost', () => {
  expect(Object.keys(validateCostAnswers('crossover',{}).errors)).toHaveLength(5);
  expect(validateCostAnswers('crossover',{...crossover,own31:'8460',managed32:'8640'}).errors).toHaveProperty('own31');
 });
+
+it.each([-1,1.5,NaN,Infinity,Number.MAX_SAFE_INTEGER+1])('rejects invalid month %s in the cost helper', month=>expect(()=>costAtMonth('own',month)).toThrow('Ungültiger Monat.'));
+it('rejects unsafe computed cent totals',()=>expect(()=>costAtMonth('own',Number.MAX_SAFE_INTEGER)).toThrow('Kosten zu groß.'));
+it.each(['managed','difference'])('rejects a wrong %s amount independently',key=>expect(validateCostAnswers('comparison',{...comparison,[key]:'641'}).errors).toHaveProperty(key));
+it('requires own fields, including choice and month, while accepting null-prototype records',()=>{
+ expect(validateCostAnswers('comparison',Object.create(comparison)).valid).toBe(false);
+ const inheritedChoice=Object.assign(Object.create({cheaper:'own'}),{own:'9120',managed:'9760',difference:'640'});
+ expect(validateCostAnswers('comparison',inheritedChoice).errors).toHaveProperty('cheaper');
+ const inheritedMonth=Object.assign(Object.create({month:'32'}),{own31:'8520',managed31:'8460',own32:'8640',managed32:'8720'});
+ expect(validateCostAnswers('crossover',inheritedMonth).errors).toHaveProperty('month');
+ expect(validateCostAnswers('comparison',Object.assign(Object.create(null),comparison)).valid).toBe(true);
+ expect(validateCostAnswers('crossover',Object.assign(Object.create(null),crossover)).valid).toBe(true);
+});

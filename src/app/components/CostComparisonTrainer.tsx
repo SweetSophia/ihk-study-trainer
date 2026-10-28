@@ -36,7 +36,7 @@ function ObjectiveSection({ section, isAuthenticated, onAttempt }: Props & { sec
     <p>{section === 'comparison'
       ? 'Berechne die Gesamtkosten beider Optionen und den absoluten Unterschied nach 36 vollständig abgerechneten Monaten. Wähle die rein rechnerisch günstigere Option.'
       : 'Gesucht ist der erste vollständig abgerechnete Monat, nach dem der eigene Server strikt günstiger ist. Prüfe die Grenze zusätzlich anhand der Gesamtkosten nach 31 und 32 Monaten. Gleich hohe Kosten gelten nicht als günstiger.'}</p>
-    <form className="space-y-4" onSubmit={event => {
+    <form noValidate className="space-y-4" onSubmit={event => {
       event.preventDefault();
       const next = validateCostAnswers(section, answers);
       setResult(next);
@@ -56,7 +56,7 @@ function ObjectiveSection({ section, isAuthenticated, onAttempt }: Props & { sec
         {result?.errors.cheaper && <p id={`${prefix}-cheaper-error`} className="text-sm text-rose-200">{result.errors.cheaper}</p>}
       </div>}
       <p role="status" className={result ? (result.valid ? 'text-emerald-200' : 'text-rose-200') : 'text-slate-400'}>
-        {result ? (result.valid ? 'Korrekt für die vorgegebenen Kostenannahmen.' : 'Bitte die markierten Eingaben prüfen.') : 'Noch keine aktuelle Prüfung.'}
+        {`${action}: ${result ? (result.valid ? 'Korrekt für die vorgegebenen Kostenannahmen.' : 'Bitte die markierten Eingaben prüfen.') : 'Noch keine aktuelle Prüfung.'}`}
       </p>
       <div className="flex flex-wrap gap-3">
         <button type="submit" className={buttonClass}>{action} prüfen</button>
@@ -92,7 +92,7 @@ export default function CostComparisonTrainer(props: Props) {
     <ul className="space-y-2"><li>Eigener Server: 4.800 € einmalig + 120 € pro Monat.</li><li>Managed Service: 400 € einmalig + 260 € pro Monat.</li></ul>
     <p>Anfangskosten zum Zeitpunkt 0; Monatskosten jeweils am Ende jedes vollständig abgerechneten Monats. Alle Beträge sind netto und konstant. Steuern, Finanzierung, Abzinsung, Restwerte und nicht genannte Kosten bleiben ausdrücklich unberücksichtigt. Dies ist ein vereinfachter Kostenvergleich, keine vollständige Erfassung aller realen Betriebskosten.</p>
     <p className="text-sm">Eurobeträge ohne Tausendertrennzeichen eingeben, mit Komma oder Punkt und höchstens zwei Nachkommastellen (z. B. 1200,50). Monatszahlen müssen ganze Zahlen sein. Gleichwertige Rechenwege sind möglich; geprüft werden die Ergebnisse.</p>
-    <p className="text-sm">Nur die erste abgeschlossene Prüfung je Abschnitt zählt pro Durchlauf (maximal zwei), auch eine leere oder fehlerhafte Abgabe. Weitere Prüfungen geben Rückmeldung ohne zusätzliche Punkte. Eine zuvor angezeigte Lösung macht nur den betreffenden Abschnitt ungewertet, auch nach dem Verbergen. Begründung und Selbstbewertung vergeben nie Punkte.</p>
+    <p className="text-sm">Nur die erste abgeschlossene Prüfung je Abschnitt zählt pro Durchlauf (maximal zwei), auch eine leere oder fehlerhafte Abgabe. Weitere Prüfungen geben Rückmeldung ohne zusätzliche Punkte. Eine vor der ersten Prüfung angezeigte Lösung macht nur den betreffenden Abschnitt ungewertet, auch nach dem Verbergen. Begründung und Selbstbewertung vergeben nie Punkte.</p>
     <p className="text-sm text-amber-200">Beim Anmelden oder Wechseln des Kontos wird dieser Durchlauf zurückgesetzt. Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung; auch beim Verlassen gehen sie verloren. {props.isAuthenticated ? 'Nur objektive Versuche werden als Fortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
     <ObjectiveSection key={`comparison-${run}`} section="comparison" {...props} />
     <ObjectiveSection key={`crossover-${run}`} section="crossover" {...props} />
@@ -103,7 +103,7 @@ export default function CostComparisonTrainer(props: Props) {
       <p id="cost-self-note">Keine automatische Bewertung. Andere begründete Empfehlungen sind möglich; der rechnerische Kostenvergleich allein entscheidet nicht über die beste Betriebslösung.</p>
       <fieldset className="space-y-3"><legend>Selbstbewertung</legend>{RUBRIC.map((text, i) => <label key={text} className="flex gap-2"><input type="checkbox" checked={ticks[i]} onChange={e => setTicks(old => old.map((v, j) => i === j ? e.target.checked : v))} />{text}</label>)}</fieldset>
       <button className={buttonClass} aria-expanded={example} aria-controls="cost-reasoning-example" onClick={() => setExample(!example)}>Begründungsbeispiel {example ? 'verbergen' : 'anzeigen'}</button>
-      {example && <p id="cost-reasoning-example">Eine Möglichkeit: Unter den Modellannahmen spart der eigene Server nach 36 Monaten 640 €. Vor einer realen Empfehlung würde ich Wiederherstellungszeiten, internen Betreuungsaufwand, Vertragsbedingungen und Datenexport vergleichen. Ein höherer Preis kann bei anderen Anforderungen gerechtfertigt sein; fehlende Kosten müssten ergänzt werden.</p>}
+      {example && <p id="cost-reasoning-example">Eine Möglichkeit: Vor einer realen Empfehlung würde ich bei beiden Angeboten Wiederherstellungszeiten, internen Betreuungsaufwand, Vertragsbedingungen und Datenexport vergleichen. Ein höherer Preis kann bei anderen Anforderungen gerechtfertigt sein; fehlende Kosten müssten ergänzt werden.</p>}
     </section>
     <button className={buttonClass} onClick={() => { setRun(v => v + 1); setReasoning(''); setTicks(RUBRIC.map(() => false)); setExample(false); }}>Neuer Durchlauf</button>
   </section>;

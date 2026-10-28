@@ -24,3 +24,21 @@ Ruling: user explicitly chose native implementation, efficient focused developme
 Development: pure tests RED missing module → GREEN31; UI RED missing component/navigation → GREEN4 component +1 page. Page selector corrected to existing compact AP2 Kosten label. Changelog marker RED observed before content change.
 
 Final verification before publication: 870 tests/51 files passed (165.37s), lint and type-check passed, production build passed. Independent GPT-6.1 Sol/high branch review found no remaining defects. Leading-zero parser limit caught and fixed with RED→GREEN safe-cent boundary regression; affected32 pure tests and lint passed, production build repeated for final parser. Desktop1440/mobile390 Chromium production flows passed: accessible field errors, keyboard disclosure, guest completion/no progress, local-fallback login reset, repeat cap, sticky reveal, reasoning/rubric no-score, new run, existing drill return and reload persistence. Browser harness corrected dynamic disclosure locator and authenticated reload assumption; no app defects from browser checks. No horizontal overflow/page errors. Live Supabase/hosted browser persistence remains unverified; local fallback is not production proof.
+
+## Late review correction pass (2026-10-28)
+Kilo review arrived after the initial15-minute window; bounded fixes approved. Shared auth.ts storage and legacy-history policy remain explicitly outside this pass; merge is held for that decision.
+
+- discussion_r4396296886: confirmed answer leakage; removed graded amount/choice from reasoning example, keeping self-assessment unscored and objective eligibility unchanged. Regression RED→GREEN.
+- discussion_r4396296892: confirmed context-free status messages; prefix both sections' wrong/correct/stale announcements. Regression RED→GREEN.
+- discussion_r4396296911: harmless today, added noValidate to match custom-validation convention.
+- discussion_r4396296916: clarified reveal applies before the first check, not retroactively.
+- discussion_r4396296922: deferred hypothetical swapped-offer generalization; approved constants are fixed and difference640 is correct. Changing offers also requires new crossover/choice/example design; this is not a generic calculator.
+- discussion_r4396296927: wording was not mathematically reversed, but now explicitly compares server against managed service.
+- discussion_r4396296931: confirmed README overstatement about DB warning; document its guest-only warning rather than changing another trainer.
+- discussion_r4396296938: removed extra blank line to preserve the existing tight Markdown list.
+- discussion_r4396296941: restore historical UTC merge-date convention and explicitly mark new feature entry pending. Confirm/update date and release-marker tests before eventual merge; current PR is held and no release date is claimed verified.
+- discussion_r4396296952: add populated wrong→correct retry and later-reveal regression; implementation already consumed the first attempt correctly.
+- discussion_r4396296953: add negative/fractional/nonfinite/unsafe month and overflow helper regressions; guards already correct.
+- discussion_r4396296955: add wrong managed/difference, inherited-only/mixed and null-prototype answer regressions; validation already correct.
+
+Final correction verification: 49 focused tests, full882/882 across51 files, lint, types and production build passed. Desktop1440/mobile390 production-browser flows passed with contextual status and non-leaking reasoning checks, unchanged scoring/guest/login/reset behavior and local-fallback reload. Independent correction review found no confirmed defect; actual UTC release date remains a pre-merge gate. No shared persistence, schema, dependencies, security settings or PR58 changes.

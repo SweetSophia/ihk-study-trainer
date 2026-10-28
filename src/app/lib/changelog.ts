@@ -6,7 +6,8 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
-  // Release dates use UTC; the newest entry accompanies its feature release. Documentation refreshes are not separate releases.
+  // Historical release dates are verified UTC merge dates; documentation refreshes are not separate releases.
+  // Pending feature entry: confirm its UTC release date before merging (the PR may remain open across days).
   {
     date: '28/10/2026',
     summary: 'AP2 Wirtschaftlichkeit: fiktive IT-Angebote mit festen Netto-Anfangs- und Monatskosten vergleichen, Gesamtkosten nach 36 Monaten und den ersten strikt günstigeren Monat bestimmen. Zwei objektive Prüfungen und unbewertete Begründung zu Betrieb und Vertragsbedingungen.',

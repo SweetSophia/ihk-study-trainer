@@ -49,7 +49,7 @@ export function validateCostAnswers(section: CostSection, answers: CostAnswers):
   } else {
     const month = Object.hasOwn(answers, 'month') ? answers.month?.trim() ?? '' : '';
     if (!/^\d+$/.test(month) || !Number.isSafeInteger(Number(month))) errors.month = 'Bitte eine nichtnegative ganze Monatszahl eingeben.';
-    else if (Number(month) !== 32) errors.month = 'Gesucht ist der erste abgeschlossene Monat mit strikt niedrigeren Kosten für den eigenen Server.';
+    else if (Number(month) !== 32) errors.month = 'Gesucht ist der erste vollständig abgerechnete Monat, in dem der eigene Server strikt günstiger ist als der Managed Service.';
   }
   return { valid: Object.keys(errors).length === 0, errors };
 }
