@@ -64,13 +64,13 @@ function formatEuro(value: number): string {
 }
 
 function calcPercent(base: number, percent: number): number {
-  return (base * percent) / 100;
+  return Math.round(Math.round(base * 100) * percent / 100) / 100;
 }
 
 function applyDeduction(base: number, percent: number): { remaining: number; amount: number } {
   const amount = calcPercent(base, percent);
   return {
-    remaining: base - amount,
+    remaining: round2(base - amount),
     amount,
   };
 }
@@ -78,24 +78,24 @@ function applyDeduction(base: number, percent: number): { remaining: number; amo
 function applyMarkup(base: number, percent: number): { total: number; amount: number } {
   const amount = calcPercent(base, percent);
   return {
-    total: base + amount,
+    total: round2(base + amount),
     amount,
   };
 }
 
 function reverseMarkup(total: number, percent: number): { base: number; amount: number } {
-  const base = total / (1 + percent / 100);
+  const base = Math.round(Math.round(total * 100) * 100 / (100 + percent)) / 100;
   return {
     base,
-    amount: total - base,
+    amount: round2(total - base),
   };
 }
 
 function reverseDiscount(remaining: number, percent: number): { base: number; amount: number } {
-  const base = remaining / (1 - percent / 100);
+  const base = Math.round(Math.round(remaining * 100) * 100 / (100 - percent)) / 100;
   return {
     base,
-    amount: base - remaining,
+    amount: round2(base - remaining),
   };
 }
 
@@ -155,7 +155,7 @@ function buildAnswerInputs(
 /** Shared calculation chain for vorwaerts and rueckwaerts (forward/backward) kalkulation.
  *  Differenz kalkulation reuses the forward chain but computes its own backward chain separately. */
 interface BaseKalkulationParams {
-  lepBrutto: number;
+  lepNetto: number;
   ustRate: number;
   lieferRabatt: number;
   lieferskonto: number;
@@ -167,7 +167,6 @@ interface BaseKalkulationParams {
 }
 
 interface BaseKalkulationChain {
-  lepNettoStep: ReturnType<typeof reverseMarkup>;
   rabattStep: ReturnType<typeof applyDeduction>;
   skontoStep: ReturnType<typeof applyDeduction>;
   bp: number;
@@ -180,7 +179,7 @@ interface BaseKalkulationChain {
 
 function randomKalkulationParams(): BaseKalkulationParams {
   return {
-    lepBrutto: randomAmount(100, 1500),
+    lepNetto: randomAmount(100, 1500),
     ustRate: 19,
     lieferRabatt: randomPercent(5, 20),
     lieferskonto: randomPercent(1, 4),
@@ -193,20 +192,13 @@ function randomKalkulationParams(): BaseKalkulationParams {
 }
 
 function computeKalkulationChain(params: BaseKalkulationParams): BaseKalkulationChain {
-  const { lepBrutto, ustRate, lieferRabatt, lieferskonto, bezugskosten,
+  const { lepNetto, ustRate, lieferRabatt, lieferskonto, bezugskosten,
     handlungsKosten, gewinnZuschlag, kundenSkonto, kundenRabatt } = params;
 
-  // lepNettoStep is kept in the chain for backward/differenz kalkulation
-  // (backward needs it to recover LEP netto in its final schema step).
-  // Vorwärtskalkulation does NOT use lepNettoStep — it applies
-  // rabatt/skonto directly to LEP brutto (see generateVorwaertsCalculation).
-  const lepNettoStep = reverseMarkup(lepBrutto, ustRate);
-
-  // Vorwärtskalkulation: Apply rabatt and skonto directly to LEP brutto.
-  // This is the correct IHK behavior — no VAT deduction at start.
-  const rabattStep = applyDeduction(lepBrutto, lieferRabatt);
+  // Purchase/cost stages exclude VAT; add VAT only at the sales boundary.
+  const rabattStep = applyDeduction(lepNetto, lieferRabatt);
   const skontoStep = applyDeduction(rabattStep.remaining, lieferskonto);
-  const bp = skontoStep.remaining + bezugskosten;
+  const bp = round2(skontoStep.remaining + bezugskosten);
   const handlungskostenStep = applyMarkup(bp, handlungsKosten);
   const gewinnStep = applyMarkup(handlungskostenStep.total, gewinnZuschlag);
   const kundenskontoStep = reverseDiscount(gewinnStep.total, kundenSkonto);
@@ -214,7 +206,6 @@ function computeKalkulationChain(params: BaseKalkulationParams): BaseKalkulation
   const ustStep = applyMarkup(kundenrabattStep.base, ustRate);
 
   return {
-    lepNettoStep,
     rabattStep,
     skontoStep,
     bp,
@@ -228,12 +219,12 @@ function computeKalkulationChain(params: BaseKalkulationParams): BaseKalkulation
 
 export function generateVorwaertsCalculation(): GeneratedKalkulation {
   const params = randomKalkulationParams();
-  const { lepBrutto, ustRate, lieferRabatt, lieferskonto, bezugskosten,
+  const { lepNetto, ustRate, lieferRabatt, lieferskonto, bezugskosten,
     handlungsKosten, gewinnZuschlag, kundenSkonto, kundenRabatt } = params;
   const chain = computeKalkulationChain(params);
 
   const calculated = toRoundedRecord({
-    lep: lepBrutto,
+    lep: lepNetto,
     rabatt: chain.rabattStep.amount,
     zep: chain.rabattStep.remaining,
     skonto: chain.skontoStep.amount,
@@ -253,7 +244,7 @@ export function generateVorwaertsCalculation(): GeneratedKalkulation {
   });
 
   const given: Record<string, number> = {
-    lepBrutto: round2(lepBrutto),
+    lepNetto: round2(lepNetto),
     ustRate,
     lieferRabatt,
     lieferskonto,
@@ -267,54 +258,37 @@ export function generateVorwaertsCalculation(): GeneratedKalkulation {
   return { given, calculated, schema: VORWAERTS_SCHEMA };
 }
 
+/** Reverse only the displayed gross sale, rounding each new monetary row to cents. */
+function calculateBackwardValues(gross: number, params: BaseKalkulationParams): Record<string, number> | null {
+  const { ustRate, kundenRabatt, kundenSkonto, gewinnZuschlag, handlungsKosten,
+    bezugskosten, lieferskonto, lieferRabatt } = params;
+  const net = reverseMarkup(gross, ustRate);
+  const rebate = applyDeduction(net.base, kundenRabatt);
+  const customerDiscount = applyDeduction(rebate.remaining, kundenSkonto);
+  const profit = reverseMarkup(customerDiscount.remaining, gewinnZuschlag);
+  const handling = reverseMarkup(profit.base, handlungsKosten);
+  const bep = round2(handling.base - bezugskosten);
+  if (bep <= 0) return null;
+  const supplierDiscount = reverseDiscount(bep, lieferskonto);
+  const supplierRebate = reverseDiscount(supplierDiscount.base, lieferRabatt);
+  return {
+    ust: net.amount, nettovk: net.base, kundenrabatt: rebate.amount, zvp: rebate.remaining,
+    kundenskonto: customerDiscount.amount, bvp: customerDiscount.remaining,
+    gewinn: profit.amount, selbstkosten: profit.base, handlungskosten: handling.amount,
+    bp: handling.base, bezugskosten, bep, skonto: supplierDiscount.amount,
+    zep: supplierDiscount.base, rabatt: supplierRebate.amount, lep: supplierRebate.base,
+  };
+}
+
 export function generateRueckwaertsCalculation(): GeneratedKalkulation {
   const params = randomKalkulationParams();
-  const { ustRate, lieferRabatt, lieferskonto, bezugskosten,
-    handlungsKosten, gewinnZuschlag, kundenSkonto, kundenRabatt } = params;
-  const chain = computeKalkulationChain(params);
-
-  // In backward kalkulation, LEP is recovered from the chain's lepNettoStep.
-  // Compute ZEP, BEP, Skonto, Rabatt, and BP from this backward-derived LEP.
-  // This ensures the backward direction is internally consistent:
-  // zep + rabatt = lep AND bep + skonto = zep AND bep + bezugskosten = bp (all based on lepNetto).
-  const lepNetto = chain.lepNettoStep.base;
-  const zepFromLep = round2(lepNetto * (1 - lieferRabatt / 100));
-  const rabattFromLep = round2(lepNetto - zepFromLep);
-  const bepFromZep = round2(zepFromLep * (1 - lieferskonto / 100));
-  const skontoFromZep = round2(zepFromLep - bepFromZep);
-  const bpFromBep = bepFromZep + bezugskosten;
-
-  const calculated = toRoundedRecord({
-    ust: chain.ustStep.amount,
-    nettovk: chain.kundenrabattStep.base,
-    kundenrabatt: chain.kundenrabattStep.amount,
-    zvp: chain.kundenskontoStep.base,
-    kundenskonto: chain.kundenskontoStep.amount,
-    bvp: chain.gewinnStep.total,
-    gewinn: chain.gewinnStep.amount,
-    selbstkosten: chain.handlungskostenStep.total,
-    handlungskosten: chain.handlungskostenStep.amount,
-    bp: bpFromBep,
-    bezugskosten,
-    bep: bepFromZep,
-    skonto: skontoFromZep,
-    zep: zepFromLep,
-    rabatt: rabattFromLep,
-    lep: lepNetto,
-  });
-
-  const given: Record<string, number> = {
-    bruttovk: round2(chain.ustStep.total),
-    ustRate,
-    kundenRabatt,
-    kundenSkonto,
-    gewinnZuschlag,
-    handlungsKosten,
-    bezugskosten: round2(bezugskosten),
-    lieferskonto,
-    lieferRabatt,
-  };
-
+  const bruttovk = computeKalkulationChain(params).ustStep.total;
+  const calculated = calculateBackwardValues(bruttovk, params);
+  if (!calculated) throw new Error('Konnte keine gültige Rückwärtskalkulation erzeugen.');
+  const { ustRate, kundenRabatt, kundenSkonto, gewinnZuschlag, handlungsKosten,
+    bezugskosten, lieferskonto, lieferRabatt } = params;
+  const given = { bruttovk, ustRate, kundenRabatt, kundenSkonto, gewinnZuschlag,
+    handlungsKosten, bezugskosten, lieferskonto, lieferRabatt };
   return { given, calculated, schema: RUECKWAERTS_SCHEMA };
 }
 
@@ -325,54 +299,7 @@ export function generateDifferenzCalculation(): GeneratedDifferenz {
     handlungsKosten, gewinnZuschlag, kundenSkonto, kundenRabatt } = params;
   const ustForwardStep = chain.ustStep;
 
-  const buildBackwardFromMarket = (marketBruttovk: number) => {
-    const ustBackwardStep = reverseMarkup(marketBruttovk, ustRate);
-    const kundenrabattBackwardStep = applyDeduction(ustBackwardStep.base, kundenRabatt);
-    const kundenskontoBackwardStep = applyDeduction(kundenrabattBackwardStep.remaining, kundenSkonto);
-    const gewinnBackwardStep = reverseMarkup(kundenskontoBackwardStep.remaining, gewinnZuschlag);
-    const handlungskostenBackwardStep = reverseMarkup(gewinnBackwardStep.base, handlungsKosten);
-    const bepMarkt = handlungskostenBackwardStep.base - bezugskosten;
-
-    if (bepMarkt <= 0) {
-      return null;
-    }
-
-    const skontoBackwardStep = reverseDiscount(bepMarkt, lieferskonto);
-    const rabattBackwardStep = reverseDiscount(skontoBackwardStep.base, lieferRabatt);
-
-    const stepValues = [
-      ustBackwardStep.amount,
-      ustBackwardStep.base,
-      kundenrabattBackwardStep.amount,
-      kundenrabattBackwardStep.remaining,
-      kundenskontoBackwardStep.amount,
-      kundenskontoBackwardStep.remaining,
-      gewinnBackwardStep.amount,
-      gewinnBackwardStep.base,
-      handlungskostenBackwardStep.amount,
-      handlungskostenBackwardStep.base,
-      bepMarkt,
-      skontoBackwardStep.amount,
-      skontoBackwardStep.base,
-      rabattBackwardStep.amount,
-      rabattBackwardStep.base,
-    ];
-
-    if (stepValues.some((value) => value < 0)) {
-      return null;
-    }
-
-    return {
-      ustBackwardStep,
-      kundenrabattBackwardStep,
-      kundenskontoBackwardStep,
-      gewinnBackwardStep,
-      handlungskostenBackwardStep,
-      bepMarkt,
-      skontoBackwardStep,
-      rabattBackwardStep,
-    };
-  };
+  const buildBackwardFromMarket = (marketBruttovk: number) => calculateBackwardValues(marketBruttovk, params);
 
   const forwardBruttovk = round2(ustForwardStep.total);
   let bruttovkMarkt = 0;
@@ -396,19 +323,8 @@ export function generateDifferenzCalculation(): GeneratedDifferenz {
     throw new Error('Konnte keine gültige Differenzkalkulation erzeugen.');
   }
 
-  const {
-    ustBackwardStep,
-    kundenrabattBackwardStep,
-    kundenskontoBackwardStep,
-    gewinnBackwardStep,
-    handlungskostenBackwardStep,
-    bepMarkt,
-    skontoBackwardStep,
-    rabattBackwardStep,
-  } = backwardMarket;
-
   const forwardSteps = toRoundedRecord({
-    lep: chain.lepNettoStep.base,
+    lep: params.lepNetto,
     rabatt: chain.rabattStep.amount,
     zep: chain.rabattStep.remaining,
     skonto: chain.skontoStep.amount,
@@ -427,29 +343,12 @@ export function generateDifferenzCalculation(): GeneratedDifferenz {
     bruttovk: ustForwardStep.total,
   });
 
-  const backwardSteps = toRoundedRecord({
-    ust: ustBackwardStep.amount,
-    nettovk: ustBackwardStep.base,
-    kundenrabatt: kundenrabattBackwardStep.amount,
-    zvp: kundenrabattBackwardStep.remaining,
-    kundenskonto: kundenskontoBackwardStep.amount,
-    bvp: kundenskontoBackwardStep.remaining,
-    gewinn: gewinnBackwardStep.amount,
-    selbstkosten: gewinnBackwardStep.base,
-    handlungskosten: handlungskostenBackwardStep.amount,
-    bp: handlungskostenBackwardStep.base,
-    bezugskosten,
-    bep: bepMarkt,
-    skonto: skontoBackwardStep.amount,
-    zep: skontoBackwardStep.base,
-    rabatt: rabattBackwardStep.amount,
-    lep: rabattBackwardStep.base,
-  });
+  const backwardSteps = backwardMarket;
 
   const differenz = round2(bruttovkMarkt - forwardSteps.bruttovk);
 
   const given: Record<string, number> = {
-    lepBrutto: round2(params.lepBrutto),
+    lepNetto: round2(params.lepNetto),
     ustRate,
     lieferRabatt,
     lieferskonto,
@@ -506,10 +405,11 @@ function buildQuestion(
       : 'Differenzkalkulation';
 
   let frage = `Berechne die ${typeLabel}!\n\n`;
+  frage += 'Lehrmodell: Alle Einkaufs- und Kostenwerte sind netto, ohne Umsatzsteuer. Umsatzsteuer wird nur beim Übergang Netto-VK ↔ Brutto-VK berücksichtigt. Runde jede Rechenzeile kaufmännisch auf zwei Nachkommastellen und rechne mit diesen Centbeträgen weiter. Alle abgefragten Geldbeträge sind in Euro.\n\n';
   frage += 'Gegebene Werte:\n';
 
   if (type === 'differenz') {
-    frage += `• Listeneinkaufspreis (brutto): ${formatEuro(given.lepBrutto)}\n`;
+    frage += `• Listeneinkaufspreis (netto): ${formatEuro(given.lepNetto)}\n`;
     frage += `• Marktpreis (Brutto-VK): ${formatEuro(given.bruttovkMarkt)}\n`;
     frage += `• Lieferantenrabatt: ${given.lieferRabatt}%\n`;
     frage += `• Lieferskonto: ${given.lieferskonto}%\n`;
@@ -524,7 +424,7 @@ function buildQuestion(
     frage += '2. Berechne die Rückwärtskalkulation (Markt-Brutto-VK → LEP)\n';
     frage += '3. Ermittle die Differenz zwischen Markt-Brutto-VK und berechnetem Brutto-VK\n';
   } else if (type === 'vorwaerts') {
-    frage += `• Listeneinkaufspreis (brutto): ${formatEuro(given.lepBrutto)}\n`;
+    frage += `• Listeneinkaufspreis (netto): ${formatEuro(given.lepNetto)}\n`;
     frage += `• Lieferantenrabatt: ${given.lieferRabatt}%\n`;
     frage += `• Lieferskonto: ${given.lieferskonto}%\n`;
     frage += `• Bezugskosten: ${formatEuro(given.bezugskosten)}\n`;
@@ -563,10 +463,10 @@ function buildQuestion(
     ];
 
     solutionSteps.push('=== VORWÄRTSKALKULATION (LEP → Brutto-VK) ===');
-    solutionSteps.push(`Gegeben: LEP brutto = ${formatEuro(given.lepBrutto)}`);
+    solutionSteps.push(`Gegeben: LEP netto = ${formatEuro(given.lepNetto)}`);
     solutionSteps.push('');
-    solutionSteps.push(`Rabatt = ${formatEuro(given.lepBrutto)} × ${given.lieferRabatt}% = ${formatEuro(forwardSteps.rabatt)}`);
-    solutionSteps.push(`ZEP = ${formatEuro(given.lepBrutto)} − ${formatEuro(forwardSteps.rabatt)} = ${formatEuro(forwardSteps.zep)}`);
+    solutionSteps.push(`Rabatt = ${formatEuro(given.lepNetto)} × ${given.lieferRabatt}% = ${formatEuro(forwardSteps.rabatt)}`);
+    solutionSteps.push(`ZEP = ${formatEuro(given.lepNetto)} − ${formatEuro(forwardSteps.rabatt)} = ${formatEuro(forwardSteps.zep)}`);
     solutionSteps.push(`Skonto = ${formatEuro(forwardSteps.zep)} × ${given.lieferskonto}% = ${formatEuro(forwardSteps.skonto)}`);
     solutionSteps.push(`BEP = ${formatEuro(forwardSteps.zep)} − ${formatEuro(forwardSteps.skonto)} = ${formatEuro(forwardSteps.bep)}`);
     solutionSteps.push(`BP = ${formatEuro(forwardSteps.bep)} + ${formatEuro(forwardSteps.bezugskosten)} = ${formatEuro(forwardSteps.bp)}`);
@@ -600,7 +500,6 @@ function buildQuestion(
     solutionSteps.push(`Skonto = ${formatEuro(backwardSteps.zep)} − ${formatEuro(backwardSteps.bep)} = ${formatEuro(backwardSteps.skonto)}`);
     solutionSteps.push(`LEP netto = ${formatEuro(backwardSteps.zep)} / ${formatDiscountFactor(given.lieferRabatt)} = ${formatEuro(backwardSteps.lep)}`);
     solutionSteps.push(`Rabatt = ${formatEuro(backwardSteps.lep)} − ${formatEuro(backwardSteps.zep)} = ${formatEuro(backwardSteps.rabatt)}`);
-    solutionSteps.push(`LEP brutto = ${formatEuro(backwardSteps.lep)} × ${formatMarkupFactor(given.ustRate)} = ${formatEuro(round2(backwardSteps.lep * (1 + given.ustRate / 100)))}`);
     solutionSteps.push('');
 
     const differenz = calculated.differenz as number;
@@ -623,10 +522,10 @@ function buildQuestion(
     answerInputs = buildAnswerInputs(schema, given);
 
     if (type === 'vorwaerts') {
-      solutionSteps.push(`Gegeben: LEP brutto = ${formatEuro(given.lepBrutto)}, Rabatt = ${given.lieferRabatt}%, Skonto = ${given.lieferskonto}%`);
+      solutionSteps.push(`Gegeben: LEP netto = ${formatEuro(given.lepNetto)}, Rabatt = ${given.lieferRabatt}%, Skonto = ${given.lieferskonto}%`);
       solutionSteps.push('');
-      solutionSteps.push(`Rabatt = ${formatEuro(given.lepBrutto)} × ${given.lieferRabatt}% = ${formatEuro(calculated.rabatt as number)}`);
-      solutionSteps.push(`ZEP = ${formatEuro(given.lepBrutto)} − ${formatEuro(calculated.rabatt as number)} = ${formatEuro(calculated.zep as number)}`);
+      solutionSteps.push(`Rabatt = ${formatEuro(given.lepNetto)} × ${given.lieferRabatt}% = ${formatEuro(calculated.rabatt as number)}`);
+      solutionSteps.push(`ZEP = ${formatEuro(given.lepNetto)} − ${formatEuro(calculated.rabatt as number)} = ${formatEuro(calculated.zep as number)}`);
       solutionSteps.push(`Skonto = ${formatEuro(calculated.zep as number)} × ${given.lieferskonto}% = ${formatEuro(calculated.skonto as number)}`);
       solutionSteps.push(`BEP = ${formatEuro(calculated.zep as number)} − ${formatEuro(calculated.skonto as number)} = ${formatEuro(calculated.bep as number)}`);
       solutionSteps.push(`BP = ${formatEuro(calculated.bep as number)} + ${formatEuro(calculated.bezugskosten as number)} = ${formatEuro(calculated.bp as number)}`);
@@ -658,7 +557,6 @@ function buildQuestion(
       solutionSteps.push(`Skonto = ${formatEuro(calculated.zep as number)} − ${formatEuro(calculated.bep as number)} = ${formatEuro(calculated.skonto as number)}`);
       solutionSteps.push(`LEP netto = ${formatEuro(calculated.zep as number)} / ${formatDiscountFactor(given.lieferRabatt)} = ${formatEuro(calculated.lep as number)}`);
       solutionSteps.push(`Rabatt = ${formatEuro(calculated.lep as number)} − ${formatEuro(calculated.zep as number)} = ${formatEuro(calculated.rabatt as number)}`);
-      solutionSteps.push(`LEP brutto = ${formatEuro(calculated.lep as number)} × ${formatMarkupFactor(given.ustRate)} = ${formatEuro(round2((calculated.lep as number) * (1 + given.ustRate / 100)))}`);
     }
   }
 
