@@ -8,10 +8,14 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   // New AP2 releases use UTC merge dates; older entries retain their originally recorded dates.
   {
-    date: '28/10/2026',
-    summary: 'AP2 Datensicherung: mögliches Datenverlustfenster und Ausfalldauer mit RPO/RTO vergleichen und vollständige Wiederherstellungsketten aus Voll- und inkrementellen Sicherungen prüfen. Alternative gültige Ketten werden akzeptiert; die Betriebsfreigabe bleibt Selbstbewertung. Eigene fiktive Übung ohne echte Wiederherstellungsbefehle.',
+    date: '29/10/2026',
+    summary: 'AP2 Berechtigungen: effektive Zugriffe aus überlappenden positiven Gruppengewährungen bestimmen und eine begrenzte Korrektur mit passenden Kontrollen planen. Zwei objektive Prüfungen; Least Privilege, Freigabe und Rücknahme bleiben Selbstbewertung. Eigenes fiktives Lehrmodell ohne echte Rechteänderungen.',
     highlight: true,
     tag: 'Aktuell',
+  },
+  {
+    date: '28/10/2026',
+    summary: 'AP2 Datensicherung: mögliches Datenverlustfenster und Ausfalldauer mit RPO/RTO vergleichen und vollständige Wiederherstellungsketten aus Voll- und inkrementellen Sicherungen prüfen. Alternative gültige Ketten werden akzeptiert; die Betriebsfreigabe bleibt Selbstbewertung. Eigene fiktive Übung ohne echte Wiederherstellungsbefehle.',
   },
   {
     date: '28/10/2026',
