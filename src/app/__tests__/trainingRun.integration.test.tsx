@@ -40,7 +40,7 @@ beforeEach(() => {
 
 it('routes run checks to original topics only and resets completed guest work after login', async () => {
  localStorage.clear(); render(<Home/>);
- fireEvent.click((await screen.findAllByRole('button',{name:/AP2-Trainingslauf/}))[0]);
+ fireEvent.click((await screen.findAllByRole('button',{name:/AP2-Lauf/}))[0]);
  fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));
  fireEvent.click(screen.getByRole('button',{name:'Auswertung'}));
  expect(screen.getByText(/0 von 1 gewerteten Erstprüfungen korrekt/)).toBeInTheDocument();
@@ -60,13 +60,13 @@ it('routes run checks to original topics only and resets completed guest work af
  fireEvent.click(screen.getByRole('button',{name:'Sicherungskette prüfen'}));expect(updateProgress).toHaveBeenCalledTimes(3);
  expect(screen.getByTestId('progress')).toHaveTextContent('subnetting');
  fireEvent.click(screen.getAllByRole('button',{name:/Subnetting/})[0]);
- fireEvent.click(screen.getAllByRole('button',{name:/AP2-Trainingslauf/})[0]);
+ fireEvent.click(screen.getAllByRole('button',{name:/AP2-Lauf/})[0]);
  fireEvent.click(screen.getByRole('button',{name:'Auswertung'}));
  expect(screen.getByText(/0 von 0 gewerteten Erstprüfungen korrekt/)).toBeInTheDocument();
 },20000);
 it('retains local summary on storage failure without retrying or counting the wrapper',async()=>{
  vi.mocked(updateProgress).mockRejectedValueOnce(new Error('synthetic storage failure'));
- render(<Home/>);fireEvent.click((await screen.findAllByRole('button',{name:/AP2-Trainingslauf/}))[0]);
+ render(<Home/>);fireEvent.click((await screen.findAllByRole('button',{name:/AP2-Lauf/}))[0]);
  fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));
  expect(await screen.findByRole('alert')).toHaveTextContent('Fortschritt konnte nicht gespeichert werden');
  fireEvent.click(screen.getByRole('button',{name:'Auswertung'}));
