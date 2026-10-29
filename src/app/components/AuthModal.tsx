@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type ClipboardEvent } from 'react';
+import { useState, useEffect, useRef, type ClipboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -68,10 +68,19 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Ignore modal results from a view that was left or closed; requests are not retried/cancelled.
+  const viewVersion = useRef(0);
+  const changeView = (next: 'select' | 'login') => {
+    ++viewVersion.current;
+    setError('');
+    setMode(next);
+  };
   /** True for ~3s after a paste, so the "Eingefügt" hint is visible. */
   const [pasteHint, setPasteHint] = useState(false);
 
   useEffect(() => {
+    const generation = viewVersion;
+    ++generation.current;
     if (isOpen) {
       setMode('select');
       setHash('');
@@ -80,13 +89,16 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
       setCopied(false);
       setPasteHint(false);
     }
+    return () => { ++generation.current; };
   }, [isOpen]);
 
   const handleRegister = async () => {
+    const version = viewVersion.current;
     setLoading(true);
     setError('');
     try {
       const newHash = await onRegister();
+      if (version !== viewVersion.current) return;
       if (newHash) {
         setHash(newHash);
         setMode('register');
@@ -94,13 +106,14 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
         setError('Fehler bei der Registrierung. Bitte versuche es erneut.');
       }
     } catch {
-      setError('Ein unerwarteter Fehler ist aufgetreten.');
+      if (version === viewVersion.current) setError('Ein unerwarteter Fehler ist aufgetreten.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogin = async () => {
+    const version = viewVersion.current;
     const { trimmed, isValid } = validateHashShape(inputHash);
     if (!trimmed) {
       setError('Bitte gib einen gültigen 12-stelligen Code ein.');
@@ -121,30 +134,33 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     setLoading(true);
     try {
       const result = await onLogin(trimmed);
+      if (version !== viewVersion.current) return;
       if (result.success) {
         setInputHash(''); // Clear the input for next time
       } else {
         setError(result.error || 'Anmeldung fehlgeschlagen.');
       }
     } catch {
-      setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
+      if (version === viewVersion.current) setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleLoginWithHash = async () => {
+    const version = viewVersion.current;
     setLoading(true);
     setError('');
     try {
       const result = await onLogin(hash);
+      if (version !== viewVersion.current) return;
       if (result.success) {
         setHash(''); // Clear registered hash after successful login
       } else {
         setError(result.error || 'Anmeldung fehlgeschlagen.');
       }
     } catch {
-      setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
+      if (version === viewVersion.current) setError('Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
     } finally {
       setLoading(false);
     }
@@ -265,7 +281,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                 </button>
 
                 <button
-                  onClick={() => setMode('login')}
+                  onClick={() => changeView('login')}
                   className="w-full flex items-center gap-3 p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/30 rounded-xl transition-all group"
                 >
                   <div className="p-3 bg-slate-700/50 rounded-lg group-hover:bg-slate-700 transition-colors">
@@ -365,7 +381,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                       autoCorrect="off"
                       spellCheck={false}
                       aria-invalid={error ? 'true' : undefined}
-                      aria-describedby="access-hash-hint"
+                      aria-describedby={error ? 'access-hash-hint auth-error' : 'access-hash-hint'}
                       className={`w-full px-4 py-3 pr-11 bg-slate-950 border rounded-lg text-slate-100 font-mono text-lg tracking-wider placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all disabled:opacity-50 ${
                         error
                           ? 'border-rose-500/50 focus:border-rose-500/50 focus:ring-rose-500/40'
@@ -428,12 +444,6 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                   )}
                 </AnimatePresence>
 
-                {error && (
-                  <div className="p-3 bg-rose-950/30 border border-rose-500/30 rounded-lg">
-                    <p className="text-sm text-rose-400">{error}</p>
-                  </div>
-                )}
-
                 <button
                   onClick={handleLogin}
                   disabled={loading || !loginValidation.isValid}
@@ -443,11 +453,17 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                 </button>
 
                 <button
-                  onClick={() => setMode('select')}
+                  onClick={() => changeView('select')}
                   className="w-full py-3 border border-slate-700 hover:border-slate-600 text-slate-400 hover:text-slate-300 rounded-lg transition-colors"
                 >
                   Zurück
                 </button>
+              </div>
+            )}
+
+            {error && (
+              <div id="auth-error" role="alert" className="mt-4 p-3 bg-rose-950/30 border border-rose-500/30 rounded-lg">
+                <p className="text-sm text-rose-400">{error}</p>
               </div>
             )}
           </div>
