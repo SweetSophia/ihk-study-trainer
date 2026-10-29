@@ -1,14 +1,15 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import type { TrainingRunContext } from '../lib/trainingRun';
 import { COST_FIELDS, validateCostAnswers, type CostAnswers, type CostSection } from '../lib/costComparison';
 
-type Props = { isAuthenticated: boolean; onAttempt: (correct: boolean) => void };
+type Props = { isAuthenticated: boolean; onAttempt: (correct: boolean) => void; trainingRun?: TrainingRunContext };
 const inputClass = 'w-full min-w-0 rounded-lg border border-slate-600 bg-slate-950 p-2 text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
 const buttonClass = 'rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
 const euro = (cents: number) => (cents / 100).toLocaleString('de-DE', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function ObjectiveSection({ section, isAuthenticated, onAttempt }: Props & { section: CostSection }) {
+function ObjectiveSection({ section, isAuthenticated, onAttempt, trainingRun }: Props & { section: CostSection }) {
   const [answers, setAnswers] = useState<CostAnswers>({});
   const [result, setResult] = useState<ReturnType<typeof validateCostAnswers> | null>(null);
   const [example, setExample] = useState(false);
@@ -20,6 +21,7 @@ function ObjectiveSection({ section, isAuthenticated, onAttempt }: Props & { sec
   function edit(key: string, value: string) {
     setAnswers(old => ({ ...old, [key]: value }));
     setResult(null);
+    trainingRun?.onEvent({ type: 'edit', section });
   }
   function numericField(key: string, label: string, whole = false) {
     const error = result?.errors[key];
@@ -40,6 +42,7 @@ function ObjectiveSection({ section, isAuthenticated, onAttempt }: Props & { sec
       event.preventDefault();
       const next = validateCostAnswers(section, answers);
       setResult(next);
+      trainingRun?.onEvent({ type: 'check', section, correct: next.valid });
       if (!attempted.current) {
         attempted.current = true;
         if (isAuthenticated && !revealed.current) onAttempt(next.valid);
@@ -61,7 +64,7 @@ function ObjectiveSection({ section, isAuthenticated, onAttempt }: Props & { sec
       <div className="flex flex-wrap gap-3">
         <button type="submit" className={buttonClass}>{action} prüfen</button>
         <button type="button" className={buttonClass} aria-expanded={example} aria-controls={`${prefix}-solution`}
-          onClick={() => { revealed.current = true; setExample(!example); }}>{action}: Lösung {example ? 'verbergen' : 'anzeigen'}</button>
+          onClick={() => { revealed.current = true; trainingRun?.onEvent({ type: 'reveal', section }); setExample(!example); }}>{action}: Lösung {example ? 'verbergen' : 'anzeigen'}</button>
       </div>
       {example && <div id={`${prefix}-solution`} className="space-y-2 text-sm text-slate-300">
         <p>{section === 'comparison'
@@ -93,7 +96,7 @@ export default function CostComparisonTrainer(props: Props) {
     <p>Anfangskosten zum Zeitpunkt 0; Monatskosten jeweils am Ende jedes vollständig abgerechneten Monats. Alle Beträge sind netto und konstant. Steuern, Finanzierung, Abzinsung, Restwerte und nicht genannte Kosten bleiben ausdrücklich unberücksichtigt. Dies ist ein vereinfachter Kostenvergleich, keine vollständige Erfassung aller realen Betriebskosten.</p>
     <p className="text-sm">Eurobeträge ohne Tausendertrennzeichen eingeben, mit Komma oder Punkt und höchstens zwei Nachkommastellen (z. B. 1200,50). Monatszahlen müssen ganze Zahlen sein. Gleichwertige Rechenwege sind möglich; geprüft werden die Ergebnisse.</p>
     <p className="text-sm">Nur die erste abgeschlossene Prüfung je Abschnitt zählt pro Durchlauf (maximal zwei), auch eine leere oder fehlerhafte Abgabe. Weitere Prüfungen geben Rückmeldung ohne zusätzliche Punkte. Eine vor der ersten Prüfung angezeigte Lösung macht nur den betreffenden Abschnitt ungewertet, auch nach dem Verbergen. Begründung und Selbstbewertung vergeben nie Punkte.</p>
-    <p className="text-sm text-amber-200">Beim Anmelden oder Wechseln des Kontos wird dieser Durchlauf zurückgesetzt. Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung; auch beim Verlassen gehen sie verloren. {props.isAuthenticated ? 'Nur objektive Versuche werden als Fortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
+    <p className="text-sm text-amber-200">Beim Anmelden oder Wechseln des Kontos wird dieser Durchlauf zurückgesetzt. {props.trainingRun ? 'Beim Aufgabenwechsel innerhalb des Trainingslaufs bleiben Eingaben, Häkchen und Lösungen erhalten; beim Verlassen des Trainingslaufs gehen sie verloren.' : 'Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung; auch beim Verlassen gehen sie verloren.'} {props.isAuthenticated ? 'Nur objektive Versuche werden als Fortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
     <ObjectiveSection key={`comparison-${run}`} section="comparison" {...props} />
     <ObjectiveSection key={`crossover-${run}`} section="crossover" {...props} />
     <section aria-labelledby="cost-reasoning-title" className="space-y-3">
@@ -105,6 +108,6 @@ export default function CostComparisonTrainer(props: Props) {
       <button className={buttonClass} aria-expanded={example} aria-controls="cost-reasoning-example" onClick={() => setExample(!example)}>Begründungsbeispiel {example ? 'verbergen' : 'anzeigen'}</button>
       {example && <p id="cost-reasoning-example">Eine Möglichkeit: Vor einer realen Empfehlung würde ich bei beiden Angeboten Wiederherstellungszeiten, internen Betreuungsaufwand, Vertragsbedingungen und Datenexport vergleichen. Ein höherer Preis kann bei anderen Anforderungen gerechtfertigt sein; fehlende Kosten müssten ergänzt werden.</p>}
     </section>
-    <button className={buttonClass} onClick={() => { setRun(v => v + 1); setReasoning(''); setTicks(RUBRIC.map(() => false)); setExample(false); }}>Neuer Durchlauf</button>
+    {!props.trainingRun && <button className={buttonClass} onClick={() => { setRun(v => v + 1); setReasoning(''); setTicks(RUBRIC.map(() => false)); setExample(false); }}>Neuer Durchlauf</button>}
   </section>;
 }

@@ -2,7 +2,7 @@
 
 Interaktiver Lernassistent für die IHK-Prüfung zum **Fachinformatiker Systemintegration**.
 
-Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud-Grundlagen, kaufmännische Kalkulation sowie sechs zusammenhängende AP2-Szenarien und einen SQL-Trainer in einer Oberfläche mit Schritt-für-Schritt-Lösungen und Fortschritts-Tracking.
+Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud-Grundlagen, kaufmännische Kalkulation sowie sieben zusammenhängende AP2-Szenarien und einen SQL-Trainer in einer Oberfläche mit Schritt-für-Schritt-Lösungen und Fortschritts-Tracking.
 
 🔗 **Live URL**: https://ihk-study-trainer.vercel.app
 
@@ -12,7 +12,7 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 
 ## Highlights
 
-- **28 Lernmodule** (27 ohne Anmeldung zugänglich + das separate SQL-Modul nach Anmeldung) für typische IHK-Themen
+- **29 Lernmodule** (28 ohne Anmeldung zugänglich + das separate SQL-Modul nach Anmeldung) für typische IHK-Themen
 - **Generierte Einzelaufgaben und feste AP2-Szenarien** für Rechenwege, Planung und begründete Entscheidungen
 - **Schritt-für-Schritt-Lösungen** für Rechen- und Verständnisaufgaben
 - **Fortschritts-Tracking pro Modul** inklusive Genauigkeit und Lern-Streaks
@@ -36,6 +36,8 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 
 Die objektiven Prüfungen liefern Rückmeldung; schriftliche Begründungen und Rubriken werden ausdrücklich selbst bewertet. Pro Durchlauf zählt nur der erste abgeschlossene objektive Check je Abschnitt bzw. SQL-Aufgabe: Netzwerkplanung einmal, Datenbank/SQL bis zu dreimal, Projektplanung, Algorithmen, Fehlersuche, Wirtschaftlichkeit und Datensicherung jeweils bis zu zweimal. Wiederholungen und Selbstbewertung vergeben keine zusätzlichen Punkte; eine vorher aufgedeckte Lösung macht den zugehörigen Teil ungewertet. Als Gast wird kein AP2-Fortschritt gespeichert. Sitzungseingaben werden nicht als Aufgabenentwurf gespeichert und gehen beim Verlassen verloren. Datenbank/SQL, Projektplanung, Algorithmen, Fehlersuche, Wirtschaftlichkeit und Datensicherung setzen den Durchlauf auch beim Anmelden oder Kontowechsel zurück. Projektplanung, Algorithmen, Fehlersuche, Wirtschaftlichkeit und Datensicherung zeigen dafür einen dauerhaften Hinweis; Datenbank/SQL zeigt den Hinweis zur Anmeldung nur im Gastmodus.
 
+**AP2-Trainingslauf:** Ein kuratierter Durchgang verbindet Wirtschaftlichkeit, Fehlersuche und Datensicherung als drei unabhängige Szenarien. Antworten, Rückmeldungen, Lösungshinweise und Selbstbewertung bleiben beim Wechsel zwischen Aufgaben und Auswertung erhalten. Die Auswertung trennt unveränderliche Erstprüfungen, aktuelle Rückmeldungen und unbewertete Begründungen; gezielte Rücksprünge helfen beim Wiederholen. Es gibt keinen Timer und keinen Anspruch auf Gleichwertigkeit mit einer offiziellen Prüfung. Neuladen, Verlassen des Moduls sowie Anmelden oder Kontowechsel verwerfen den Sitzungsentwurf. Objektive Versuche zählen ausschließlich bei den ursprünglichen Themen, nie zusätzlich beim Trainingslauf. Als Gast bleibt alles ungespeichert.
+
 Beim AP2-SQL-Training laufen Prüfungen in wegwerfbaren Browser-Datenbanken mit Worker-Abbruch und einer 30-Sekunden-Frist. Pausierte Browser können Timer verzögern; dies ist keine harte Echtzeit- oder Speichergrenze.
 
 ### Weitere Erweiterungen und Verbesserungen
@@ -48,7 +50,7 @@ Beim AP2-SQL-Training laufen Prüfungen in wegwerfbaren Browser-Datenbanken mit 
 
 ## Lernmodule
 
-### 28 Lernmodule (27 direkt verfügbar + 1 nach Anmeldung)
+### 29 Lernmodule (28 direkt verfügbar + 1 nach Anmeldung)
 
 Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist anders angeordnet.
 
@@ -79,7 +81,8 @@ Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist an
 25. **AP2 Fehlersuche** – DNS-Evidenz, Korrektur und Verifikation
 26. **AP2 Wirtschaftlichkeit** – IT-Kosten über einen festen Zeitraum und die Monatsgrenze vergleichen
 27. **AP2 Datensicherung** – RPO/RTO und vollständige Wiederherstellungsketten
-28. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
+28. **AP2-Trainingslauf** – Wirtschaftlichkeit, Fehlersuche und Datensicherung mit gemeinsamer Auswertung
+29. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
 
 ## UI & Lernerlebnis
 
@@ -147,7 +150,7 @@ Den Pepper separat mit `openssl rand -base64 32` erzeugen und den ausgegebenen W
 
 - **Ohne Supabase-Konfiguration** nutzt die App lokale Fallback-Speicherung für Fortschritt/Anmeldung. Neuer Fortschritt wird pro Account-ID getrennt gespeichert; Lesen und Schreiben benötigen HTTPS bzw. localhost (Web Crypto für den Account-Schlüssel); parallele Schreibzugriffe werden zusätzlich mit [Web Locks](https://developer.mozilla.org/en-US/docs/Web/API/Web_Locks_API) koordiniert. Ohne diese API oder bei Speicherfehlern wird kein ungesicherter Schreibversuch verwendet; die App zeigt eine Fehlermeldung.
 - Der alte lokale Schlüssel `ihk_progress` bleibt unverändert und keinem Account zugeordnet. Er wird weder automatisch übernommen noch gelöscht; neue Account-Zähler beginnen getrennt. Das betrifft nur den lokalen Fallback, nicht die Supabase-Speicherung.
-- **Ohne `GROQ_API_KEY`** kann das separate SQL-Modul keine KI-Aufgaben erzeugen. Die sechs festen AP2-Szenarien einschließlich ihrer SQL-Prüfungen benötigen diesen Schlüssel nicht.
+- **Ohne `GROQ_API_KEY`** kann das separate SQL-Modul keine KI-Aufgaben erzeugen. Die sieben festen AP2-Szenarien einschließlich ihrer SQL-Prüfungen benötigen diesen Schlüssel nicht.
 - Die KI-Server-Action prüft Account-IDs über Supabase; lokaler Fallback allein ersetzt diese Prüfung nicht. Für KI-SQL sind daher auch eine eingerichtete Supabase-Datenbank und eine dort gültige Account-ID nötig.
 - **Ohne Upstash-Env-Vars** läuft der Rate-Limiter In-Memory (nur für lokales Dev praktikabel; auf Vercel ist er dann nicht multi-instance-sicher und es erscheint eine Warnung im Log).
 - **Ohne `RATE_LIMIT_PEPPER`** wirft der Rate-Limiter in Production einen Fehler, sobald eine SQL-Anfrage die Rate-Limit-Prüfung erreicht; im Dev wird `dev:<hash>` als Identifier verwendet (kollidiert nie mit Production-HMACs).
