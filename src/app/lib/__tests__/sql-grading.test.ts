@@ -90,6 +90,14 @@ describe('real PostgreSQL grading', () => {
   it('runs mutations from identical initial state, including non-idempotent updates', async () => {
     expect(await gradeSqlAnswer({ setup_sql, grading: mutation, solution_query: 'UPDATE items SET quantity = quantity + 1' }, 'UPDATE items SET quantity = quantity + 1')).toMatchObject({ correct: true });
   });
+  it.each([
+    ["UPDATE prices SET amount=1.5 WHERE id=1", "UPDATE prices SET amount=1.5 WHERE id=1", true],
+    ["UPDATE prices SET amount=2.0 WHERE id=1", "UPDATE prices SET amount=2.00 WHERE id=1", false],
+    ["UPDATE prices SET amount=2.0 WHERE id=1", "UPDATE prices SET amount=CASE WHEN id=1 THEN 2.0 ELSE 1.5 END", false],
+  ] as const)('preserves legacy mutation storage representation: %s / %s', async (reference, answer, correct) => {
+    const input = { setup_sql: 'CREATE TABLE prices(id integer PRIMARY KEY, amount numeric); INSERT INTO prices VALUES(1,1.50),(2,1.50);', grading: mutation, solution_query: reference };
+    expect(await gradeSqlAnswer(input, answer)).toMatchObject({ correct });
+  });
   it('rejects different mutations even when both return empty rows', async () => {
     expect(await gradeSqlAnswer({ setup_sql, grading: mutation, solution_query: 'UPDATE items SET quantity = 11 WHERE id = 1' }, 'UPDATE items SET quantity = 21 WHERE id = 2')).toMatchObject({ correct: false });
   });

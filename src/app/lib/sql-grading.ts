@@ -52,18 +52,18 @@ function numericSignature(value: unknown): string {
   return JSON.stringify(['numeric', (match[1] === '-' ? '-' : '') + significant, String(scale)]);
 }
 
-function resultSignature(result: Results<unknown>, ordered: boolean): string {
+function resultSignature(result: Results<unknown>, ordered: boolean, normalizeNumbers = true): string {
   const fields = result.fields.map(field => field.name).sort();
   if (new Set(fields).size !== fields.length) {
     throw new SqlAnswerError('Mehrdeutige Spaltennamen werden nicht unterstützt. Bitte eindeutige Aliase verwenden.');
   }
   const types = new Map(result.fields.map(field => [field.name, field.dataTypeID]));
-  const rows = result.rows.map(row => JSON.stringify(
+  const rows = normalizeNumbers ? result.rows.map(row => JSON.stringify(
     Object.entries(row as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([name, value]) => [
       name,
       NUMERIC_OIDS.has(types.get(name) ?? 0) && value !== null ? numericSignature(value) : canonical(value),
     ]),
-  ));
+  )) : result.rows.map(canonical);
   if (!ordered) rows.sort();
   // Values are encoded into separate signature strings: a real JSON array/object
   // resembling our numeric tag cannot impersonate a scalar numeric result.
@@ -100,7 +100,9 @@ async function snapshot(db: PGlite | Transaction): Promise<string> {
   const states = [];
   for (const table of tables.rows) {
     const rows = await db.query(`SELECT * FROM ${quote(table.schemaname)}.${quote(table.tablename)}`);
-    states.push([table, resultSignature(rows, false)]);
+    // Preserve the legacy stored-state contract (including numeric scale).
+    // Numeric result equivalence applies to SELECT answers, not mutation snapshots.
+    states.push([table, resultSignature(rows, false, false)]);
   }
   return canonical(states);
 }
