@@ -1,10 +1,11 @@
 'use client';
 
 import { useRef, useState, type ReactNode } from 'react';
+import type { TrainingRunContext } from '../lib/trainingRun';
 import { CLAIMS, DIAGNOSES, CORRECTIONS, VERIFICATIONS, validateDiagnosis, validateCorrection, type Validation } from '../lib/troubleshooting';
 
 type Section = 'diagnosis'|'action';
-type Props = { isAuthenticated:boolean; onAttempt:(correct:boolean)=>void };
+type Props = { isAuthenticated:boolean; onAttempt:(correct:boolean)=>void; trainingRun?:TrainingRunContext };
 const inputClass='w-full min-w-0 rounded-lg border border-slate-600 bg-slate-950 p-2 text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
 const buttonClass='rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
 const blank=()=>({diagnosis:'', classifications:{} as Record<string,string>, correction:'', verification:''});
@@ -13,14 +14,15 @@ const RUBRIC=[
  'Ich begründe die begrenzte Profilkorrektur, dokumentiere den Ausgangszustand und stimme Änderung und Rücknahme mit der zuständigen Person ab.',
  'Ich prüfe nach der Änderung den normalen DNS- und HTTPS-Pfad, dokumentiere das tatsächliche Ergebnis und eskaliere bei fortbestehendem Fehler statt Erfolg zu unterstellen.',
 ];
-export default function TroubleshootingTrainer({isAuthenticated,onAttempt}:Props){
+export default function TroubleshootingTrainer({isAuthenticated,onAttempt,trainingRun}:Props){
  const [answers,setAnswers]=useState(blank);
  const [results,setResults]=useState<Partial<Record<Section,Validation>>>({});const [shown,setShown]=useState({diagnosis:false,action:false});
  const attempted=useRef({diagnosis:false,action:false});const revealed=useRef({diagnosis:false,action:false});
  const [reasoning,setReasoning]=useState('');const [ticks,setTicks]=useState(RUBRIC.map(()=>false));const [reasonExample,setReasonExample]=useState(false);
- function clear(section:Section){setResults(old=>({...old,[section]:undefined}));}
+ function clear(section:Section){trainingRun?.onEvent({type:'edit',section});setResults(old=>({...old,[section]:undefined}));}
  function check(section:Section){
   const result=section==='diagnosis'?validateDiagnosis(answers.diagnosis,answers.classifications):validateCorrection(answers.correction,answers.verification);setResults(old=>({...old,[section]:result}));
+  trainingRun?.onEvent({type:'check',section,correct:result.valid});
   if(!attempted.current[section]){attempted.current[section]=true;if(isAuthenticated&&!revealed.current[section])onAttempt(result.valid);}
  }
  function field(section:Section,key:string,label:string,value:string,change:(v:string)=>void,options:readonly {value:string;label:string}[]){
@@ -32,7 +34,7 @@ export default function TroubleshootingTrainer({isAuthenticated,onAttempt}:Props
   return <section aria-labelledby={`troubleshooting-${section}-title`} className="space-y-3 rounded-lg border border-slate-700 p-4"><h3 id={`troubleshooting-${section}-title`} className="font-semibold">{title}</h3>
    <form noValidate className="space-y-4" onSubmit={e=>{e.preventDefault();check(section);}}>{children}
     <p role="status" className={result?(result.valid?'text-emerald-200':'text-rose-200'):'text-slate-400'}>{result?`${name}: ${result.valid?'Korrekt.':'Bitte die markierten Eingaben prüfen.'}`:'Noch keine aktuelle Prüfung.'}</p>
-    <div className="flex flex-wrap gap-3"><button type="submit" className={buttonClass}>{name} prüfen</button><button type="button" className={buttonClass} aria-expanded={shown[section]} aria-controls={`troubleshooting-${section}-solution`} onClick={()=>{revealed.current[section]=true;setShown(old=>({...old,[section]:!old[section]}));}}>{name}: Lösung {shown[section]?'verbergen':'anzeigen'}</button></div>
+    <div className="flex flex-wrap gap-3"><button type="submit" className={buttonClass}>{name} prüfen</button><button type="button" className={buttonClass} aria-expanded={shown[section]} aria-controls={`troubleshooting-${section}-solution`} onClick={()=>{revealed.current[section]=true;trainingRun?.onEvent({type:'reveal',section});setShown(old=>({...old,[section]:!old[section]}));}}>{name}: Lösung {shown[section]?'verbergen':'anzeigen'}</button></div>
     {shown[section]&&<div id={`troubleshooting-${section}-solution`} className="space-y-2 text-sm text-slate-300">{solution}</div>}
    </form>
   </section>;
@@ -55,7 +57,7 @@ export default function TroubleshootingTrainer({isAuthenticated,onAttempt}:Props
    <p>Es werden keine Befehle ausgeführt und keine Netzwerk- oder Sicherheitseinstellungen verändert. Nach einer Korrektur liegen noch keine Messergebnisse vor.</p>
   </section>
   <p className="text-sm">Nur die erste abgeschlossene Prüfung je Abschnitt zählt pro Durchlauf (maximal zwei), auch eine leere oder falsche Abgabe. Weitere Prüfungen geben Rückmeldung ohne Punkte. Eine vorher angezeigte Lösung macht nur den betreffenden Abschnitt ungewertet. Begründung und Häkchen vergeben nie Punkte.</p>
-  <p className="text-sm text-amber-200">Beim Anmelden oder Kontowechsel wird dieser Durchlauf zurückgesetzt. Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung und gehen auch beim Verlassen verloren. {isAuthenticated?'Nur objektive Versuche werden als Fortschritt gespeichert.':'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
+  <p className="text-sm text-amber-200">Beim Anmelden oder Kontowechsel wird dieser Durchlauf zurückgesetzt. {trainingRun?'Beim Aufgabenwechsel innerhalb des Trainingslaufs bleiben Eingaben, Häkchen und Lösungen erhalten; beim Verlassen des Trainingslaufs gehen sie verloren.':'Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung und gehen auch beim Verlassen verloren.'} {isAuthenticated?'Nur objektive Versuche werden als Fortschritt gespeichert.':'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
   {objective('diagnosis','1. Evidenz und Diagnose',<>
    {field('diagnosis','diagnosis','Am besten gestützte Diagnose',answers.diagnosis,value=>setAnswers(old=>({...old,diagnosis:value})),DIAGNOSES)}
    <p>Ordne jede Aussage ein: „Gestützt“ bedeutet durch die vorliegenden Beobachtungen belegt. „Nicht belegt“ bedeutet nicht bewiesen, nicht zwingend falsch. Die Reihenfolge deiner Eingaben ist unerheblich.</p>
@@ -70,6 +72,6 @@ export default function TroubleshootingTrainer({isAuthenticated,onAttempt}:Props
    <fieldset className="space-y-3"><legend>Selbstbewertung</legend>{RUBRIC.map((text,i)=><label key={text} className="flex gap-2"><input type="checkbox" checked={ticks[i]} onChange={e=>setTicks(old=>old.map((v,j)=>i===j?e.target.checked:v))}/>{text}</label>)}</fieldset>
    <button className={buttonClass} aria-expanded={reasonExample} aria-controls="troubleshooting-reason-example" onClick={()=>setReasonExample(!reasonExample)}>Begründungsbeispiel {reasonExample?'verbergen':'anzeigen'}</button>{reasonExample&&<p id="troubleshooting-reason-example">Eine Möglichkeit: Profilabweichung dokumentieren und die lokale Wiederherstellung mit der zuständigen Person abstimmen. Die erfolgreiche HTTPS-Kontrolle spricht gegen eine allgemeine Unerreichbarkeit; sie erklärt den ICMP-Ausfall nicht. Nach der Änderung normale Namensauflösung und Portalzugriff prüfen, tatsächliche Ergebnisse dokumentieren und bei Problemen abgestimmt zurücknehmen oder weiter untersuchen.</p>}
   </section>
-  <button className={buttonClass} onClick={()=>{setAnswers(blank());setResults({});setShown({diagnosis:false,action:false});attempted.current={diagnosis:false,action:false};revealed.current={diagnosis:false,action:false};setReasoning('');setTicks(RUBRIC.map(()=>false));setReasonExample(false);}}>Neuer Durchlauf</button>
+  {!trainingRun&&<button className={buttonClass} onClick={()=>{setAnswers(blank());setResults({});setShown({diagnosis:false,action:false});attempted.current={diagnosis:false,action:false};revealed.current={diagnosis:false,action:false};setReasoning('');setTicks(RUBRIC.map(()=>false));setReasonExample(false);}}>Neuer Durchlauf</button>}
  </section>;
 }

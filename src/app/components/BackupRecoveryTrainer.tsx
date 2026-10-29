@@ -1,23 +1,26 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import type { TrainingRunContext } from '../lib/trainingRun';
 import { BACKUPS, RECOVERY, TIMELINE_FIELDS, validateTimeline, validateRestoreChain, type RecoveryResult } from '../lib/backupRecovery';
 
-type Props = { isAuthenticated: boolean; onAttempt: (correct: boolean) => void };
+type Props = { isAuthenticated: boolean; onAttempt: (correct: boolean) => void; trainingRun?: TrainingRunContext };
 const inputClass = 'w-full min-w-0 rounded-lg border border-slate-600 bg-slate-950 p-2 text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
 const buttonClass = 'rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
 
-function ObjectiveSection({ chain, isAuthenticated, onAttempt }: Props & { chain: boolean }) {
+function ObjectiveSection({ chain, isAuthenticated, onAttempt, trainingRun }: Props & { chain: boolean }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<RecoveryResult | null>(null);
   const [example, setExample] = useState(false);
   const attempted = useRef(false);
   const revealed = useRef(false);
+  const section = chain ? 'chain' : 'time';
   const action = chain ? 'Sicherungskette' : 'Zeitziele';
   const prefix = chain ? 'recovery-chain' : 'recovery-time';
   function edit(key: string, value: string) {
     setAnswers(old => ({ ...old, [key]: value }));
     setResult(null);
+    trainingRun?.onEvent({ type: 'edit', section });
   }
   function field(key: string, label: string) {
     const error = result?.errors[key];
@@ -38,6 +41,7 @@ function ObjectiveSection({ chain, isAuthenticated, onAttempt }: Props & { chain
       event.preventDefault();
       const next = chain ? validateRestoreChain(answers.chain) : validateTimeline(answers);
       setResult(next);
+      trainingRun?.onEvent({ type: 'check', section, correct: next.valid });
       if (!attempted.current) {
         attempted.current = true;
         if (isAuthenticated && !revealed.current) onAttempt(next.valid);
@@ -64,7 +68,7 @@ function ObjectiveSection({ chain, isAuthenticated, onAttempt }: Props & { chain
       <div className="flex flex-wrap gap-3">
         <button type="submit" className={buttonClass}>{action} prüfen</button>
         <button type="button" className={buttonClass} aria-expanded={example} aria-controls={`${prefix}-solution`}
-          onClick={() => { revealed.current = true; setExample(!example); }}>{action}: Lösung {example ? 'verbergen' : 'anzeigen'}</button>
+          onClick={() => { revealed.current = true; trainingRun?.onEvent({ type: 'reveal', section }); setExample(!example); }}>{action}: Lösung {example ? 'verbergen' : 'anzeigen'}</button>
       </div>
       {example && <div id={`${prefix}-solution`} className="space-y-2 text-sm text-slate-300">
         {chain ? <><p>Zwei mögliche Ketten: F1,I1,I2 oder F2,I4. Beide enden bei 09:40. Jede inkrementelle Sicherung benötigt ihre angegebene Vorgängerkette; I3 scheitert am fehlenden X.</p><p>Die Anzahl der Images beweist keine Wiederherstellungsdauer.</p></>
@@ -99,7 +103,7 @@ export default function BackupRecoveryTrainer(props: Props) {
     </li>)}</ul>
     <p>Eine inkrementelle Sicherung ist nur mit genau ihrer angegebenen Vorgängerkette nutzbar. Eine andere Vollsicherung ersetzt diesen Vorgänger nicht. RAID-Ausfallsicherheit ersetzt keine Datensicherung. Aus den Datenständen folgt weder die Zahl tatsächlich verlorener Datensätze noch die Dauer einer künftigen Wiederherstellung.</p>
     <p className="text-sm">Nur die erste abgeschlossene Prüfung je Abschnitt zählt pro Durchlauf (maximal zwei), auch eine leere oder fehlerhafte Abgabe. Wiederholungen geben Rückmeldung ohne zusätzliche Punkte. Eine zuvor angezeigte Lösung macht nur den betreffenden Abschnitt ungewertet. Begründung und Selbstbewertung vergeben nie Punkte.</p>
-    <p className="text-sm text-amber-200">Beim Anmelden oder Wechseln des Kontos wird dieser Durchlauf zurückgesetzt. Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung; auch beim Verlassen gehen sie verloren. {props.isAuthenticated ? 'Nur objektive Versuche werden als Fortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
+    <p className="text-sm text-amber-200">Beim Anmelden oder Wechseln des Kontos wird dieser Durchlauf zurückgesetzt. {props.trainingRun ? 'Beim Aufgabenwechsel innerhalb des Trainingslaufs bleiben Eingaben, Häkchen und Lösungen erhalten; beim Verlassen des Trainingslaufs gehen sie verloren.' : 'Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung; auch beim Verlassen gehen sie verloren.'} {props.isAuthenticated ? 'Nur objektive Versuche werden als Fortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
     <ObjectiveSection key={`time-${run}`} chain={false} {...props} />
     <ObjectiveSection key={`chain-${run}`} chain {...props} />
     <section aria-labelledby="recovery-reasoning-title" className="space-y-3">
@@ -111,6 +115,6 @@ export default function BackupRecoveryTrainer(props: Props) {
       <button className={buttonClass} aria-expanded={example} aria-controls="recovery-reasoning-example" onClick={() => setExample(!example)}>Begründungsbeispiel {example ? 'verbergen' : 'anzeigen'}</button>
       {example && <p id="recovery-reasoning-example">Eine Möglichkeit: In isolierter Umgebung repräsentative Dateien und Anwendungsfunktionen prüfen, Integrität und Zugriffsrechte dokumentieren und die zuständige Rolle über die Freigabe entscheiden lassen. Bei Abweichungen erst Ursachen klären, korrigieren und erneut testen. Tatsächliche Ergebnisse dokumentieren statt aus einem Sicherungszeitplan Erfolg zu versprechen.</p>}
     </section>
-    <button className={buttonClass} onClick={() => { setRun(v => v + 1); setReasoning(''); setTicks(RUBRIC.map(() => false)); setExample(false); }}>Neuer Durchlauf</button>
+    {!props.trainingRun && <button className={buttonClass} onClick={() => { setRun(v => v + 1); setReasoning(''); setTicks(RUBRIC.map(() => false)); setExample(false); }}>Neuer Durchlauf</button>}
   </section>;
 }
