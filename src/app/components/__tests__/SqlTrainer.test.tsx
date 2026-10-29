@@ -235,7 +235,8 @@ describe('SqlTrainer', () => {
     await userEvent.click(run);
     expect(await screen.findByText(/SQL Fehler: syntax error/)).toBeInTheDocument();
     await userEvent.click(run);
-    expect(await screen.findByText(/Musterlösung enthält einen Fehler/)).toBeInTheDocument();
+    expect(await screen.findByText(/technisch nicht geprüft/)).toBeInTheDocument();
+    expect(screen.queryByText(/Musterlösung enthält einen Fehler/)).not.toBeInTheDocument();
     expect(onIncorrect).toHaveBeenCalledOnce();
     expect(onCorrect).not.toHaveBeenCalled();
   });
@@ -287,5 +288,73 @@ describe('SqlTrainer', () => {
     await act(async () => finish({ correct: true }));
     expect(onCorrect).not.toHaveBeenCalled();
     expect(onIncorrect).not.toHaveBeenCalled();
+  });
+
+  it('announces an initial generation failure even without an exercise', async () => {
+    mockGenerateSqlExercise.mockRejectedValueOnce(new Error('429 private provider detail'));
+    renderSqlTrainer();
+    const status = screen.getByRole('status');
+    await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
+    await waitFor(() => expect(status).toHaveTextContent(/Rate limit erreicht/));
+    expect(status).not.toHaveTextContent('private provider detail');
+    expect(status).toHaveAttribute('aria-live', 'polite');
+  });
+
+  it('retains the old exercise and draft while replacement is pending and after failure', async () => {
+    const { run } = await load();
+    let fail!: (reason: Error) => void;
+    mockGenerateSqlExercise.mockReturnValueOnce(new Promise((_, reject) => { fail = reject; }));
+    await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
+    expect(screen.getByText(sampleExercise.theme)).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('SELECT 1');
+    expect(run).toBeDisabled();
+    await act(async () => fail(new Error('offline')));
+    expect(screen.getByRole('status')).toHaveTextContent(/Aufgaben-Generierung/);
+    expect(screen.getByRole('textbox')).toHaveValue('SELECT 1');
+    expect(run).toBeEnabled();
+  });
+
+  it('keeps a completed exercise unscorable after replacement fails', async () => {
+    vi.mocked(gradeSqlAnswer).mockResolvedValue({ correct: true });
+    const { run, onCorrect } = await load();
+    await userEvent.click(run);
+    mockGenerateSqlExercise.mockRejectedValueOnce(new Error('offline'));
+    await userEvent.click(screen.getByRole('button', { name: /Neue Übung/i }));
+    expect(screen.getByRole('textbox')).toHaveValue('SELECT 1');
+    expect(run).toBeDisabled();
+    await userEvent.click(run);
+    expect(onCorrect).toHaveBeenCalledOnce();
+  });
+
+  it('requests strict infrastructure classification and never scores a thrown engine failure', async () => {
+    vi.mocked(gradeSqlAnswer).mockRejectedValueOnce(new WebAssembly.RuntimeError('private engine trap'));
+    const { run, onCorrect, onIncorrect } = await load();
+    await userEvent.click(run);
+    expect(gradeSqlAnswer).toHaveBeenCalledWith(sampleExercise, 'SELECT 1', { rejectInfrastructureErrors: true });
+    expect(screen.getByRole('status')).toHaveTextContent(/technisch/);
+    expect(screen.getByRole('status')).not.toHaveTextContent('private engine trap');
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(onIncorrect).not.toHaveBeenCalled();
+    expect(run).toBeEnabled();
+  });
+
+  it('does not show old identity feedback after an account transition', async () => {
+    vi.mocked(gradeSqlAnswer).mockResolvedValue({ correct: false, message: 'SQL Fehler: old identity detail' });
+    const { run, rerender } = await load();
+    await userEvent.click(run);
+    expect(screen.getByText(/old identity detail/)).toBeInTheDocument();
+    rerender(<SqlTrainer accessHash="another-synthetic-identity" />);
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
+  it('announces that checking is in progress while the grading promise is pending', async () => {
+    let finish!: (result: { correct: boolean }) => void;
+    vi.mocked(gradeSqlAnswer).mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    const { run } = await load();
+    fireEvent.click(run);
+    expect(screen.getByRole('status')).toHaveTextContent(/wird geprüft/);
+    await act(async () => finish({ correct: true }));
+    expect(screen.getByRole('status')).toHaveTextContent(/Korrekt!/);
   });
 });
