@@ -10,6 +10,7 @@ import ProgressDashboard from './components/ProgressDashboard';
 import SqlTrainer from './components/SqlTrainer';
 import TroubleshootingTrainer from './components/TroubleshootingTrainer';
 import AlgorithmTracingTrainer from './components/AlgorithmTracingTrainer';
+import AccessControlTrainer from './components/AccessControlTrainer';
 import TrainingRun from './components/TrainingRun';
 import BackupRecoveryTrainer from './components/BackupRecoveryTrainer';
 import CostComparisonTrainer from './components/CostComparisonTrainer';
@@ -176,7 +177,7 @@ export default function Home() {
 
   const generateNewQuestion = (module: string) => {
     // Dedicated trainers do not use the exact-answer question registry.
-    if (!isModuleId(module) || module === 'ap2TrainingRun' || module === 'sql' || module === 'ap2NetworkPlanning' || module === 'ap2DatabaseDesign' || module === 'ap2ProjectPlanning' || module === 'ap2AlgorithmTracing' || module === 'ap2Troubleshooting' || module === 'ap2CostComparison' || module === 'ap2BackupRecovery') return;
+    if (!isModuleId(module) || module === 'ap2AccessControl' || module === 'ap2TrainingRun' || module === 'sql' || module === 'ap2NetworkPlanning' || module === 'ap2DatabaseDesign' || module === 'ap2ProjectPlanning' || module === 'ap2AlgorithmTracing' || module === 'ap2Troubleshooting' || module === 'ap2CostComparison' || module === 'ap2BackupRecovery') return;
     const question = GENERATORS[module]();
     setCurrentQuestion(question);
   };
@@ -313,7 +314,12 @@ export default function Home() {
 
           {/* Main Study Area */}
           <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
-            {currentModule === 'ap2TrainingRun' ? (
+            {currentModule === 'ap2AccessControl' ? (
+              <AccessControlTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
+                onAttempt={correct => {
+                  if (accessHash) recordProgress(accessHash, 'ap2AccessControl', correct);
+                }} />
+            ) : currentModule === 'ap2TrainingRun' ? (
               <TrainingRun key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
                 onAttempt={(module, correct) => {
                   if (accessHash) recordProgress(accessHash, module, correct);
