@@ -68,9 +68,9 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  // Ignore modal results from a view that was left or closed; requests are not retried/cancelled.
+  // Ignore obsolete view feedback while retaining created codes; requests are not retried/cancelled.
   const viewVersion = useRef(0);
-  const changeView = (next: 'select' | 'login') => {
+  const changeView = (next: 'select' | 'login' | 'register') => {
     ++viewVersion.current;
     setError('');
     setMode(next);
@@ -79,30 +79,30 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
   const [pasteHint, setPasteHint] = useState(false);
 
   useEffect(() => {
-    const generation = viewVersion;
-    ++generation.current;
+    const generationRef = viewVersion;
+    ++generationRef.current;
     if (isOpen) {
       setMode('select');
-      setHash('');
       setInputHash('');
       setError('');
       setCopied(false);
       setPasteHint(false);
     }
-    return () => { ++generation.current; };
+    return () => { ++generationRef.current; };
   }, [isOpen]);
 
   const handleRegister = async () => {
+    if (hash) { changeView('register'); return; }
     const version = viewVersion.current;
     setLoading(true);
     setError('');
     try {
       const newHash = await onRegister();
-      if (version !== viewVersion.current) return;
       if (newHash) {
+        // Preserve a created credential even if its request outlived the chosen view.
         setHash(newHash);
-        setMode('register');
-      } else {
+        if (version === viewVersion.current) setMode('register');
+      } else if (version === viewVersion.current) {
         setError('Fehler bei der Registrierung. Bitte versuche es erneut.');
       }
     } catch {
@@ -134,6 +134,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     setLoading(true);
     try {
       const result = await onLogin(trimmed);
+      if (result.success) setHash(''); // Clear pending credentials at any successful identity transition.
       if (version !== viewVersion.current) return;
       if (result.success) {
         setInputHash(''); // Clear the input for next time
@@ -153,10 +154,9 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     setError('');
     try {
       const result = await onLogin(hash);
+      if (result.success) setHash('');
       if (version !== viewVersion.current) return;
-      if (result.success) {
-        setHash(''); // Clear registered hash after successful login
-      } else {
+      if (!result.success) {
         setError(result.error || 'Anmeldung fehlgeschlagen.');
       }
     } catch {
@@ -256,6 +256,18 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
 
           {/* Content */}
           <div className="px-6 py-6">
+            <div id="auth-error" role="alert" aria-atomic="true" className={error ? 'mb-4 p-3 bg-rose-950/30 border border-rose-500/30 rounded-lg' : 'sr-only'}>
+              {error && <p className="text-sm text-rose-400">{error}</p>}
+            </div>
+            <p role="status" className={loading || (hash && mode !== 'register') ? 'mb-4 text-sm text-slate-300' : 'sr-only'}>
+              {loading ? 'Eine Anfrage läuft noch. Schließen bricht die Anfrage nicht ab.' : hash && mode !== 'register' ? 'Ein Zugangscode wurde erstellt und ist in dieser Sitzung noch verfügbar.' : ''}
+            </p>
+            {hash && mode !== 'register' && (
+              <div className="mb-4 space-y-3 rounded-lg border border-amber-500/30 bg-amber-950/30 p-3">
+                <p className="text-sm text-amber-200">Sichere ihn, bevor du dich mit einem anderen Code anmeldest. Nach erfolgreicher Anmeldung wird diese Codeanzeige zurückgesetzt. Beim Neuladen oder Verlassen der Seite geht ein noch nicht gesicherter Code verloren.</p>
+                <button type="button" onClick={() => changeView('register')} disabled={loading} className="w-full rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-100 disabled:opacity-50">Erstellten Zugangscode anzeigen</button>
+              </div>
+            )}
             {mode === 'select' && (
               <div className="space-y-4">
                 <p className="text-slate-400 text-center">
@@ -268,7 +280,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                 
                 <button
                   onClick={handleRegister}
-                  disabled={loading}
+                  disabled={loading || !!hash}
                   className="w-full flex items-center gap-3 p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/30 rounded-xl transition-all group"
                 >
                   <div className="p-3 bg-emerald-500/10 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
@@ -461,11 +473,6 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
               </div>
             )}
 
-            {error && (
-              <div id="auth-error" role="alert" className="mt-4 p-3 bg-rose-950/30 border border-rose-500/30 rounded-lg">
-                <p className="text-sm text-rose-400">{error}</p>
-              </div>
-            )}
           </div>
         </motion.div>
       </div>
