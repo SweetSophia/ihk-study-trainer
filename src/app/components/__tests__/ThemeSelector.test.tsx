@@ -184,7 +184,7 @@ describe("ThemeSelector - SQL module addition", () => {
         "Kabel",
         "Linux",
         "Cloud",
-        "Kalkulation",
+        "Differenzkalk.",
         "Vorwärtskalk.",
         "Rückwärtskalk.",
         "SQL",
@@ -223,7 +223,7 @@ describe("ThemeSelector - SQL module addition", () => {
         "Kabel",
         "Linux",
         "Cloud",
-        "Kalkulation",
+        "Differenzkalk.",
         "Vorwärtskalk.",
         "Rückwärtskalk.",
       ];
@@ -284,6 +284,17 @@ describe("ThemeSelector - SQL module addition", () => {
 
       expect(onSelectModule).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('offers differential in both layouts and never offers the mixed legacy module', async () => {
+    render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
+    expect(screen.queryByText('Kalkulation')).not.toBeInTheDocument();
+    const buttons = screen.getAllByRole('button', { name: /Differenzkalk\./ });
+    expect(buttons).toHaveLength(2);
+    for (const button of buttons) {
+      await userEvent.click(button);
+      expect(onSelectModule).toHaveBeenLastCalledWith('handelskalkulationDifferenz');
+    }
   });
 
   describe("handelskalkulation module additions", () => {

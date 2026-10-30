@@ -106,3 +106,20 @@ it.each(['invalid','LocalOnly0!!','has space12','LocalOnly001\n'])('rejects malf
  await expect(getAllProgress(id)).rejects.toThrow('Lokaler Fortschritt konnte nicht geladen werden.');
  expect(lockNames).toEqual([]);expect(await getUserByHash(id)).toBeNull();
 });
+
+it('writes the dedicated differential counter without touching mixed or split calculation history', async () => {
+ const rows = [
+  {module:'handelskalkulation',questions_attempted:20,questions_correct:5,streak_days:1,last_session:null},
+  {module:'handelskalkulation-vorwaerts',questions_attempted:3,questions_correct:2,streak_days:1,last_session:null},
+  {module:'handelskalkulation-rueckwaerts',questions_attempted:4,questions_correct:3,streak_days:1,last_session:null},
+ ];
+ localStorage.setItem(key(first),JSON.stringify(rows));
+ await updateProgress(first,'handelskalkulationDifferenz',true);
+ const stored=JSON.parse(localStorage.getItem(key(first))!);
+ expect(stored.slice(0,3)).toEqual(rows);
+ expect(stored[3]).toMatchObject({module:'handelskalkulationDifferenz',questions_attempted:1,questions_correct:1});
+ const loaded=await getAllProgress(first);
+ expect(loaded.map(r=>r.module)).toEqual(['handelskalkulation','handelskalkulationVorwaerts','handelskalkulationRueckwaerts','handelskalkulationDifferenz']);
+ expect(loaded[0]).toMatchObject(rows[0]);
+ expect(localStorage.getItem('ihk_progress')).toBe(legacy);
+});

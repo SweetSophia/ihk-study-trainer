@@ -203,7 +203,7 @@ export default function Home() {
   const handlePracticeMistakes = () => {
     // Find module with most mistakes and switch to it
     const moduleWithMistakes = progress
-      .filter(p => p.questions_attempted > p.questions_correct)
+      .filter(p => isModuleId(toCanonicalModuleId(p.module)) && p.questions_attempted > p.questions_correct)
       .sort((a, b) => 
         (b.questions_attempted - b.questions_correct) - 
         (a.questions_attempted - a.questions_correct)

@@ -598,6 +598,15 @@ export function generateRueckwaertsKalkulationQuestion(): Question {
   return buildQuestion('rueckwaerts', given, calculated, schema, { moduleId: 'handelskalkulationRueckwaerts' });
 }
 
+/** Dedicated differential exercise, with its own progress identity and no mixed-mode fallback. */
+export function generateDifferenzKalkulationQuestion(): Question {
+  const { given, calculated, forwardSteps, backwardSteps, schema } = generateDifferenzCalculation();
+  return buildQuestion('differenz', given, calculated, schema, {
+    moduleId: 'handelskalkulationDifferenz', forwardSteps, backwardSteps,
+  });
+}
+
+/** Internal legacy mixed generator; no longer registered for exercise selection. */
 export function generateHandelskalkulationQuestion(): Question {
   const rand = Math.random();
   const type: KalkulationType = rand < 0.333 ? 'vorwaerts' : rand < 0.666 ? 'rueckwaerts' : 'differenz';

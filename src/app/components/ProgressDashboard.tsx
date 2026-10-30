@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 import { toCanonicalModuleId } from '../lib/moduleIds';
-import { MODULE_NAMES, isModuleId } from '../lib/modules';
+import { MODULE_NAMES, isModuleId, LEGACY_CALCULATION } from '../lib/modules';
 import {
   fireStreakConfetti,
   isStreakMilestone,
@@ -88,6 +88,11 @@ export default function ProgressDashboard({
       void fireStreakConfetti(streakDays);
     }
   }, [streakDays]);
+
+  const hasActiveMistakes = progress.some(p =>
+    isModuleId(toCanonicalModuleId(p.module)) && p.questions_attempted > p.questions_correct,
+  );
+  const hasMixedHistory = progress.some(p => p.module === LEGACY_CALCULATION.id);
 
   const totalAttempted = progress.reduce((sum, p) => sum + p.questions_attempted, 0);
   const totalCorrect = progress.reduce((sum, p) => sum + p.questions_correct, 0);
@@ -177,7 +182,8 @@ export default function ProgressDashboard({
       <div className="flex flex-wrap gap-3">
         <button
           onClick={onPracticeMistakes}
-          className="flex items-center gap-2 px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-lg transition-colors"
+          disabled={!hasActiveMistakes}
+          className="flex items-center gap-2 px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <RotateCcw className="w-4 h-4" />
           <span className="text-sm font-medium">Fehler üben</span>
@@ -205,6 +211,12 @@ export default function ProgressDashboard({
           <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
             Fortschritt pro Modul
           </h3>
+          {hasMixedHistory && (
+            <p className="text-xs text-slate-500 mb-3">
+              Gemischte Kalkulationsversuche bleiben im Altbestand und in der Gesamtsumme erhalten.
+              Neue Differenzaufgaben werden separat gezählt; den Altbestand kannst du nicht erneut üben.
+            </p>
+          )}
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {progress.map((p) => {
               const accuracy = p.questions_attempted > 0 
@@ -226,7 +238,9 @@ export default function ProgressDashboard({
                       <XCircle className="w-4 h-4 text-rose-400" />
                     )}
                     <span className="text-sm text-slate-300">
-                      {isModuleId(canonicalModuleId) ? MODULE_NAMES[canonicalModuleId] : p.module}
+                      {canonicalModuleId === LEGACY_CALCULATION.id
+                        ? LEGACY_CALCULATION.name
+                        : isModuleId(canonicalModuleId) ? MODULE_NAMES[canonicalModuleId] : p.module}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">

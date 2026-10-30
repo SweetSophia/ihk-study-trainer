@@ -124,10 +124,26 @@ describe('ProgressDashboard – MODULE_NAMES PR additions', () => {
     expect(screen.getByText('Cloud')).toBeInTheDocument();
   });
 
-  it('displays "Kalkulation" for the handelskalkulation module ID', async () => {
+  it('labels mixed history as legacy rather than pure differential', async () => {
     render(<ProgressDashboard progress={makeProgress('handelskalkulation')} streakDays={0} onPracticeMistakes={noOp} />);
     await openDetails();
-    expect(screen.getByText('Kalkulation')).toBeInTheDocument();
+    expect(screen.getByText('Kalkulation (gemischter Altbestand)')).toBeInTheDocument();
+    expect(screen.queryByText('Differenzkalkulation')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Fehler üben' })).toBeDisabled();
+  });
+
+  it('keeps mixed totals and new differential totals separate and allows active mistake practice', async () => {
+    render(<ProgressDashboard progress={[
+      { module: 'handelskalkulation', questions_attempted: 20, questions_correct: 5 },
+      { module: 'handelskalkulationDifferenz', questions_attempted: 2, questions_correct: 1 },
+    ]} streakDays={0} onPracticeMistakes={noOp} />);
+    await openDetails();
+    expect(screen.getByText('Kalkulation (gemischter Altbestand)')).toBeInTheDocument();
+    expect(screen.getByText('Differenzkalkulation')).toBeInTheDocument();
+    expect(screen.getByText('5/20')).toBeInTheDocument();
+    expect(screen.getByText('1/2')).toBeInTheDocument();
+    expect(screen.getByText('22')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Fehler üben' })).toBeEnabled();
   });
 
   it('displays "Vorwärtskalkulation" for the canonical split module ID', async () => {

@@ -80,11 +80,17 @@ export const BASE_MODULES = [
   { id: 'cables', name: 'Kabel', icon: Cable, description: 'Kabelauswahl' },
   { id: 'linux', name: 'Linux', icon: Terminal, description: 'Linux-Befehle' },
   { id: 'cloud', name: 'Cloud', icon: Cloud, description: 'Cloud Computing' },
-  { id: 'handelskalkulation', name: 'Kalkulation', icon: Calculator, description: 'Gemischt' },
   { id: 'handelskalkulationVorwaerts', name: 'Vorwärtskalkulation', shortName: 'Vorwärtskalk.', icon: Calculator, description: 'LEP → Brutto-VK' },
   { id: 'handelskalkulationRueckwaerts', name: 'Rückwärtskalkulation', shortName: 'Rückwärtskalk.', icon: Calculator, description: 'Brutto-VK → LEP' },
+  { id: 'handelskalkulationDifferenz', name: 'Differenzkalkulation', shortName: 'Differenzkalk.', icon: Calculator, description: 'Marktpreis · Vergleich' },
   { id: 'raid', name: 'RAID-Rechner', shortName: 'RAID', icon: Server, description: 'Kapazität & Ausfallsicherheit' },
 ] as const satisfies readonly ModuleDescriptor[];
+
+/** Retired mixed drill: display its history without making it selectable or remapping it. */
+export const LEGACY_CALCULATION = {
+  id: 'handelskalkulation',
+  name: 'Kalkulation (gemischter Altbestand)',
+} as const;
 
 /**
  * The SQL module requires authentication. The component layer adds it

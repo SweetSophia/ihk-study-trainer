@@ -17,7 +17,7 @@ import { generateCableQuestion, CABLE_TYPES, ALL_CABLE_PROS } from './cables';
 import { generateLinuxQuestion } from './linux';
 import { generateCloudQuestion } from './cloud';
 import {
-  generateHandelskalkulationQuestion,
+  generateDifferenzKalkulationQuestion,
   generateVorwaertsKalkulationQuestion,
   generateRueckwaertsKalkulationQuestion,
 } from './handelskalkulation';
@@ -229,7 +229,7 @@ export const GENERATORS: Record<RegistryModuleId, () => Question> = {
       scenario: q.scenario,
     };
   },
-  handelskalkulation: generateHandelskalkulationQuestion,
+  handelskalkulationDifferenz: generateDifferenzKalkulationQuestion,
   handelskalkulationVorwaerts: generateVorwaertsKalkulationQuestion,
   handelskalkulationRueckwaerts: generateRueckwaertsKalkulationQuestion,
   raid: () => {
