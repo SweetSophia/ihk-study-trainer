@@ -580,7 +580,8 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
                     <input
                       id={`${controlId}-value-${idx}`}
                       ref={attachFirst ? (firstInputRef as Ref<HTMLInputElement>) : undefined}
-                      type={cfg.inputType ?? 'number'}
+                      type="text"
+                      inputMode={cfg.inputType === 'text' ? undefined : 'decimal'}
                       value={answers[cfg.valueKey] || ''}
                       onChange={(e) =>
                         setAnswers({ ...answers, [cfg.valueKey]: e.target.value })

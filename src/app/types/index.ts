@@ -8,9 +8,9 @@ export interface AnswerInputConfig {
   unitOptions?: string[];
   /** Optional label shown above the value input (e.g. "Stunden", "Dateigröße") */
   label?: string;
-  /** Text is needed for structured values such as IPv4 addresses; numeric is the default. */
+  /** Numeric answers use a text control with a decimal keyboard hint to preserve comma/exponent input. Explicit text disables that hint, e.g. for IPv4 addresses. */
   inputType?: 'number' | 'text';
-  /** When present, the value field renders as a dropdown instead of a number input */
+  /** When present, the value field renders as a dropdown instead of a text input */
   valueOptions?: string[];
   /** When present, validation accepts any value in this list (order-independent multi-correct) */
   acceptedValues?: string[];

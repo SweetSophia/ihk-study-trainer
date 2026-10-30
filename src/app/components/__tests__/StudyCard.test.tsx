@@ -148,7 +148,8 @@ describe('legacy associated answer controls', () => {
       { valueKey: 'pick', label: 'Auswahl', valueOptions: ['Ja', 'Nein'] },
     ], expectedAnswers: { size: 1, sizeUnit: 'MB', pick: 'Ja' } });
     const { rerender } = render(<StudyCard question={structured} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} />);
-    expect(screen.getByLabelText('Dateigröße')).toHaveAttribute('type', 'number');
+    expect(screen.getByLabelText('Dateigröße')).toHaveAttribute('type', 'text');
+    expect(screen.getByLabelText('Dateigröße')).toHaveAttribute('inputmode', 'decimal');
     expect(screen.getByLabelText('Einheit')).toHaveRole('combobox');
     expect(screen.getByLabelText('Auswahl')).toHaveRole('combobox');
     rerender(<><StudyCard question={makeQuestion()} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} /><StudyCard question={makeQuestion({ id: 'second' })} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} /></>);
@@ -900,5 +901,28 @@ describe('StudyCard – drag-order exercise', () => {
     expect(
       screen.getAllByRole('button', { name: /Element verschieben/ })[0],
     ).toBeDisabled();
+  });
+});
+
+
+describe('decimal input preserves the strict parser contract', () => {
+  it.each([
+    ['0,75', true], ['0.75', true], ['7.5e-1', true], ['7,5e-1', true],
+    ['0,75xyz', false], ['0.75xyz', false], ['0,75.0', false],
+    ['0.75,0', false], ['1 000', false], ['0,7,5', false], ['1e309', false],
+  ])('preserves and grades the complete typed answer %s', async (value, correct) => {
+    const question = makeQuestion({
+      expectedAnswers: { size: 0.75, sizeUnit: 'MiB' },
+      answerInputs: [{ valueKey: 'size', label: 'Dateigröße', unitKey: 'sizeUnit', unitOptions: ['MiB'] }],
+    });
+    const user = userEvent.setup();
+    const check = (answers: Record<string, string>) => validateQuestionAnswers(question, answers);
+    render(<StudyCard question={question} onCheckAnswer={check} onNextQuestion={noNextQuestion} />);
+    const input = screen.getByLabelText('Dateigröße');
+    await user.type(input, value);
+    expect((input as HTMLInputElement).value).toBe(value);
+    await user.selectOptions(screen.getByLabelText('Einheit'), 'MiB');
+    await user.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+    expect(screen.getByRole('status')).toHaveTextContent(correct ? 'Richtig!' : 'nicht ganz richtig');
   });
 });
