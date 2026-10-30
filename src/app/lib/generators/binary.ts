@@ -1,7 +1,7 @@
 export interface BinaryQuestion {
   theme: string;
   questionText: string;
-  expectedAnswers: { decimal: string; binary: string };
+  expectedAnswers: { decimal: string } | { binary: string };
   solutionSteps: string[];
 }
 
@@ -18,7 +18,6 @@ export function generateBinaryQuestion(): BinaryQuestion {
       theme: 'Zahlensysteme',
       questionText: `Wandle die Dezimalzahl ${decimal} in eine 8-Bit-Binärzahl um.`,
       expectedAnswers: {
-        decimal: decimal.toString(),
         binary: binary
       },
       solutionSteps: [
@@ -38,8 +37,7 @@ export function generateBinaryQuestion(): BinaryQuestion {
       theme: 'Zahlensysteme',
       questionText: `Wandle die Binärzahl ${binary} in eine Dezimalzahl um.`,
       expectedAnswers: {
-        decimal: decimal.toString(),
-        binary: binary
+        decimal: decimal.toString()
       },
       solutionSteps: [
         `Gegeben: Binärzahl = ${binary}`,

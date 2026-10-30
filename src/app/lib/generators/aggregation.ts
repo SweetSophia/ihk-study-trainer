@@ -24,7 +24,7 @@ export function generateAggregationQuestion(): AggregationQuestion {
   
   return {
     theme: 'Netzwerkarchitektur & Overhead',
-    questionText: `Kann folgende Netzwerke zu einer Summary-Route aggregiert werden? Falls ja, gebe die Summary-Route an.\nNetzwerke: ${networks.join(', ')}`,
+    questionText: `Bestimme die kleinste überdeckende Summary-Route für diese Netzwerke. Zusätzliche Adressen innerhalb der Summary sind erlaubt; eine exakt gleiche Adressmenge ist nicht gefordert.\nNetzwerke: ${networks.join(', ')}`,
     networks: networks,
     expectedAnswers: {
       summaryRoute: summaryRoute,

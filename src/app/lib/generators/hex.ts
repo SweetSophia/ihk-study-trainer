@@ -1,7 +1,7 @@
 export interface HexQuestion {
   theme: string;
   questionText: string;
-  expectedAnswers: { hex: string; decimal: string };
+  expectedAnswers: { hex: string } | { decimal: string };
   solutionSteps: string[];
 }
 
@@ -18,8 +18,7 @@ export function generateHexQuestion(): HexQuestion {
       theme: 'Zahlensysteme',
       questionText: `Wandle die Dezimalzahl ${decimal} in eine Hexadezimalzahl um.`,
       expectedAnswers: {
-        hex: hex,
-        decimal: decimal.toString()
+        hex: hex
       },
       solutionSteps: [
         `Gegeben: Dezimalzahl = ${decimal}`,
@@ -41,7 +40,6 @@ export function generateHexQuestion(): HexQuestion {
       theme: 'Zahlensysteme',
       questionText: `Wandle die Hexadezimalzahl 0x${hex} in eine Dezimalzahl um.`,
       expectedAnswers: {
-        hex: hex,
         decimal: decimal.toString()
       },
       solutionSteps: [

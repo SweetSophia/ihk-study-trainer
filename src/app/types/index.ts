@@ -8,7 +8,9 @@ export interface AnswerInputConfig {
   unitOptions?: string[];
   /** Optional label shown above the value input (e.g. "Stunden", "Dateigröße") */
   label?: string;
-  /** When present, the value field renders as a dropdown instead of a number input */
+  /** Answer text is preserved for the strict validator, including signs, commas and exponents. No restricted decimal keypad is requested; structured text such as IPv4 also uses the text control. */
+  inputType?: 'number' | 'text';
+  /** When present, the value field renders as a dropdown instead of a text input */
   valueOptions?: string[];
   /** When present, validation accepts any value in this list (order-independent multi-correct) */
   acceptedValues?: string[];
