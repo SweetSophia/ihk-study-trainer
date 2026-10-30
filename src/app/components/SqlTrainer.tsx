@@ -38,7 +38,12 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
   const exercise = loadedExercise?.accessHash === accessHash ? loadedExercise.value : null;
   const [userQuery, setUserQuery] = useState('');
   const [isPending, startTransition] = useTransition();
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  type Feedback = { type: 'success' | 'error' | 'info'; message: string };
+  const [feedbackState, setFeedbackState] = useState<{ accessHash: string | null; value: Feedback } | null>(null);
+  const feedback = feedbackState?.accessHash === accessHash ? feedbackState.value : null;
+  const setFeedback = useCallback((value: Feedback | null) => {
+    setFeedbackState(value ? { accessHash, value } : null);
+  }, [accessHash]);
 
   const [isValidating, setIsValidating] = useState(false);
   const generation = useRef(0);
@@ -58,14 +63,16 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
     }
 
     const token = ++generation.current;
-    completed.current = false;
-    setExercise(null);
     startTransition(async () => {
       try {
-        setFeedback(null);
-        setUserQuery('');
+        setFeedback({ type: 'info', message: 'SQL-Aufgabe wird geladen…' });
         const newExercise = await generateSqlExercise(accessHash);
-        if (mounted.current && token === generation.current) setExercise({ value: newExercise, accessHash });
+        if (mounted.current && token === generation.current) {
+          setExercise({ value: newExercise, accessHash });
+          setUserQuery('');
+          completed.current = false;
+          setFeedback(null);
+        }
       } catch (error: unknown) {
         if (!mounted.current || token !== generation.current) return;
         const message = getErrorMessage(error, 'Unbekannter Fehler');
@@ -83,7 +90,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
         }
       }
     });
-  }, [accessHash]);
+  }, [accessHash, setFeedback]);
 
   const validateAnswer = useCallback(async () => {
     if (!exercise || !userQuery.trim()) {
@@ -91,14 +98,14 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
       return;
     }
 
-    if (inFlight.current || completed.current) return;
+    if (isPending || inFlight.current || completed.current) return;
     inFlight.current = true;
     setIsValidating(true);
-    setFeedback(null);
+    setFeedback({ type: 'info', message: 'SQL-Antwort wird geprüft…' });
     const token = generation.current;
     const isCurrent = () => mounted.current && token === generation.current;
     try {
-      const result = await gradeSqlAnswer(exercise, userQuery);
+      const result = await gradeSqlAnswer(exercise, userQuery, { rejectInfrastructureErrors: true });
       if (!isCurrent()) return;
       setFeedback({
         type: result.correct ? 'success' : 'error',
@@ -112,13 +119,13 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
       } else {
         onIncorrect?.();
       }
-    } catch (error: unknown) {
-      if (isCurrent()) setFeedback({ type: 'error', message: `Validierungsfehler: ${getErrorMessage(error, 'Unbekannter Fehler')}` });
+    } catch {
+      if (isCurrent()) setFeedback({ type: 'error', message: 'Die SQL-Aufgabe konnte technisch nicht geprüft werden. Bitte erneut versuchen oder eine neue Übung laden.' });
     } finally {
       inFlight.current = false;
       if (mounted.current) setIsValidating(false);
     }
-  }, [exercise, userQuery, onCorrect, onIncorrect]);
+  }, [exercise, userQuery, onCorrect, onIncorrect, isPending, setFeedback]);
 
   return (
     <div className="space-y-6">
@@ -147,8 +154,27 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
         </button>
       </div>
 
+      <div role="status" aria-live="polite" aria-atomic="true">
+        {feedback && (
+          <div
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+              feedback.type === 'success'
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                : feedback.type === 'error'
+                ? 'bg-red-500/10 text-red-400 border border-red-500/30'
+                : 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+            }`}
+          >
+            {feedback.type === 'success' && <CheckCircle2 className="w-4 h-4" />}
+            {feedback.type === 'error' && <XCircle className="w-4 h-4" />}
+            {feedback.type === 'info' && <AlertCircle className="w-4 h-4" />}
+            <span className="text-sm">{feedback.message}</span>
+          </div>
+        )}
+      </div>
+
       {/* Exercise Display */}
-      {exercise && !isPending && (
+      {exercise && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -183,6 +209,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
             <textarea
               id="user-query"
               value={userQuery}
+              disabled={isPending}
               onChange={(e) => setUserQuery(e.target.value)}
               className="w-full h-36 p-4 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-y"
               placeholder="SELECT ... FROM ... WHERE ...;"
@@ -194,29 +221,13 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
           <div className="flex items-center gap-4">
             <button
               onClick={validateAnswer}
-              disabled={!userQuery.trim() || isValidating || completed.current}
+              disabled={!userQuery.trim() || isPending || isValidating || completed.current}
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
             >
               <Play className="w-4 h-4" />
               Query ausführen & prüfen
             </button>
 
-            {feedback && (
-              <div
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  feedback.type === 'success'
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                    : feedback.type === 'error'
-                    ? 'bg-red-500/10 text-red-400 border border-red-500/30'
-                    : 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
-                }`}
-              >
-                {feedback.type === 'success' && <CheckCircle2 className="w-4 h-4" />}
-                {feedback.type === 'error' && <XCircle className="w-4 h-4" />}
-                {feedback.type === 'info' && <AlertCircle className="w-4 h-4" />}
-                <span className="text-sm">{feedback.message}</span>
-              </div>
-            )}
           </div>
 
           {/* Solution Hint */}
