@@ -26,7 +26,10 @@ export function parseLocaleFloat(raw?: string | null): number {
     return Number.NaN;
   }
 
-  return parseFloat(raw.replace(',', '.'));
+  const normalized = raw.trim().replace(',', '.');
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(normalized)) return Number.NaN;
+  const value = Number(normalized);
+  return Number.isFinite(value) ? value : Number.NaN;
 }
 
 const BASE_FOR_KEY: Record<string, number> = {

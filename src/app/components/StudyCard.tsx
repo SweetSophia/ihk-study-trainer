@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type MutableRefObject, type Ref } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type MutableRefObject, type Ref } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check,
@@ -77,6 +77,7 @@ function useAutoFocusFirst<T extends HTMLElement>(
 }
 
 export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: StudyCardProps) {
+  const controlId = useId();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showSolution, setShowSolution] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -554,11 +555,12 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
             return (
               <div key={cfg.valueKey} className="flex gap-3 items-end">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-400 mb-2">
+                  <label htmlFor={`${controlId}-value-${idx}`} className="block text-sm font-medium text-slate-400 mb-2">
                     {cfg.label ?? 'Wert'}
                   </label>
                   {cfg.valueOptions ? (
                     <select
+                      id={`${controlId}-value-${idx}`}
                       ref={attachFirst ? (firstInputRef as Ref<HTMLSelectElement>) : undefined}
                       value={answers[cfg.valueKey] || ''}
                       onChange={(e) =>
@@ -576,8 +578,9 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
                     </select>
                   ) : (
                     <input
+                      id={`${controlId}-value-${idx}`}
                       ref={attachFirst ? (firstInputRef as Ref<HTMLInputElement>) : undefined}
-                      type="number"
+                      type={cfg.inputType ?? 'number'}
                       value={answers[cfg.valueKey] || ''}
                       onChange={(e) =>
                         setAnswers({ ...answers, [cfg.valueKey]: e.target.value })
@@ -591,10 +594,11 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
                 </div>
                 {cfg.unitKey && cfg.unitOptions && (
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-slate-400 mb-2">
+                    <label htmlFor={`${controlId}-unit-${idx}`} className="block text-sm font-medium text-slate-400 mb-2">
                       Einheit
                     </label>
                     <select
+                      id={`${controlId}-unit-${idx}`}
                       value={answers[cfg.unitKey] || ''}
                       onChange={(e) =>
                         setAnswers({ ...answers, [cfg.unitKey!]: e.target.value })
@@ -620,10 +624,11 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
             const attachFirst = idx === 0;
             return (
               <div key={key}>
-                <label className="block text-sm font-medium text-slate-400 mb-2 capitalize">
+                <label htmlFor={`${controlId}-generic-${idx}`} className="block text-sm font-medium text-slate-400 mb-2 capitalize">
                   {key.replace(/([A-Z])/g, ' $1').trim()}
                 </label>
                 <input
+                  id={`${controlId}-generic-${idx}`}
                   ref={attachFirst ? (firstInputRef as Ref<HTMLInputElement>) : undefined}
                   type="text"
                   value={answers[key] || ''}
@@ -708,6 +713,8 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
         <button
           type="button"
           onClick={() => setShowSolution(!showSolution)}
+          aria-expanded={showSolution}
+          aria-controls={`${controlId}-solution`}
           className="flex items-center gap-2 px-5 py-2.5 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-slate-100 rounded-lg transition-colors"
         >
           <Lightbulb className="w-4 h-4" />
@@ -726,6 +733,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
       </div>
 
       {/* Stepped solution */}
+      <div id={`${controlId}-solution`}>
       <AnimatePresence>
         {showSolution && (
           <motion.div
@@ -823,8 +831,8 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
                 <div className="mt-2 space-y-1">
                   {Object.entries(question.expectedAnswers).map(([key, value]) => (
                     <p key={key} className="text-sm text-slate-300">
-                      <span className="text-slate-500 capitalize">{key}:</span>{' '}
-                      <span className="text-emerald-300 font-mono">{value}</span>
+                      <span className="text-slate-500 capitalize">{question.answerInputs?.find(cfg => cfg.valueKey === key)?.label ?? key}:</span>{' '}
+                      <span className="text-emerald-300 font-mono">{typeof value === 'boolean' ? (value ? 'Ja' : 'Nein') : value}</span>
                     </p>
                   ))}
                 </div>
@@ -833,6 +841,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

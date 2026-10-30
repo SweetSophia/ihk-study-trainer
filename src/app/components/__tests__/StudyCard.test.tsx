@@ -119,6 +119,7 @@ vi.mock('../../lib/celebrations', () => ({
 
 import StudyCard from '../StudyCard';
 import { validateQuestionAnswers } from '../../lib/answerValidation';
+import { GENERATORS } from '../../lib/generators/registry';
 
 const noCheckAnswer = vi.fn().mockReturnValue(true);
 const noNextQuestion = vi.fn();
@@ -139,6 +140,51 @@ function makeQuestion(overrides: Partial<Question> = {}): Question {
     ...overrides,
   };
 }
+
+describe('legacy associated answer controls', () => {
+  it('associates numeric, unit, select and generic labels with distinct controls across cards', () => {
+    const structured = makeQuestion({ answerInputs: [
+      { valueKey: 'size', label: 'Dateigröße', unitKey: 'sizeUnit', unitOptions: ['MB', 'MiB'] },
+      { valueKey: 'pick', label: 'Auswahl', valueOptions: ['Ja', 'Nein'] },
+    ], expectedAnswers: { size: 1, sizeUnit: 'MB', pick: 'Ja' } });
+    const { rerender } = render(<StudyCard question={structured} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} />);
+    expect(screen.getByLabelText('Dateigröße')).toHaveAttribute('type', 'number');
+    expect(screen.getByLabelText('Einheit')).toHaveRole('combobox');
+    expect(screen.getByLabelText('Auswahl')).toHaveRole('combobox');
+    rerender(<><StudyCard question={makeQuestion()} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} /><StudyCard question={makeQuestion({ id: 'second' })} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} /></>);
+    const widths = screen.getAllByLabelText('width');
+    expect(widths).toHaveLength(2);
+    expect(widths[0].id).not.toBe(widths[1].id);
+  });
+  it('connects both disclosure states to a stable target and renders boolean solutions', () => {
+    render(<StudyCard question={makeQuestion({ expectedAnswers: { possible: true, denied: false } })} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} />);
+    const button = screen.getByRole('button', { name: 'Lösung anzeigen' });
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    const id = button.getAttribute('aria-controls')!;
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id)).toBeEmptyDOMElement();
+    fireEvent.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    expect(within(document.getElementById(id)!).getByText('Ja')).toBeVisible();
+    expect(within(document.getElementById(id)!).getByText('Nein')).toBeVisible();
+    fireEvent.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(document.getElementById(id)).toBeEmptyDOMElement();
+  });
+  it('allows a generated aggregation answer with a text IPv4 field and a labelled Ja choice', () => {
+    const q = GENERATORS.aggregation();
+    const check = vi.fn(answers => validateQuestionAnswers(q, answers));
+    render(<StudyCard question={q} onCheckAnswer={check} onNextQuestion={noNextQuestion} />);
+    const route = screen.getByLabelText('Summary-Netzadresse');
+    expect(route).toHaveAttribute('type', 'text');
+    fireEvent.change(route, { target: { value: q.expectedAnswers.summaryRoute } });
+    fireEvent.change(screen.getByLabelText('Präfixlänge'), { target: { value: String(q.expectedAnswers.summaryCidr) } });
+    fireEvent.change(screen.getByLabelText('Überdeckende Summary möglich?'), { target: { value: 'Ja' } });
+    fireEvent.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+    expect(check).toHaveReturnedWith(true);
+    expect(screen.getByRole('status')).toHaveTextContent('Richtig!');
+  });
+});
 
 describe('StudyCard – welcome screen (no question)', () => {
   beforeEach(() => {

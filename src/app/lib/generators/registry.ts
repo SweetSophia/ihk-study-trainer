@@ -125,6 +125,11 @@ export const GENERATORS: Record<RegistryModuleId, () => Question> = {
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
       difficulty: 'hard',
+      answerInputs: [
+        { valueKey: 'possible', label: 'Überdeckende Summary möglich?', valueOptions: ['Ja', 'Nein'], acceptedValues: q.expectedAnswers.possible ? ['Ja', 'true'] : ['Nein', 'false'] },
+        { valueKey: 'summaryRoute', label: 'Summary-Netzadresse', inputType: 'text' },
+        { valueKey: 'summaryCidr', label: 'Präfixlänge' },
+      ],
     };
   },
   ports: () => {
