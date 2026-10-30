@@ -34,15 +34,40 @@ function canonical(value: unknown): string {
   return JSON.stringify(encode(value));
 }
 
-function resultSignature(result: Results<unknown>, ordered: boolean): string {
-  const rows = result.rows.map(canonical);
-  if (!ordered) rows.sort();
-  // Keep column names even when there are no rows; allow column reordering
-  // and equivalent result values returned under different PostgreSQL type OIDs.
+// Scalar numeric PostgreSQL types, including OID's integral representation.
+// Text, JSON and arrays are deliberately not treated as numeric values.
+const NUMERIC_OIDS = new Set([20, 21, 23, 26, 700, 701, 1700]);
+
+function numericSignature(value: unknown): string {
+  if (typeof value !== 'number' && typeof value !== 'bigint' && typeof value !== 'string') return canonical(value);
+  const text = String(value);
+  if (['NaN', 'Infinity', '-Infinity'].includes(text)) return JSON.stringify(['numeric', text]);
+  const match = /^([+-]?)(\d+)(?:\.(\d*))?(?:e([+-]?\d+))?$/i.exec(text);
+  if (!match) return canonical(value);
+  const fraction = match[3] ?? '';
+  const digits = (match[2] + fraction).replace(/^0+/, '');
+  if (!digits) return JSON.stringify(['numeric', '0', '0']);
+  const significant = digits.replace(/0+$/, '');
+  const scale = BigInt(fraction.length) - BigInt(match[4] ?? '0') - BigInt(digits.length - significant.length);
+  return JSON.stringify(['numeric', (match[1] === '-' ? '-' : '') + significant, String(scale)]);
+}
+
+function resultSignature(result: Results<unknown>, ordered: boolean, normalizeNumbers = true): string {
   const fields = result.fields.map(field => field.name).sort();
-  if (new Set(result.fields.map(field => field.name)).size !== result.fields.length) {
+  if (new Set(fields).size !== fields.length) {
     throw new SqlAnswerError('Mehrdeutige Spaltennamen werden nicht unterstützt. Bitte eindeutige Aliase verwenden.');
   }
+  const types = new Map(result.fields.map(field => [field.name, field.dataTypeID]));
+  const rows = normalizeNumbers ? result.rows.map(row => JSON.stringify(
+    Object.entries(row as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([name, value]) => [
+      name,
+      NUMERIC_OIDS.has(types.get(name) ?? 0) && value !== null ? numericSignature(value) : canonical(value),
+    ]),
+  )) : result.rows.map(canonical);
+  if (!ordered) rows.sort();
+  // Values are encoded into separate signature strings: a real JSON array/object
+  // resembling our numeric tag cannot impersonate a scalar numeric result.
+  // Keep column names even for empty results; permit column reordering.
   return canonical({ rows, fields });
 }
 
@@ -75,7 +100,9 @@ async function snapshot(db: PGlite | Transaction): Promise<string> {
   const states = [];
   for (const table of tables.rows) {
     const rows = await db.query(`SELECT * FROM ${quote(table.schemaname)}.${quote(table.tablename)}`);
-    states.push([table, resultSignature(rows, false)]);
+    // Preserve the legacy stored-state contract (including numeric scale).
+    // Numeric result equivalence applies to SELECT answers, not mutation snapshots.
+    states.push([table, resultSignature(rows, false, false)]);
   }
   return canonical(states);
 }

@@ -8,6 +8,9 @@ describe('original database scenario', () => {
   it('accepts a correlated count including zero and reordered output columns', async () => {
     expect(await gradeDatabaseTask(1, 'SELECT (SELECT COUNT(*) FROM wartung w WHERE w.geraet_id=g.id) AS anzahl, g.id AS geraet_id FROM geraet g ORDER BY g.id DESC')).toEqual({ correct: true });
   });
+  it('accepts an equivalent numeric aggregate through the strict AP2 caller on both fixtures', async () => {
+    expect(await gradeDatabaseTask(1, 'SELECT g.id::numeric AS geraet_id, COUNT(w.id)::numeric AS anzahl FROM geraet g LEFT JOIN wartung w ON w.geraet_id=g.id GROUP BY g.id')).toEqual({ correct: true });
+  });
   it('rejects loss of zero counts', async () => {
     expect((await gradeDatabaseTask(1, 'SELECT g.id AS geraet_id, COUNT(w.id) AS anzahl FROM geraet g JOIN wartung w ON w.geraet_id=g.id GROUP BY g.id')).correct).toBe(false);
   });

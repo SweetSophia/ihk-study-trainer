@@ -47,6 +47,26 @@ describe('real PostgreSQL grading', () => {
   it.each(['int2', 'float8', 'int8'])('accepts equivalent numeric values cast to %s', async type => {
     expect(await gradeSqlAnswer(exercise('SELECT id AS n FROM items'), `SELECT id::${type} AS n FROM items`)).toMatchObject({ correct: true });
   });
+  it.each([false, true])('accepts exact numeric equivalents for legacy/AP2 strict=%s', async strict => {
+    const input = { setup_sql: '', grading: select, solution_query: `SELECT
+      1::integer AS one, 1.10::numeric AS decimal_value, 0.001::numeric AS tiny,
+      0::integer AS zero, 9007199254740993::bigint AS large,
+      'NaN'::numeric AS nan, 'Infinity'::numeric AS inf, '-Infinity'::numeric AS neg_inf` };
+    const query = `SELECT
+      1.00::numeric AS one, 1.1::float8 AS decimal_value, 1e-3::float8 AS tiny,
+      '-0.0'::numeric AS zero, 9007199254740993::numeric AS large,
+      'NaN'::float8 AS nan, 'Infinity'::float8 AS inf, '-Infinity'::float8 AS neg_inf`;
+    expect(await gradeSqlAnswer(input, query, { rejectInfrastructureErrors: strict })).toMatchObject({ correct: true });
+  });
+  it.each([
+    ['9007199254740992::bigint', '9007199254740993::numeric'],
+    ['0.1000000000000000000001::numeric', '0.1000000000000000000002::numeric'],
+    ['1::integer', "'1'::text"],
+    ['1::integer', "'[\"numeric\",\"1\",\"0\"]'::jsonb"],
+    ['0::integer', 'NULL::numeric'],
+  ])('keeps distinct numeric or nonnumeric results apart: %s versus %s', async (reference, answer) => {
+    expect(await gradeSqlAnswer({ setup_sql: '', grading: select, solution_query: `SELECT ${reference} AS n` }, `SELECT ${answer} AS n`)).toMatchObject({ correct: false });
+  });
   it.each(['NaN', 'Infinity', '-Infinity'])('distinguishes numeric %s from NULL', async value => {
     expect(await gradeSqlAnswer(exercise('SELECT NULL::float8 AS n'), `SELECT '${value}'::float8 AS n`)).toMatchObject({ correct: false });
   });
@@ -69,6 +89,14 @@ describe('real PostgreSQL grading', () => {
   });
   it('runs mutations from identical initial state, including non-idempotent updates', async () => {
     expect(await gradeSqlAnswer({ setup_sql, grading: mutation, solution_query: 'UPDATE items SET quantity = quantity + 1' }, 'UPDATE items SET quantity = quantity + 1')).toMatchObject({ correct: true });
+  });
+  it.each([
+    ["UPDATE prices SET amount=1.5 WHERE id=1", "UPDATE prices SET amount=1.5 WHERE id=1", true],
+    ["UPDATE prices SET amount=2.0 WHERE id=1", "UPDATE prices SET amount=2.00 WHERE id=1", false],
+    ["UPDATE prices SET amount=2.0 WHERE id=1", "UPDATE prices SET amount=CASE WHEN id=1 THEN 2.0 ELSE 1.5 END", false],
+  ] as const)('preserves legacy mutation storage representation: %s / %s', async (reference, answer, correct) => {
+    const input = { setup_sql: 'CREATE TABLE prices(id integer PRIMARY KEY, amount numeric); INSERT INTO prices VALUES(1,1.50),(2,1.50);', grading: mutation, solution_query: reference };
+    expect(await gradeSqlAnswer(input, answer)).toMatchObject({ correct });
   });
   it('rejects different mutations even when both return empty rows', async () => {
     expect(await gradeSqlAnswer({ setup_sql, grading: mutation, solution_query: 'UPDATE items SET quantity = 11 WHERE id = 1' }, 'UPDATE items SET quantity = 21 WHERE id = 2')).toMatchObject({ correct: false });
