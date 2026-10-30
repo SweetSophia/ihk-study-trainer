@@ -72,7 +72,7 @@ Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist an
 14. **Kabel** – passende Kabeltypen anhand von Strecke, Geschwindigkeit und Umgebung wählen
 15. **Linux** – Linux-Befehle und typische Admin-Kommandos üben
 16. **Cloud** – Cloud-Computing-Konzepte, Provider-Modelle und Sicherheitsgrundlagen wiederholen
-17. **Handelskalkulation** – Vorwärts-, Rückwärts- und Differenzkalkulation Schritt für Schritt lösen
+17. **Differenzkalkulation** – Vorwärts- und marktpreisbasierte Rückwärtsrechnung gezielt vergleichen
 18. **Vorwärtskalkulation** – vom Listeneinkaufspreis zum Bruttoverkaufspreis
 19. **Rückwärtskalkulation** – vom Bruttoverkaufspreis zurück zum Listeneinkaufspreis
 20. **RAID-Rechner** – Kapazität und Ausfallsicherheit von RAID-Verbünden
@@ -86,6 +86,8 @@ Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist an
 28. **AP2-Trainingslauf** – Wirtschaftlichkeit, Fehlersuche und Datensicherung mit gemeinsamer Auswertung
 29. **AP2 Berechtigungen** – effektive Gruppenrechte, begrenzte Korrektur und geplante Kontrolle
 30. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
+
+Alte gemischte Kalkulationsversuche bleiben als **„Kalkulation (gemischter Altbestand)“** im Fortschritt und in den Gesamtsummen erhalten. Sie werden keinem der drei getrennten Angebote nachträglich zugerechnet und nicht über „Fehler üben“ neu gestartet. Vorwärts- und Rückwärtsfortschritt behalten ihre bisherigen IDs; Differenzaufgaben starten mit einer eigenen Fortschritts-ID.
 
 ## UI & Lernerlebnis
 
