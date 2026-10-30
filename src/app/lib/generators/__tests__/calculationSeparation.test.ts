@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GENERATORS } from '../registry';
+import { generateDifferenzCalculation } from '../handelskalkulation';
 import { BASE_MODULES } from '../../modules';
 import { normalizeProgressModules, toCanonicalModuleId, toStoredProgressModuleId } from '../../moduleIds';
 import { validateQuestionAnswers } from '../../answerValidation';
@@ -46,6 +47,21 @@ describe('three distinct calculation offerings', () => {
       expect(validateQuestionAnswers(q, answers)).toBe(true);
       expect(validateQuestionAnswers(q, { ...answers, [keys[0]]: '99999999' })).toBe(false);
     }
+  });
+
+  it('keeps differential mode through the existing +5% fallback after repeated equal-market draws', () => {
+    // 0.9 + (2 / 7) * 0.35 = 1: every market draw equals the forward price.
+    const rng = vi.spyOn(Math, 'random').mockReturnValue(2 / 7);
+    const result = generateDifferenzCalculation();
+    expect(rng.mock.calls.length).toBeGreaterThanOrEqual(25);
+    expect(result.given.bruttovkMarkt).toBe(Math.round(result.forwardSteps.bruttovk * 1.05 * 100) / 100);
+    expect(result.backwardSteps.bep).toBeGreaterThan(0);
+    const question = GENERATORS.handelskalkulationDifferenz();
+    expect(question.module).toBe('handelskalkulationDifferenz');
+    expect(question.solutionSteps[0]).toBe('Differenzkalkulation');
+    expect(question.answerInputs).toHaveLength(32);
+    const answers = Object.fromEntries(question.answerInputs!.map(input => [input.valueKey, String(question.expectedAnswers[input.valueKey])]));
+    expect(validateQuestionAnswers(question, answers)).toBe(true);
   });
 
   it('keeps mixed history distinct from differential and both existing stored aliases', () => {

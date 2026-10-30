@@ -46,7 +46,7 @@ Beim AP2-SQL-Training laufen Prüfungen in wegwerfbaren Browser-Datenbanken mit 
 
 - **RAID-Rechner** mit visueller Laufwerksdarstellung, Kapazität und Ausfallsicherheit
 - **Subnetting-Visualisierung** nach der Prüfung oder beim Öffnen der Lösung sowie **OSI-Sortierübung** mit Tastaturbedienung
-- Getrennte Vorwärts- und Rückwärtskalkulation neben gemischter Handelskalkulation
+- Getrennte Vorwärts-, Rückwärts- und Differenzkalkulation
 - Genauere Prüfung diskreter Zahlen und Netzwerkangaben, korrekt ausgerichtete Aggregationsnetze und SQL-Bewertung mit getrennten Testdatenbanken
 - Verbesserte SQL-Fehlermeldungen, Schutz vor veralteten Fortschrittsantworten und zugängliche Rückmeldungen in den neuen Trainern
 
