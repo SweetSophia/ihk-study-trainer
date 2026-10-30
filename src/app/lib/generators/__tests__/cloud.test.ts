@@ -1,9 +1,26 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   generateCloudQuestion,
   resolveCloudQuestionsForDifficulty,
 } from '../cloud';
+
+afterEach(() => vi.restoreAllMocks());
+
+it('distinguishes direct Internet Gateway routing from private-subnet outbound NAT', () => {
+  const bank = resolveCloudQuestionsForDifficulty('medium');
+  const index = bank.findIndex((q) => q.question.includes('Public Subnet und einem Private Subnet'));
+  expect(index).toBeGreaterThanOrEqual(0);
+  vi.spyOn(Math, 'random').mockReturnValue((index + 0.5) / bank.length);
+  const question = generateCloudQuestion('medium');
+  const answer = 'Public Subnets haben eine direkte Route zum Internet Gateway; Private Subnets nicht';
+  expect(question.expectedAnswers.answer).toBe(answer);
+  expect(question.answerInputs[0].valueOptions).toContain(answer);
+  expect(question.answerInputs[0].acceptedValues).toEqual([answer]);
+  const solution = question.solutionSteps.join('\n');
+  expect(solution).toMatch(/Private Subnets.*ausgehenden Internetzugang.*NAT/);
+  expect(solution).toMatch(/Adressierung.*Sicherheitsregeln/);
+});
 
 const sampleQuestion = {
   type: 'multipleChoice' as const,

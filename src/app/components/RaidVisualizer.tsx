@@ -11,14 +11,11 @@ import type { RaidConfig } from '../types';
 export type DiskRole = 'data' | 'parity';
 
 /**
- * One row in the disk grid: which slot, what it stores, and how big it is.
+ * One tile: index, capacity role, and disk-size unit.
  *
- * The visualizer doesn't draw individual stripes — it draws one tile per
- * physical disk and labels the role (data vs parity). For RAID 5/6 the
- * canonical pedagogical simplification is "one (or two) disk's worth of
- * parity space"; we mark the last N disks as parity, the rest as data.
- * Real RAID 5 distributes parity across disks (rotating), but a flat
- * one-disk-as-parity view is what IHK exam questions expect.
+ * For RAID 5/6 these are capacity equivalents, not physical disk roles.
+ * Parity is distributed across all disks; one/two disk-capacity units
+ * account for its overhead. The UI explicitly labels this distinction.
  */
 export interface ClassifiedDisk {
   index: number;
@@ -27,11 +24,11 @@ export interface ClassifiedDisk {
 }
 
 /**
- * Decide which disks hold data and which hold parity for the chosen level.
+ * Allocate disk-capacity units to data and parity for the chosen level.
  *
  * Exported so the tests can assert the role layout without rendering the
- * component. The function is total: every disk in [0, total) gets exactly
- * one role, and the count of parity disks matches the level's redundancy
+ * component. The function is total: every unit in [0, total) gets exactly
+ * one role, and the count of parity units matches the level's redundancy
  * overhead (1 for RAID 5, 2 for RAID 6, 0 for RAID 0/1/10).
  */
 export function classifyDisks(raid: RaidConfig): ClassifiedDisk[] {
@@ -90,7 +87,7 @@ interface RaidVisualizerProps {
  *
  * Layout (top → bottom):
  *   1. Header — level badge + level name + short description
- *   2. Disk grid — one tile per physical disk, color-coded by role
+ *   2. Disk grid — for RAID 5/6, capacity equivalents color-coded by role
  *   3. Stat grid — level, disk count, per-disk size, formatted usable
  *      capacity, and the fault-tolerance status badge
  *
@@ -105,6 +102,10 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
   const usableLabel = useMemo(() => formatUsableCapacity(raid), [raid]);
   const totalDataDisks = disks.filter((d) => d.role === 'data').length;
   const totalParityDisks = disks.length - totalDataDisks;
+  const isParityAccounting = totalParityDisks > 0;
+  const roleLabels: Record<DiskRole, string> = isParityAccounting
+    ? { data: 'Datenanteil', parity: 'Paritätsanteil' }
+    : DISK_ROLE_LABEL;
 
   // Stagger fade-in for the disk tiles. Cap the delay so an 8-disk array
   // doesn't take 8 × 60ms = nearly half a second to settle.
@@ -146,11 +147,19 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
       {/* Disk grid */}
       <div
         className="px-5 pt-4 pb-4 border-b border-slate-800/60"
-        aria-label={`${raid.disks} Festplatten im Array`}
+        aria-label={isParityAccounting
+          ? `${raid.disks} Plattenkapazitäten zur Kapazitätsberechnung`
+          : `${raid.disks} Festplatten im Array`}
       >
         <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-3">
-          Festplatten
+          {isParityAccounting ? 'Kapazitätsaufteilung (rechnerisch)' : 'Festplatten'}
         </p>
+        {isParityAccounting && (
+          <p className="text-xs text-slate-400 mb-3">
+            Jeder Anteil entspricht einer Plattenkapazität. Parität wird über alle Festplatten verteilt;
+            der Paritätsanteil entspricht der Kapazität {totalParityDisks === 1 ? 'einer Platte' : 'zweier Platten'}.
+          </p>
+        )}
         <div
           className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-4"
           data-testid="raid-disk-grid"
@@ -165,8 +174,8 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
                 ease: 'easeOut',
                 delay: baseDelay + i * stepDelay,
               }}
-              aria-label={`Festplatte ${disk.index + 1}: ${disk.diskSizeGb} GB (${
-                DISK_ROLE_LABEL[disk.role]
+              aria-label={`${isParityAccounting ? 'Kapazitätsanteil' : 'Festplatte'} ${disk.index + 1}: ${disk.diskSizeGb} GB (${
+                roleLabels[disk.role]
               })`}
               data-testid="raid-disk-tile"
               data-disk-index={disk.index}
@@ -187,14 +196,14 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
                   disk.role === 'parity' ? 'text-amber-300' : 'text-emerald-300'
                 }`}
               >
-                Platte {disk.index + 1}
+                {isParityAccounting ? 'Anteil' : 'Platte'} {disk.index + 1}
               </span>
               <span
                 className={`text-[10px] uppercase tracking-wider ${
                   disk.role === 'parity' ? 'text-amber-400/80' : 'text-emerald-400/80'
                 }`}
               >
-                {DISK_ROLE_LABEL[disk.role]}
+                {roleLabels[disk.role]}
               </span>
               <span className="text-[10px] text-slate-500 font-mono">
                 {disk.diskSizeGb} GB
@@ -206,9 +215,9 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
         {/* Compact legend so the colour code is also conveyed in text form
             (don't rely on colour alone — accessibility requirement). */}
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
-          <LegendSwatch tone="emerald" label="Datenträger" />
+          <LegendSwatch tone="emerald" label={roleLabels.data} />
           {totalParityDisks > 0 && (
-            <LegendSwatch tone="amber" label="Parität" />
+            <LegendSwatch tone="amber" label={roleLabels.parity} />
           )}
           {raid.faultTolerance === 0 && (
             <LegendSwatch tone="rose" label="Keine Redundanz" />
@@ -241,7 +250,7 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
           testId="viz-stat-usable"
         />
         <StatRow
-          label="Datenträger / Parität"
+          label={isParityAccounting ? 'Daten / Parität (Plattenkapazitäten)' : 'Datenträger / Parität'}
           value={`${totalDataDisks} / ${totalParityDisks}`}
           tone={totalParityDisks > 0 ? 'amber' : 'slate'}
           testId="viz-stat-split"

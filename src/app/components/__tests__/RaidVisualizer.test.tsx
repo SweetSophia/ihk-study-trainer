@@ -100,7 +100,7 @@ describe('classifyDisks', () => {
     expect(result.every((d) => d.role === 'data')).toBe(true);
   });
 
-  it('marks exactly the last disk as parity for RAID 5', () => {
+  it('allocates one disk-capacity equivalent to parity for RAID 5', () => {
     const result = classifyDisks(
       makeRaid({ level: 'RAID 5', disks: 5, diskSizeGb: 2000 }),
     );
@@ -109,7 +109,7 @@ describe('classifyDisks', () => {
     expect(result[4]).toEqual({ index: 4, role: 'parity', diskSizeGb: 2000 });
   });
 
-  it('marks exactly the last two disks as parity for RAID 6', () => {
+  it('allocates two disk-capacity equivalents to parity for RAID 6', () => {
     const result = classifyDisks(
       makeRaid({ level: 'RAID 6', disks: 6, diskSizeGb: 1000 }),
     );
@@ -204,19 +204,19 @@ describe('RaidVisualizer — rendering', () => {
     expect(screen.getAllByTestId('raid-disk-tile')).toHaveLength(8);
   });
 
-  it('numbers the disks sequentially starting at 1', () => {
+  it('numbers the capacity units sequentially starting at 1 for parity RAID', () => {
     render(<RaidVisualizer raid={makeRaid({ disks: 4 })} />);
 
     const tiles = screen.getAllByTestId('raid-disk-tile');
     expect(tiles[0]).toHaveAttribute('data-disk-index', '0');
     expect(tiles[3]).toHaveAttribute('data-disk-index', '3');
 
-    const labels = screen.getAllByText(/^Platte \d+$/);
+    const labels = screen.getAllByText(/^Anteil \d+$/);
     expect(labels.map((el) => el.textContent)).toEqual([
-      'Platte 1',
-      'Platte 2',
-      'Platte 3',
-      'Platte 4',
+      'Anteil 1',
+      'Anteil 2',
+      'Anteil 3',
+      'Anteil 4',
     ]);
   });
 });
@@ -225,7 +225,25 @@ describe('RaidVisualizer — rendering', () => {
 // Color coding (parity vs data)
 // ===========================================================================
 
-describe('RaidVisualizer — disk role colour coding', () => {
+describe('RaidVisualizer — capacity accounting colour coding', () => {
+  it.each([
+    ['RAID 5', 1, 'einer Platte'],
+    ['RAID 6', 2, 'zweier Platten'],
+  ] as const)('presents %s as capacity equivalents rather than dedicated parity disks', (level, parityUnits, overhead) => {
+    render(<RaidVisualizer raid={makeRaid({ level, disks: 4 })} />);
+
+    expect(screen.getByText('Kapazitätsaufteilung (rechnerisch)')).toBeInTheDocument();
+    expect(screen.getByText(/Parität wird über alle Festplatten verteilt/)).toHaveTextContent(`Kapazität ${overhead}`);
+    const tiles = screen.getAllByTestId('raid-disk-tile');
+    expect(tiles.filter((tile) => tile.getAttribute('data-disk-role') === 'parity')).toHaveLength(parityUnits);
+    for (const tile of tiles) {
+      expect(tile.getAttribute('aria-label')).toMatch(/^Kapazitätsanteil \d+: 1000 GB \((Datenanteil|Paritätsanteil)\)$/);
+      expect(within(tile).queryByText(/^Platte \d+$/)).not.toBeInTheDocument();
+    }
+    expect(screen.getByText('Daten / Parität (Plattenkapazitäten)')).toBeInTheDocument();
+    expect(screen.getByTestId('viz-stat-split')).toHaveTextContent(`${4 - parityUnits} / ${parityUnits}`);
+  });
+
   it('marks every tile as data for RAID 0 (no parity)', () => {
     render(<RaidVisualizer raid={makeRaid({ level: 'RAID 0', disks: 4 })} />);
 
@@ -274,8 +292,8 @@ describe('RaidVisualizer — disk role colour coding', () => {
     expect(parityClasses).toContain('amber');
   });
 
-  it('shows the "Parität" text label on every parity tile', () => {
-    // RAID 6 with 5 disks → 3 data + 2 parity. The "Parität" text appears
+  it('shows the "Paritätsanteil" text label on every parity capacity tile', () => {
+    // RAID 6 with 5 disks → 3 data + 2 parity capacity units. The label appears
     // once per parity tile (inside the tile) plus once in the legend below
     // the grid — so 3 occurrences total.
     render(<RaidVisualizer raid={makeRaid({ level: 'RAID 6', disks: 5 })} />);
@@ -286,7 +304,7 @@ describe('RaidVisualizer — disk role colour coding', () => {
     );
     expect(parityTiles).toHaveLength(2);
     parityTiles.forEach((tile) => {
-      expect(within(tile).getByText('Parität')).toBeInTheDocument();
+      expect(within(tile).getByText('Paritätsanteil')).toBeInTheDocument();
     });
   });
 });
@@ -428,7 +446,7 @@ describe('RaidVisualizer — accessibility', () => {
     expect(section.tagName.toLowerCase()).toBe('section');
   });
 
-  it('gives each disk tile a descriptive aria-label with role and capacity', () => {
+  it('gives each capacity tile an aria-label that does not imply physical disk roles', () => {
     render(
       <RaidVisualizer
         raid={makeRaid({ level: 'RAID 5', disks: 3, diskSizeGb: 1000 })}
@@ -436,10 +454,10 @@ describe('RaidVisualizer — accessibility', () => {
     );
 
     expect(
-      screen.getByLabelText('Festplatte 1: 1000 GB (Datenträger)'),
+      screen.getByLabelText('Kapazitätsanteil 1: 1000 GB (Datenanteil)'),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText('Festplatte 3: 1000 GB (Parität)'),
+      screen.getByLabelText('Kapazitätsanteil 3: 1000 GB (Paritätsanteil)'),
     ).toBeInTheDocument();
   });
 
@@ -456,16 +474,16 @@ describe('RaidVisualizer — accessibility', () => {
     // Both the data and parity legend entries are present. The same
     // terminology is used for visible labels and aria-labels so screen-reader
     // and sighted users get the same vocabulary.
-    expect(screen.getAllByText('Datenträger').length).toBeGreaterThanOrEqual(1);
-    const parityLabels = screen.getAllByText('Parität');
+    expect(screen.getAllByText('Datenanteil').length).toBeGreaterThanOrEqual(1);
+    const parityLabels = screen.getAllByText('Paritätsanteil');
     expect(parityLabels.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('labels the disk-grid container so assistive tech announces the count', () => {
+  it('labels the capacity-grid container so assistive tech announces capacity units', () => {
     render(<RaidVisualizer raid={makeRaid({ disks: 4 })} />);
 
     expect(
-      screen.getByLabelText('4 Festplatten im Array'),
+      screen.getByLabelText('4 Plattenkapazitäten zur Kapazitätsberechnung'),
     ).toBeInTheDocument();
   });
 

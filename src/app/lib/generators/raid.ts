@@ -40,7 +40,7 @@ const RAID_SPECS: Record<RaidLevel, RaidSpec> = {
       usableCapacityGb: (disks - 1) * size,
       faultTolerance: 1,
     }),
-    description: 'Striping mit einer Paritätsplatte — ein Ausfall wird toleriert.',
+    description: 'Striping mit verteilter Parität (Kapazitätsanteil einer Platte) — ein Ausfall wird toleriert.',
   },
   'RAID 6': {
     level: 'RAID 6',
@@ -49,7 +49,7 @@ const RAID_SPECS: Record<RaidLevel, RaidSpec> = {
       usableCapacityGb: (disks - 2) * size,
       faultTolerance: 2,
     }),
-    description: 'Striping mit doppelter Parität — zwei Ausfälle werden toleriert.',
+    description: 'Striping mit doppelter verteilter Parität (Kapazitätsanteil zweier Platten) — zwei Ausfälle werden toleriert.',
   },
   'RAID 10': {
     level: 'RAID 10',
@@ -288,7 +288,7 @@ function buildSolutionSteps(params: {
       case 'RAID 1':
         return `${disks - 1} Ausfälle toleriert (alle Spiegelplatten müssen ausfallen).`;
       case 'RAID 5':
-        return `1 Ausfall wird toleriert (Paritätsplatte kann rekonstruiert werden).`;
+        return `1 Ausfall wird toleriert (Daten einer beliebigen ausgefallenen Platte können aus den übrigen Daten und der verteilten Parität rekonstruiert werden).`;
       case 'RAID 6':
         return `2 Ausfälle werden toleriert (doppelte Parität).`;
       case 'RAID 10':

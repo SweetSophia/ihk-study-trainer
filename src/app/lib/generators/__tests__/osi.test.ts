@@ -6,6 +6,16 @@ import {
 } from '../osi';
 
 describe('generateOsiOrderQuestion', () => {
+  it.each([
+    ['von oben nach unten', 'APSTNDP'],
+    ['von unten nach oben', 'PDNTSPA'],
+  ])('gives a mnemonic matching the layer initials %s', (direction, initials) => {
+    const q = generateOsiOrderQuestion();
+    const mnemonic = q.solutionSteps.find((step) => step.startsWith(`Merkspruch (${direction})`));
+    const words = mnemonic?.match(/"([^"]+)"/)?.[1].split(' ');
+    expect(words?.map((word) => word[0]).join('')).toBe(initials);
+  });
+
   it('uses the osi module theme and orders-related question text', () => {
     const q = generateOsiOrderQuestion();
     expect(q.theme).toBe('TCP/IP-Referenzmodell & Protokolle');

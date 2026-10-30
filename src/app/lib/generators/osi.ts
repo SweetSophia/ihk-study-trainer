@@ -203,8 +203,8 @@ export function generateOsiOrderQuestion(): OsiOrderQuestion {
       `  Layer 1 — Physical / Bitübertragungsschicht`,
       `    Kabel, Hubs, Repeater, Glasfaser, elektrische/optische Signale`,
       ``,
-      `Merkspruch (von oben nach unten): "Please Do Not Throw Sausage Pizza Away"`,
-      `Merkspruch (von unten nach oben): "All People Seem To Need Data Processing"`,
+      `Merkspruch (von oben nach unten): "All People Seem To Need Data Processing"`,
+      `Merkspruch (von unten nach oben): "Please Do Not Throw Sausage Pizza Away"`,
     ],
   };
 }
