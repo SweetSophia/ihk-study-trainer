@@ -1,3 +1,4 @@
+import { mockNumberLocale } from '../../../../test/numberLocale';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { generateImageCalcQuestion } from '../imageCalc';
@@ -35,7 +36,8 @@ describe('generateImageCalcQuestion – precise conversion steps', () => {
     expect(question.expectedAnswers.size).toBe(unit === 6 ? 0.0008 : 0.0007);
   });
 
-  it('uses exact operands and declares only final rounding across all 140 selectable images', () => {
+  it.each(['en-US', 'de-DE', 'fr-FR', 'ru-RU'])('uses exact operands and declares only final rounding across all 140 selectable images in %s', locale => {
+    const normalize = mockNumberLocale(locale);
     let checked = 0;
     for (let r = 0; r < imageDimensions.length; r++) {
       for (let d = 0; d < depths.length; d++) {
@@ -49,20 +51,27 @@ describe('generateImageCalcQuestion – precise conversion steps', () => {
           expect(question.questionText).toContain(`auf ${places} Nachkommastellen`);
 
           const steps = question.solutionSteps as string[];
-          for (const step of steps) {
+          let matched = 0;
+          for (const rawStep of steps) {
+            const step = normalize(rawStep);
             const operation = step.match(/^\s*(KiB|KB|MiB|MB|GiB|GB) = ([\d.,]+) ÷ (\d+)$/);
             if (operation) {
+              matched++;
               const target = units.indexOf(operation[1]);
-              expect(readNumber(operation[2]) / Number(operation[3])).toBeCloseTo(bytes / divisors[target], 12);
+              expect(Number(operation[2]) / Number(operation[3])).toBeCloseTo(bytes / divisors[target], 12);
             }
             const value = step.match(/^\s*(KiB|KB|MiB|MB|GiB|GB) = ([\d.,]+) \1$/);
-            if (value) expect(readNumber(value[2])).toBeCloseTo(bytes / divisors[units.indexOf(value[1])], 12);
+            if (value) {
+              matched++;
+              expect(Number(value[2])).toBeCloseTo(bytes / divisors[units.indexOf(value[1])], 12);
+            }
           }
+          expect(matched).toBe([0, 2, 2, 4, 4, 6, 6][u]);
           const final = steps.at(-1)!;
           expect(final).toContain(`${rounded} ${units[u]}`);
           if (rounded !== exact) expect(final).toContain('≈');
           checked++;
-          vi.restoreAllMocks();
+          vi.mocked(Math.random).mockRestore();
         }
       }
     }

@@ -1,3 +1,4 @@
+import { mockNumberLocale } from '../../../../test/numberLocale';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { validateStructuredAnswer } from '../../answerValidation';
@@ -19,12 +20,6 @@ function selectCombo(resolution: number, depth: number, rate: number, unit: numb
   return generateImageTransferComboQuestion();
 }
 
-function readNumber(value: string): number {
-  const parts = new Intl.NumberFormat().formatToParts(1234.5);
-  const group = parts.find((part) => part.type === 'group')!.value;
-  const decimal = parts.find((part) => part.type === 'decimal')!.value;
-  return Number(value.replaceAll(group, '').replace(decimal, '.'));
-}
 
 describe('generateImageTransferComboQuestion – fractional precision', () => {
   it('preserves the positive Full HD 100 Mbit/s transfer and accepts its exact answer', () => {
@@ -49,7 +44,8 @@ describe('generateImageTransferComboQuestion – fractional precision', () => {
     })).toBe(true);
   });
 
-  it('preserves positive times and matching solution/input components in all 420 selectable cases', () => {
+  it.each(['en-US', 'de-DE', 'fr-FR', 'ru-RU'])('preserves positive times and matching solution/input components in all 420 selectable cases in %s', locale => {
+    const normalize = mockNumberLocale(locale);
     let checked = 0;
     for (let r = 0; r < dimensions.length; r++) {
       for (let d = 0; d < depths.length; d++) {
@@ -82,19 +78,26 @@ describe('generateImageTransferComboQuestion – fractional precision', () => {
 
             // Independently verify the displayed operands as well as the final time.
             const bytes = bits / 8;
-            const steps = question.solutionSteps as string[];
+            const steps = (question.solutionSteps as string[]).map(step => /^  (KB|MB|Overhead|Effektive Datenmenge) =/.test(step) ? normalize(step) : step);
             const kb = steps.find((step) => step.startsWith('  KB ='))!.match(/KB = ([\d.,]+) ÷ 1000 = ([\d.,]+) KB/)!;
-            expect(readNumber(kb[1]) / 1000).toBe(bytes / 1000);
-            expect(readNumber(kb[2])).toBe(bytes / 1000);
+            expect(kb).not.toBeNull();
+            expect(Number(kb![1]) / 1000).toBe(bytes / 1000);
+            expect(Number(kb![2])).toBe(bytes / 1000);
             const mb = steps.find((step) => step.startsWith('  MB ='))!.match(/MB = ([\d.,]+) ÷ 1000 = ([\d.,]+) MB/)!;
-            expect(readNumber(mb[1]) / 1000).toBeCloseTo(bytes / 1000000, 12);
-            expect(readNumber(mb[2])).toBe(bytes / 1000000);
+            expect(mb).not.toBeNull();
+            expect(Number(mb![1]) / 1000).toBeCloseTo(bytes / 1000000, 12);
+            expect(Number(mb![2])).toBe(bytes / 1000000);
             const overhead = steps.find((step) => step.startsWith('  Overhead ='))!.match(/= ([\d.,]+) B$/)!;
-            expect(readNumber(overhead[1])).toBe(bytes / 10);
+            expect(overhead).not.toBeNull();
+            expect(Number(overhead![1])).toBe(bytes / 10);
             const effectiveBytes = steps.find((step) => /^  Effektive Datenmenge = [\d.,]+ B$/.test(step))!.match(/= ([\d.,]+) B$/)!;
-            expect(readNumber(effectiveBytes[1])).toBeCloseTo(bytes * 11 / 10, 8);
+            expect(effectiveBytes).not.toBeNull();
+            expect(Number(effectiveBytes![1])).toBeCloseTo(bytes * 11 / 10, 8);
+            expect(steps.filter(step => /^  (KB|MB) =/.test(step))).toHaveLength(2);
+            expect(steps.filter(step => /^  Overhead =/.test(step))).toHaveLength(1);
+            expect(steps.filter(step => /^  Effektive Datenmenge = [\d.]+ B$/.test(step))).toHaveLength(1);
             checked++;
-            vi.restoreAllMocks();
+            vi.mocked(Math.random).mockRestore();
           }
         }
       }
