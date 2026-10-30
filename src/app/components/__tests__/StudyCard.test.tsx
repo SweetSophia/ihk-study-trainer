@@ -149,7 +149,7 @@ describe('legacy associated answer controls', () => {
     ], expectedAnswers: { size: 1, sizeUnit: 'MB', pick: 'Ja' } });
     const { rerender } = render(<StudyCard question={structured} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} />);
     expect(screen.getByLabelText('Dateigröße')).toHaveAttribute('type', 'text');
-    expect(screen.getByLabelText('Dateigröße')).toHaveAttribute('inputmode', 'decimal');
+    expect(screen.getByLabelText('Dateigröße')).not.toHaveAttribute('inputmode');
     expect(screen.getByLabelText('Einheit')).toHaveRole('combobox');
     expect(screen.getByLabelText('Auswahl')).toHaveRole('combobox');
     rerender(<><StudyCard question={makeQuestion()} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} /><StudyCard question={makeQuestion({ id: 'second' })} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} /></>);
@@ -925,4 +925,26 @@ describe('decimal input preserves the strict parser contract', () => {
     await user.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
     expect(screen.getByRole('status')).toHaveTextContent(correct ? 'Richtig!' : 'nicht ganz richtig');
   });
+});
+
+
+it('keeps the general text keyboard contract for signed answers and checks Enter from the input', async () => {
+  const question = makeQuestion({
+    module: 'handelskalkulation', expectedAnswers: { differenz: -17.09 },
+    answerInputs: [{ valueKey: 'differenz', label: 'Differenz' }],
+  });
+  const check = vi.fn((answers: Record<string, string>) => validateQuestionAnswers(question, answers));
+  const user = userEvent.setup();
+  render(<StudyCard question={question} onCheckAnswer={check} onNextQuestion={noNextQuestion} />);
+  const input = screen.getByLabelText('Differenz');
+  expect(input).toHaveAttribute('type', 'text');
+  expect(input).not.toHaveAttribute('inputmode');
+  await user.type(input, '-17,09');
+  expect(input).toHaveFocus();
+  await user.keyboard('{Enter}');
+  expect(screen.getByRole('status')).toHaveTextContent('Richtig!');
+  expect(input).toBeDisabled();
+  expect(check).toHaveBeenCalledOnce();
+  await user.keyboard('{Enter}');
+  expect(check).toHaveBeenCalledOnce();
 });

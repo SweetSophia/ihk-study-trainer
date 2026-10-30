@@ -8,7 +8,7 @@ export interface AnswerInputConfig {
   unitOptions?: string[];
   /** Optional label shown above the value input (e.g. "Stunden", "Dateigröße") */
   label?: string;
-  /** Numeric answers use a text control with a decimal keyboard hint to preserve comma/exponent input. Explicit text disables that hint, e.g. for IPv4 addresses. */
+  /** Answer text is preserved for the strict validator, including signs, commas and exponents. No restricted decimal keypad is requested; structured text such as IPv4 also uses the text control. */
   inputType?: 'number' | 'text';
   /** When present, the value field renders as a dropdown instead of a text input */
   valueOptions?: string[];
