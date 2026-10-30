@@ -206,12 +206,12 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
     question: 'Was ist der Unterschied zwischen einem Public Subnet und einem Private Subnet in einer VPC?',
     options: [
       'Es gibt keinen Unterschied',
-      'Public Subnets haben Internetzugang, Private Subnets nicht',
+      'Public Subnets haben eine direkte Route zum Internet Gateway; Private Subnets nicht',
       'Private Subnets sind kostenpflichtig',
       'Public Subnets sind nur in Private Cloud verfügbar'
     ],
-    correctAnswer: 'Public Subnets haben Internetzugang, Private Subnets nicht',
-    explanation: 'Public Subnets sind über ein Internet Gateway direkt aus dem Internet erreichbar. Private Subnets haben keinen direkten Internetzugang und werden für sensible Ressourcen wie Datenbanken verwendet.',
+    correctAnswer: 'Public Subnets haben eine direkte Route zum Internet Gateway; Private Subnets nicht',
+    explanation: 'In AWS hat ein Public Subnet eine direkte Route zum Internet Gateway, ein Private Subnet nicht. Ressourcen in Private Subnets können ausgehenden Internetzugang über NAT erhalten, z.B. für Updates. Die Erreichbarkeit einzelner Ressourcen hängt zusätzlich von Adressierung und Sicherheitsregeln ab.',
   },
   {
     type: 'trueFalse',

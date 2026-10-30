@@ -1,5 +1,21 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { calculateRaid, generateRaidQuestion } from '../raid';
+
+afterEach(() => vi.restoreAllMocks());
+
+it.each([
+  ['RAID 5', 0.45, 'einer Platte'],
+  ['RAID 6', 0.65, 'zweier Platten'],
+] as const)('explains distributed parity and capacity overhead for %s', (level, random, overhead) => {
+  vi.spyOn(Math, 'random').mockReturnValue(random);
+  const q = generateRaidQuestion();
+  expect(q.raid.level).toBe(level);
+  const solution = q.solutionSteps.join('\n');
+  expect(solution).toContain('verteilter');
+  expect(solution).toContain(`Kapazitätsanteil ${overhead}`);
+  expect(solution).not.toContain('Paritätsplatte');
+  if (level === 'RAID 5') expect(solution).toContain('beliebigen ausgefallenen Platte');
+});
 
 describe('calculateRaid', () => {
   it('computes RAID 0 capacity = disks × size, fault tolerance 0', () => {

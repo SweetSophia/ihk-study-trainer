@@ -27,10 +27,11 @@ describe('linux generator', () => {
     const acceptedValues = question.answerInputs?.[0]?.acceptedValues ?? [];
 
     expect([...acceptedValues].sort()).toEqual(
-      ['iptables', 'ufw', 'nft', 'nftables', 'firewall-cmd'].sort()
+      // nftables is a framework; its CLI command is nft.
+      ['iptables', 'ufw', 'nft', 'firewall-cmd'].sort()
     );
     expect(question.solutionSteps.at(-1)).toBe(
-      '  Gültige Antworten in dieser Aufgabe: iptables, ufw, nft, nftables, firewall-cmd'
+      '  Gültige Antworten in dieser Aufgabe: iptables, ufw, nft, firewall-cmd'
     );
   });
 
@@ -38,8 +39,8 @@ describe('linux generator', () => {
     const cases = [
       {
         command: 'iptables',
-        accepted: ['iptables', 'ufw', 'nft', 'nftables', 'firewall-cmd'],
-        rejected: ['firewalld'],
+        accepted: ['iptables', 'ufw', 'nft', 'firewall-cmd'],
+        rejected: ['firewalld', 'nftables'],
       },
       {
         command: 'useradd',
@@ -104,5 +105,31 @@ describe('linux generator', () => {
     expect(
       validateStructuredAnswer(inputs, question.expectedAnswers, { answer: '  FIREWALL-CMD  ' })
     ).toBe(true);
+  });
+
+  it('accepts the taught mkfs.ext4 command without accepting arbitrary command prefixes or arguments', () => {
+    const question = generateDescriptionQuestion('mkfs');
+    const inputs = question.answerInputs ?? [];
+    for (const answer of ['mkfs', 'mkfs.ext4', '  MKFS.EXT4  ']) {
+      expect(validateStructuredAnswer(inputs, question.expectedAnswers, { answer })).toBe(true);
+    }
+    for (const answer of ['fdisk', 'mkfs.invalid', 'mkfs.ext4 /dev/sdb1']) {
+      expect(validateStructuredAnswer(inputs, question.expectedAnswers, { answer })).toBe(false);
+    }
+  });
+
+  it('teaches separate byte and character counts, including a UTF-8 example', () => {
+    const solution = generateDescriptionQuestion('wc').solutionSteps.join('\n');
+    expect(solution).toContain('Bytes (-c)');
+    expect(solution).toContain('Zeichen (-m)');
+    expect(solution).toMatch(/Ohne Optionen.*Zeilen.*Wörter.*Bytes/);
+    expect(solution).toContain('ä');
+    expect(solution).toMatch(/2 Bytes.*1 Zeichen/);
+  });
+
+  it.each(['ss', 'netstat'])('describes the -l filter in %s -tulpn as listening sockets', (command) => {
+    const solution = generateDescriptionQuestion(command).solutionSteps.join('\n');
+    expect(solution).toMatch(/-tulpn zeigt.*lauschenden TCP\/UDP-Sockets/);
+    expect(solution).not.toContain('alle TCP/UDP-Verbindungen');
   });
 });

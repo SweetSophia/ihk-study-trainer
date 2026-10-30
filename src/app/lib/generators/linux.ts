@@ -326,7 +326,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'ss',
     description: 'Zeigt Netzwerkverbindungen und offene Ports an',
     explanation:
-      'ss (socket statistics) ist der moderne Ersatz für netstat. ss -tulpn zeigt alle TCP/UDP-Verbindungen mit Prozessinformationen.',
+      'ss (socket statistics) ist der moderne Ersatz für netstat. ss -tulpn zeigt die lauschenden TCP/UDP-Sockets mit Prozessinformationen (-l: listening). Mit -a werden auch nicht lauschende Sockets angezeigt.',
     example: 'ss -tulpn',
     category: 'Netzwerk',
     difficulty: 'medium',
@@ -689,6 +689,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'mkfs.ext4 /dev/sdb1',
     category: 'Festplatte und Dateisystem',
     difficulty: 'hard',
+    acceptedCommands: ['mkfs.ext4'],
   },
 
   // ── SSH & Remote ───────────────────────────────────────────────────────
@@ -799,7 +800,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'netstat',
     description: 'Zeigt Netzwerkverbindungen, Routing-Tabellen und Statistiken an (veraltet, ss bevorzugen)',
     explanation:
-      'netstat (network statistics) zeigt Netzwerkverbindungen und offene Ports. -tulpn zeigt alle TCP/UDP-Verbindungen. Es gilt als veraltet, ss wird bevorzugt.',
+      'netstat (network statistics) zeigt Netzwerkverbindungen und offene Ports. -tulpn zeigt die lauschenden TCP/UDP-Sockets (-l: listening). Mit -a werden auch nicht lauschende Sockets angezeigt. Es gilt als veraltet, ss wird bevorzugt.',
     example: 'netstat -tulpn',
     category: 'Netzwerk (erweitert)',
     difficulty: 'medium',
@@ -840,12 +841,12 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'iptables',
     description: 'Konfiguriert die Linux-Firewall (Paketfilter-Regeln)',
     explanation:
-      'iptables verwaltet die Netfilter-Firewall-Regeln im Linux-Kernel. Es kann Pakete akzeptieren, ablehnen, umleiten oder protokollieren. Wird zunehmend durch nftables ersetzt. Alternative (benutzerfreundlicher): ufw (Uncomplicated Firewall). Auf vielen Distributionen wird zusätzlich firewalld über das Kommando firewall-cmd verwaltet. In dieser bewusst breit formulierten Aufgabe gelten daher iptables, ufw, nft/nftables und firewall-cmd als richtige Antworten.',
+      'iptables verwaltet die Netfilter-Firewall-Regeln im Linux-Kernel. Es kann Pakete akzeptieren, ablehnen, umleiten oder protokollieren. Das neuere Framework nftables wird über den Befehl nft verwaltet. Alternative (benutzerfreundlicher): ufw (Uncomplicated Firewall). Auf vielen Distributionen wird zusätzlich firewalld über das Kommando firewall-cmd verwaltet. In dieser bewusst breit formulierten Aufgabe gelten daher iptables, ufw, nft und firewall-cmd als richtige Antworten.',
     example: 'iptables -L -n -v',
     category: 'Netzwerk (erweitert)',
     difficulty: 'hard',
     aliases: [],
-    acceptedCommands: ['ufw', 'nft', 'nftables', 'firewall-cmd'],
+    acceptedCommands: ['ufw', 'nft', 'firewall-cmd'],
   },
   {
     command: 'tracepath',
@@ -889,7 +890,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'wc',
     description: 'Zählt Zeilen, Wörter und Bytes/Zeichen in einer Datei',
     explanation:
-      'wc (word count) zählt Zeilen (-l), Wörter (-w) und Bytes/Zeichen (-c). Ohne Optionen werden alle drei ausgegeben.',
+      'wc (word count) zählt Zeilen (-l), Wörter (-w), Bytes (-c) oder Zeichen (-m). Ohne Optionen werden Zeilen, Wörter und Bytes ausgegeben. Beispiel: ä in UTF-8 belegt 2 Bytes, ist aber 1 Zeichen.',
     example: 'wc -l /var/log/syslog',
     category: 'Shell und Datenverarbeitung',
     difficulty: 'easy',

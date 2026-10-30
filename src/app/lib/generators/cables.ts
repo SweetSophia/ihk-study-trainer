@@ -192,7 +192,13 @@ export function findBestCable(
 }
 
 function generateCableComparison(): string[] {
-  return CABLE_TYPES.map(cable => 
-    `  • ${cable.type}: bis ${cable.maxSpeed >= 1000 ? cable.maxSpeed / 1000 + ' Gbit/s' : cable.maxSpeed + ' Mbit/s'}, max ${cable.maxDistance}m`
-  );
+  return CABLE_TYPES.map(cable => {
+    if (cable.type === 'Multimode Glasfaser (OM3/OM4)') {
+      return `  • ${cable.type}: abhängig von Optik und Faserklasse; z.B. 100GBASE-SR4-S: 100 Gbit/s bis 70m (OM3) oder 100m (OM4)`;
+    }
+    if (cable.type === 'Singlemode Glasfaser (OS2)') {
+      return `  • ${cable.type}: abhängig von Optik und Faser; z.B. 100GBASE-LR4-S: 100 Gbit/s bis 10km`;
+    }
+    return `  • ${cable.type}: bis ${cable.maxSpeed >= 1000 ? cable.maxSpeed / 1000 + ' Gbit/s' : cable.maxSpeed + ' Mbit/s'}, max ${cable.maxDistance}m`;
+  });
 }

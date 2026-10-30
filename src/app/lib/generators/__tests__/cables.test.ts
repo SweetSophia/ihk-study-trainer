@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
-import { findBestCable } from '../cables';
+import { findBestCable, generateCableQuestion } from '../cables';
+
+it('qualifies fiber comparison rates and reaches with specific optics and fiber grades', () => {
+  const solution = generateCableQuestion().solutionSteps;
+  const multimode = solution.find((step) => step.startsWith('  • Multimode'));
+  const singlemode = solution.find((step) => step.startsWith('  • Singlemode'));
+  expect(multimode).toContain('100GBASE-SR4-S');
+  expect(multimode).toContain('100 Gbit/s');
+  expect(multimode).toContain('70m (OM3)');
+  expect(multimode).toContain('100m (OM4)');
+  expect(singlemode).toContain('100GBASE-LR4-S');
+  expect(singlemode).toContain('100 Gbit/s');
+  expect(singlemode).toContain('10km');
+  for (const comparison of [multimode, singlemode]) {
+    expect(comparison).toContain('abhängig');
+    expect(comparison).not.toMatch(/bis .*Gbit\/s, max/);
+  }
+});
 
 describe('cable selection in EMI-heavy environments', () => {
   it('prefers an EMI-safe cable for the warehouse scenario', () => {
