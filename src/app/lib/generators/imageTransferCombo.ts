@@ -1,5 +1,6 @@
 import { Question } from '../../types';
-import { formatIHKTime, TIME_UNITS, UNIT_SEKUNDEN, UNIT_MINUTEN, UNIT_STUNDEN } from './timeFormat';
+import { TIME_UNITS, UNIT_SEKUNDEN, UNIT_MINUTEN, UNIT_STUNDEN } from './timeFormat';
+import { formatImageTransferTime } from './imageTransferTime';
 
 const resolutions = [
   { name: 'Full HD', width: 1920, height: 1080 },
@@ -10,6 +11,8 @@ const resolutions = [
 ];
 
 const colorDepths = [8, 16, 24, 32];
+
+const formatIntermediate = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 10 });
 
 // Bandwidth units and their conversion to bit/s
 const bandwidthUnits = [
@@ -32,7 +35,7 @@ export function generateImageTransferComboQuestion(): Question {
   const totalBits = resolution.width * resolution.height * colorDepth;
   const totalBytes = totalBits / 8;
   const totalKB = totalBytes / 1000;
-  const totalMB = totalKB / 1000;
+  const totalMB = totalBytes / 1000000;
   
   // Calculate bandwidth in bit/s
   const bandwidthBps = bandwidthValue * bandwidthUnit.multiplier;
@@ -41,14 +44,14 @@ export function generateImageTransferComboQuestion(): Question {
   const rawTimeSeconds = (totalBytes * 8) / bandwidthBps;
 
   // Calculate with overhead for the written-out solution
-  const overheadBytes = totalBytes * 0.10;
+  const overheadBytes = totalBytes / 10;
   const effectiveBytes = totalBytes + overheadBytes;
   const effectiveTimeSeconds = (effectiveBytes * 8) / bandwidthBps;
 
-  // formatIHKTime() already applies the 10% IHK overhead internally, so pass
+  // The combo formatter applies the 10% overhead internally, so pass
   // the raw transfer time here and use the formatted effective result everywhere
   // the user-facing answer is derived.
-  const formattedEffectiveResult = formatIHKTime(rawTimeSeconds);
+  const formattedEffectiveResult = formatImageTransferTime(rawTimeSeconds);
   const roundedEffectiveSeconds = formattedEffectiveResult.roundedSeconds;
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
@@ -68,8 +71,8 @@ export function generateImageTransferComboQuestion(): Question {
     `  Bytes = ${totalBytes.toLocaleString()} B`,
     ``,
     `Schritt 2: Bildgröße in MB umrechnen`,
-    `  KB = ${totalBytes.toLocaleString()} ÷ 1000 = ${Math.round(totalKB).toLocaleString()} KB`,
-    `  MB = ${Math.round(totalKB).toLocaleString()} ÷ 1000 = ${totalMB.toFixed(2)} MB`,
+    `  KB = ${totalBytes.toLocaleString()} ÷ 1000 = ${formatIntermediate(totalKB)} KB`,
+    `  MB = ${formatIntermediate(totalKB)} ÷ 1000 = ${formatIntermediate(totalMB)} MB`,
     ``,
     `Schritt 3: Bandbreite in Bit/s umrechnen`,
     `  Bandbreite = ${bandwidthValue} ${bandwidthUnit.unit}`,
@@ -78,15 +81,16 @@ export function generateImageTransferComboQuestion(): Question {
     `Schritt 4: Übertragungszeit ohne Overhead berechnen`,
     `  Zeit = (Datenmenge in Bit) ÷ Bandbreite`,
     `  Zeit = (${totalBytes.toLocaleString()} × 8) ÷ ${bandwidthBps.toLocaleString()}`,
-    `  Zeit = ${rawTimeSeconds.toFixed(2)} s`,
+    `  Zeit ≈ ${rawTimeSeconds.toFixed(9)} s`,
     ``,
-    `Schritt 5: 10% Overhead hinzufügen (IHK-Standard)`,
-    `  Overhead = ${totalBytes.toLocaleString()} × 0,10 = ${Math.round(overheadBytes).toLocaleString()} B`,
-    `  Effektive Datenmenge = ${totalBytes.toLocaleString()} + ${Math.round(overheadBytes).toLocaleString()}`,
-    `  Effektive Datenmenge = ${Math.round(effectiveBytes).toLocaleString()} B`,
+    `Schritt 5: 10% Overhead hinzufügen (vorgegebenes Modell)`,
+    `  Overhead = ${totalBytes.toLocaleString()} × 0,10 = ${formatIntermediate(overheadBytes)} B`,
+    `  Effektive Datenmenge = ${totalBytes.toLocaleString()} + ${formatIntermediate(overheadBytes)}`,
+    `  Effektive Datenmenge = ${formatIntermediate(effectiveBytes)} B`,
     ``,
     `Schritt 6: Effektive Übertragungszeit berechnen`,
-    `  Effektive Zeit = ${effectiveTimeSeconds.toFixed(2)} s`
+    `  Effektive Zeit ≈ ${effectiveTimeSeconds.toFixed(9)} s`,
+    `  Rundung: unter 60 Sekunden auf 9 Nachkommastellen, ab 60 Sekunden auf ganze Sekunden.`
   ];
   
   // Add time formatting explanation based on result
@@ -107,7 +111,7 @@ export function generateImageTransferComboQuestion(): Question {
       `  Gerundete Gesamtsekunden = ${roundedEffectiveSeconds} s`,
       `  Minuten = ⌊${roundedEffectiveSeconds} ÷ 60⌋ = ${formattedEffectiveResult.minutes} Minuten`,
       `  Restsekunden = ${roundedEffectiveSeconds} - (${formattedEffectiveResult.minutes} × 60) = ${roundedEffectiveSeconds - (formattedEffectiveResult.minutes * 60)} s`,
-      `  Sekunden = ⌊Restsekunden⌋ = ${formattedEffectiveResult.seconds} Sekunden`,
+      `  Sekunden = Restsekunden = ${formattedEffectiveResult.seconds} Sekunden`,
       `  Ergebnis: ${formattedEffectiveResult.minutes} Minute(n) ${formattedEffectiveResult.seconds} Sekunde(n)`
     );
   }
@@ -121,7 +125,7 @@ export function generateImageTransferComboQuestion(): Question {
     id: `image-transfer-combo-${Date.now()}`,
     theme: 'IT-Mathematik & Datenberechnung',
     module: 'imageTransferCombo',
-    questionText: `Ein unkomprimiertes ${resolution.name}-Bild (${resolution.width}×${resolution.height} Pixel, ${colorDepth} Bit Farbtiefe) soll über eine Leitung mit ${bandwidthValue} ${bandwidthUnit.unit} übertragen werden. Berechne die Übertragungszeit unter Berücksichtigung eines 10% Overheads (60-System bei ≥ 60 Sekunden).`,
+    questionText: `Ein unkomprimiertes ${resolution.name}-Bild (${resolution.width}×${resolution.height} Pixel, ${colorDepth} Bit Farbtiefe) soll über eine Leitung mit ${bandwidthValue} ${bandwidthUnit.unit} übertragen werden. Berechne die Übertragungszeit unter Berücksichtigung eines 10% Overheads. Runde erst das Endergebnis: unter 60 Sekunden auf 9 Nachkommastellen, ab 60 Sekunden auf ganze Sekunden und gib es im 60-System an.`,
     expectedAnswers: {
       ...(formattedEffectiveResult.hours !== undefined && {
         hours: formattedEffectiveResult.hours,
