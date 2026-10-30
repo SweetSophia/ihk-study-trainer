@@ -22,7 +22,7 @@ function centOracle(g: Record<string, number>, backwards = false, gross = g.brut
     Math.floor((value * numerator + denominator / 2) / denominator);
   c.bezugskosten = money(g.bezugskosten);
   if (!backwards) {
-    c.lep = money(g.lepNetto ?? g.lepBrutto);
+    c.lep = money(g.lepNetto);
     c.rabatt = ratio(c.lep, g.lieferRabatt, 100); c.zep = c.lep - c.rabatt;
     c.skonto = ratio(c.zep, g.lieferskonto, 100); c.bep = c.zep - c.skonto;
     c.bp = c.bep + c.bezugskosten;
@@ -61,12 +61,14 @@ describe('handelskalkulation generator', () => {
       skonto: 20.88, zep: 696, rabatt: 104, lep: 800,
     });
     const question = generateRueckwaertsKalkulationQuestion();
-    const correct = Object.fromEntries(Object.entries(result.calculated).map(([k,v]) => [k, String(v)]));
+    const requestedKeys = question.answerInputs!.map(input => input.valueKey);
+    expect(requestedKeys).not.toContain('bezugskosten');
+    const correct = Object.fromEntries(requestedKeys.map(key => [key, String(result.calculated[key])]));
     expect(validateQuestionAnswers(question, correct)).toBe(true);
     expect(validateQuestionAnswers(question, { ...correct, bp: '609.82' })).toBe(false);
   });
 
-  it.each([0, 0.12345, 0.5, 0.98765, 0.999999])('uses displayed rounded inputs for every money row at seed %s', seed => {
+  it.each([0, 0.12345, 0.25, 0.5, 0.98765, 0.999999])('uses displayed rounded inputs for every money row at seed %s', seed => {
     vi.spyOn(Math, 'random').mockReturnValue(seed);
     const forward = generateVorwaertsCalculation();
     expect(forward.calculated).toEqual(centOracle(forward.given));
@@ -78,6 +80,44 @@ describe('handelskalkulation generator', () => {
     expect(diff.calculated.differenz).toBeCloseTo(diff.given.bruttovkMarkt - diff.forwardSteps.bruttovk, 2);
   });
 
+  it('rounds a real half-cent supplier rebate up: net LEP 100.50 at 13% gives 13.07', () => {
+    vi.spyOn(Math, 'random').mockReturnValueOnce(50.5 / 140001).mockReturnValue(0.5);
+    const result = generateVorwaertsCalculation();
+    expect(result.given).toMatchObject({ lepNetto: 100.50, lieferRabatt: 13 });
+    expect(result.calculated).toMatchObject({ lep: 100.50, rabatt: 13.07, zep: 87.43 });
+  });
+
+  it('covers interior supplier skonto 2% and customer skonto 3%', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.25);
+    const result = generateVorwaertsCalculation();
+    expect(result.given).toMatchObject({ lieferskonto: 2, kundenSkonto: 3 });
+    expect(result.calculated.skonto).toBe(8.19);
+    expect(result.calculated.kundenskonto).toBe(19.73);
+  });
+
+  it.each([0, 0.5])('distinguishes given and market-derived net LEP at market variance seed %s', varianceSeed => {
+    vi.spyOn(Math, 'random')
+      .mockReturnValueOnce(0.9)
+      .mockReturnValueOnce(0.5).mockReturnValueOnce(0.5)
+      .mockReturnValueOnce(0.5).mockReturnValueOnce(0.5)
+      .mockReturnValueOnce(0.5).mockReturnValueOnce(0.5)
+      .mockReturnValueOnce(0.5).mockReturnValueOnce(0.5)
+      .mockReturnValue(varianceSeed);
+    const question = generateHandelskalkulationQuestion();
+    expect(question.questionText).toContain('Listeneinkaufspreis (netto, gegeben): 800,00 €');
+    expect(question.answerInputs!.find(input => input.valueKey === 'forward_lep')?.label)
+      .toBe('Vorwärts: Listeneinkaufspreis (LEP, netto, gegeben)');
+    expect(question.answerInputs!.find(input => input.valueKey === 'backward_lep')?.label)
+      .toBe('Rückwärts: = Listeneinkaufspreis (LEP, netto, aus Marktpreis)');
+    expect(question.solutionSteps.join('\n')).toContain('LEP netto (aus Marktpreis) =');
+    expect(question.solutionSteps.join('\n')).toContain('Der aus dem Marktpreis abgeleitete LEP netto');
+    expect(question.solutionSteps.join('\n')).toContain('kann vom gegebenen LEP netto abweichen');
+    expect(question.answerInputs).toHaveLength(32);
+    expect(Object.keys(question.expectedAnswers)).toHaveLength(32);
+    expect(question.expectedAnswers.forward_lep).toBe(800);
+    expect(question.expectedAnswers.backward_lep).toBe(varianceSeed === 0 ? 714.97 : 863.77);
+  });
+
   it('grades the supplied net LEP consistently with rebate and ZEP in Differenz', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const result = generateDifferenzCalculation();
@@ -87,9 +127,10 @@ describe('handelskalkulation generator', () => {
   });
 
   it('states net purchase values and row-by-row cent rounding in all existing question modes', () => {
-    for (const seed of [0.1, 0.5, 0.9]) {
+    for (const [seed, mode] of [[0.1, 'Vorwärtskalkulation'], [0.5, 'Rückwärtskalkulation'], [0.9, 'Differenzkalkulation']] as const) {
       vi.spyOn(Math, 'random').mockReturnValue(seed);
       const q = generateHandelskalkulationQuestion();
+      expect(q.solutionSteps[0]).toBe(mode);
       expect(q.questionText).toContain('ohne Umsatzsteuer');
       expect(q.questionText).toContain('jede Rechenzeile');
       expect(q.questionText).toContain('zwei Nachkommastellen');
@@ -258,6 +299,6 @@ describe('handelskalkulation generator', () => {
     expect(steps).not.toContain('/ (1 -');
     expect(steps).toMatch(/Selbstkosten = .* \/ 1,\d{2} = .*/);
     expect(steps).toMatch(/ZEP = .* \/ 0,\d{2} = .*/);
-    expect(steps).toMatch(/LEP netto = .* \/ 0,\d{2} = .*/);
+    expect(steps).toMatch(/LEP netto \(aus Marktpreis\) = .* \/ 0,\d{2} = .*/);
   });
 });

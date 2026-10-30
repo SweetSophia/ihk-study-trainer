@@ -15,12 +15,11 @@ Uses percentage-based calculations with simple operators (+, -, *, /).
 
 #### 1. Vorwärtskalkulation (Forward Calculation)
 **Purpose:** Calculate selling price from supplier price
-**Direction:** Listeneinkaufspreis (LEP) → Bruttoverkaufspreis (BVP)
+**Direction:** Listeneinkaufspreis (LEP, netto) → Bruttoverkaufspreis (Brutto-VK)
+**Implemented teaching model:** All purchase and cost values exclude VAT. VAT appears only at the Netto-VK ↔ Brutto-VK boundary. Round each new monetary row commercially to cents and use those displayed cents in subsequent rows.
 **Schema:**
 ```text
-LEP brutto
-  - Umsatzsteuer (19%)
-  = LEP netto
+LEP netto
   - Lieferantenrabatt (%)
   = Zieleinkaufspreis (ZEP)
   - Lieferskonto (%)
@@ -36,27 +35,27 @@ LEP brutto
   + Kundenrabatt (%)
   = Nettoverkaufspreis
   + Umsatzsteuer (19%)
-  = Bruttoverkaufspreis (BVP)
+  = Bruttoverkaufspreis (Brutto-VK)
 ```
 
 **Sample values for generator:**
-- LEP brutto: €50-1500
+- LEP netto: €100-1500
 - Rabatt: 5-20%
-- Skonto: 2-5%
-- Bezugskosten: €5-100 (flat or per unit)
+- Lieferskonto: 1-4%
+- Bezugskosten: €5-80
 - Handlungskosten: 25-60%
 - Gewinnzuschlag: 8-25%
-- Kundenskonto: 2-4%
-- Kundenrabatt: 5-15%
+- Kundenskonto: 2-5%
+- Kundenrabatt: 5-20%
 
 #### 2. Rückwärtskalkulation (Backward/Reverse Calculation)
 **Purpose:** Find maximum purchase price given market selling price
-**Direction:** BVP → LEP (reverse of forward)
+**Direction:** Brutto-VK → LEP netto (reverse of forward)
 **Use case:** When competitor's price is known, calculate max allowable cost
 
 **Schema (reverse):**
 ```text
-BVP
+Brutto-VK
   - Umsatzsteuer
   = Nettoverkaufspreis
   - Kundenrabatt
@@ -73,21 +72,22 @@ BVP
   = Zieleinkaufspreis
   + Lieferantenrabatt
   = LEP netto
-  + Umsatzsteuer
-  = LEP brutto
 ```
 
-**Key insight:** In reverse calc, percentages divide instead of multiply:
-- Rabatt/Skonto: `value = current / (1 + rate)`
-- Instead of: `value = current * rate`
+**Percentage bases and reverse factors** (`p` is a percentage, e.g. 19):
+- Reverse VAT, profit or handling markup: `base = total / (1 + p / 100)`; derive the markup amount as `total - base`.
+- Recover a price before supplier Rabatt/Skonto: `base = remaining / (1 - p / 100)`; derive the deduction amount as `base - remaining`.
+- In the forward sales chain, recover ZVP from BVP and Netto-VK from ZVP with that same discount divisor, because customer deductions refer to the higher price.
+- In the backward sales chain, calculate customer Rabatt/Skonto as `higherPrice * p / 100`, round the deduction to cents, and subtract it.
+- Round every newly calculated amount/base to cents before deriving the complementary sum/difference. Do not apply purchase VAT conversion after recovering LEP netto.
 
 #### 3. Differenzkalkulation (Difference Calculation)
-**Purpose:** Both LEP and BVP are known, calculate if product is worth selling
-**Direction:** Both ends toward middle
-**Shows:** Whether product generates profit/loss
+**Purpose:** Compare the calculated Brutto-VK with a given gross market price, starting from a given LEP netto.
+**Direction:** Full forward chain from the given LEP netto and shared backward chain from Markt-Brutto-VK.
+**Shows:** Markt-Brutto-VK minus calculated Brutto-VK (Gewinnspielraum/Unterdeckung under the stated assumptions). The market-derived backward LEP netto is the purchase price compatible with the market price and the assumed markups/deductions; it can differ from the given forward LEP. This gross sale-price difference is not a separate calculation of realized profit.
 
 #### 4. Handelskalkulation Combined
-Mix of all three types, random selection of which intermediate values to hide
+The combined trainer randomly selects forward, backward or Differenz calculation and asks for the corresponding intermediate and final values. Dedicated forward/backward trainers retain their own modes.
 
 ### Question Types for Kalkulation
 1. **fillBlank:** Complete missing step(s) in schema (most common)

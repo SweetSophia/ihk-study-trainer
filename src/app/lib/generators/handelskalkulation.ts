@@ -152,8 +152,8 @@ function buildAnswerInputs(
     }));
 }
 
-/** Shared calculation chain for vorwaerts and rueckwaerts (forward/backward) kalkulation.
- *  Differenz kalkulation reuses the forward chain but computes its own backward chain separately. */
+/** Shared calculation parameters for forward/backward kalkulation.
+ *  Differenz kalkulation reuses the forward chain and the shared backward routine. */
 interface BaseKalkulationParams {
   lepNetto: number;
   ustRate: number;
@@ -409,7 +409,7 @@ function buildQuestion(
   frage += 'Gegebene Werte:\n';
 
   if (type === 'differenz') {
-    frage += `• Listeneinkaufspreis (netto): ${formatEuro(given.lepNetto)}\n`;
+    frage += `• Listeneinkaufspreis (netto, gegeben): ${formatEuro(given.lepNetto)}\n`;
     frage += `• Marktpreis (Brutto-VK): ${formatEuro(given.bruttovkMarkt)}\n`;
     frage += `• Lieferantenrabatt: ${given.lieferRabatt}%\n`;
     frage += `• Lieferskonto: ${given.lieferskonto}%\n`;
@@ -423,6 +423,7 @@ function buildQuestion(
     frage += '1. Berechne die Vorwärtskalkulation (LEP → Brutto-VK)\n';
     frage += '2. Berechne die Rückwärtskalkulation (Markt-Brutto-VK → LEP)\n';
     frage += '3. Ermittle die Differenz zwischen Markt-Brutto-VK und berechnetem Brutto-VK\n';
+    frage += 'Der Rückwärts-LEP netto wird aus dem Marktpreis abgeleitet und kann vom gegebenen LEP netto der Vorwärtskalkulation abweichen.\n';
   } else if (type === 'vorwaerts') {
     frage += `• Listeneinkaufspreis (netto): ${formatEuro(given.lepNetto)}\n`;
     frage += `• Lieferantenrabatt: ${given.lieferRabatt}%\n`;
@@ -454,8 +455,14 @@ function buildQuestion(
   if (type === 'differenz' && forwardSteps && backwardSteps) {
     expectedAnswers = { ...calculated };
     answerInputs = [
-      ...buildAnswerInputs(VORWAERTS_SCHEMA, given, 'forward_', 'Vorwärts'),
-      ...buildAnswerInputs(RUECKWAERTS_SCHEMA, given, 'backward_', 'Rückwärts', ['bruttovk']),
+      ...buildAnswerInputs(VORWAERTS_SCHEMA, given, 'forward_', 'Vorwärts').map(input =>
+        input.valueKey === 'forward_lep'
+          ? { ...input, label: 'Vorwärts: Listeneinkaufspreis (LEP, netto, gegeben)' }
+          : input),
+      ...buildAnswerInputs(RUECKWAERTS_SCHEMA, given, 'backward_', 'Rückwärts', ['bruttovk']).map(input =>
+        input.valueKey === 'backward_lep'
+          ? { ...input, label: 'Rückwärts: = Listeneinkaufspreis (LEP, netto, aus Marktpreis)' }
+          : input),
       {
         valueKey: 'differenz',
         label: 'Differenz (Markt-Brutto-VK − berechneter Brutto-VK)',
@@ -498,8 +505,9 @@ function buildQuestion(
     solutionSteps.push(`BEP = ${formatEuro(backwardSteps.bp)} − ${formatEuro(backwardSteps.bezugskosten)} = ${formatEuro(backwardSteps.bep)}`);
     solutionSteps.push(`ZEP = ${formatEuro(backwardSteps.bep)} / ${formatDiscountFactor(given.lieferskonto)} = ${formatEuro(backwardSteps.zep)}`);
     solutionSteps.push(`Skonto = ${formatEuro(backwardSteps.zep)} − ${formatEuro(backwardSteps.bep)} = ${formatEuro(backwardSteps.skonto)}`);
-    solutionSteps.push(`LEP netto = ${formatEuro(backwardSteps.zep)} / ${formatDiscountFactor(given.lieferRabatt)} = ${formatEuro(backwardSteps.lep)}`);
+    solutionSteps.push(`LEP netto (aus Marktpreis) = ${formatEuro(backwardSteps.zep)} / ${formatDiscountFactor(given.lieferRabatt)} = ${formatEuro(backwardSteps.lep)}`);
     solutionSteps.push(`Rabatt = ${formatEuro(backwardSteps.lep)} − ${formatEuro(backwardSteps.zep)} = ${formatEuro(backwardSteps.rabatt)}`);
+    solutionSteps.push('Der aus dem Marktpreis abgeleitete LEP netto ist der zu diesem Verkaufspreis und den vorgegebenen Zu- und Abschlägen passende Einkaufspreis. Er kann vom gegebenen LEP netto abweichen, weil der Marktpreis vom vorwärts berechneten Brutto-VK abweicht.');
     solutionSteps.push('');
 
     const differenz = calculated.differenz as number;
