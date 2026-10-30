@@ -12,6 +12,9 @@ const resolutions = [
 
 const colorDepths = [8, 16, 24, 32];
 
+// Keep conversion operands exact; only the final answer is rounded.
+const formatIntermediate = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 20 });
+
 // Target units for IHK-style questions
 const targetUnits = [
   { unit: 'Bytes', divisor: 1, binary: true },
@@ -40,23 +43,17 @@ export function generateImageCalcQuestion(): Question {
   const totalKiB = totalBytes / 1024;
   const totalKB = totalBytes / 1000;
   const totalMiB = totalKiB / 1024;
-  const totalMB = totalKB / 1000;
+  const totalMB = totalBytes / 1000000;
   const totalGiB = totalMiB / 1024;
-  const totalGB = totalMB / 1000;
+  const totalGB = totalBytes / 1000000000;
   
   const difficulty: 'easy' | 'medium' | 'hard' = 
     resolution.width >= 3840 ? 'hard' :
     resolution.width >= 2560 ? 'medium' : 'easy';
   
   // Format the result based on unit size
-  let formattedResult: number;
-  if (resultInUnit >= 1000) {
-    formattedResult = Math.round(resultInUnit);
-  } else if (resultInUnit >= 1) {
-    formattedResult = Number(resultInUnit.toFixed(2));
-  } else {
-    formattedResult = Number(resultInUnit.toFixed(4));
-  }
+  const decimalPlaces = resultInUnit >= 1000 ? 0 : resultInUnit >= 1 ? 2 : 4;
+  const formattedResult = Number(resultInUnit.toFixed(decimalPlaces));
   
   // Build solution steps dynamically based on target unit
   const solutionSteps: string[] = [
@@ -79,7 +76,7 @@ export function generateImageCalcQuestion(): Question {
       ``,
       `Schritt 3: In KiB umrechnen (binär: ÷ 1024)`,
       `  KiB = ${totalBytes.toLocaleString()} ÷ 1024`,
-      `  KiB = ${Math.round(totalKiB).toLocaleString()} KiB`
+      `  KiB = ${formatIntermediate(totalKiB)} KiB`
     );
   }
   
@@ -88,7 +85,7 @@ export function generateImageCalcQuestion(): Question {
       ``,
       `Schritt 3: In KB umrechnen (dezimal: ÷ 1000)`,
       `  KB = ${totalBytes.toLocaleString()} ÷ 1000`,
-      `  KB = ${Math.round(totalKB).toLocaleString()} KB`
+      `  KB = ${formatIntermediate(totalKB)} KB`
     );
   }
   
@@ -96,8 +93,8 @@ export function generateImageCalcQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In MiB umrechnen (binär: ÷ 1024)`,
-      `  MiB = ${Math.round(totalKiB).toLocaleString()} ÷ 1024`,
-      `  MiB = ${totalMiB.toFixed(2)} MiB`
+      `  MiB = ${formatIntermediate(totalKiB)} ÷ 1024`,
+      `  MiB = ${formatIntermediate(totalMiB)} MiB`
     );
   }
   
@@ -105,8 +102,8 @@ export function generateImageCalcQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In MB umrechnen (dezimal: ÷ 1000)`,
-      `  MB = ${Math.round(totalKB).toLocaleString()} ÷ 1000`,
-      `  MB = ${totalMB.toFixed(2)} MB`
+      `  MB = ${formatIntermediate(totalKB)} ÷ 1000`,
+      `  MB = ${formatIntermediate(totalMB)} MB`
     );
   }
   
@@ -114,12 +111,12 @@ export function generateImageCalcQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In MiB umrechnen (binär: ÷ 1024)`,
-      `  MiB = ${Math.round(totalKiB).toLocaleString()} ÷ 1024`,
-      `  MiB = ${Math.round(totalMiB).toLocaleString()} MiB`,
+      `  MiB = ${formatIntermediate(totalKiB)} ÷ 1024`,
+      `  MiB = ${formatIntermediate(totalMiB)} MiB`,
       ``,
       `Schritt 5: In GiB umrechnen (binär: ÷ 1024)`,
-      `  GiB = ${Math.round(totalMiB).toLocaleString()} ÷ 1024`,
-      `  GiB = ${totalGiB.toFixed(4)} GiB`
+      `  GiB = ${formatIntermediate(totalMiB)} ÷ 1024`,
+      `  GiB = ${formatIntermediate(totalGiB)} GiB`
     );
   }
   
@@ -127,25 +124,25 @@ export function generateImageCalcQuestion(): Question {
     solutionSteps.push(
       ``,
       `Schritt 4: In MB umrechnen (dezimal: ÷ 1000)`,
-      `  MB = ${Math.round(totalKB).toLocaleString()} ÷ 1000`,
-      `  MB = ${Math.round(totalMB).toLocaleString()} MB`,
+      `  MB = ${formatIntermediate(totalKB)} ÷ 1000`,
+      `  MB = ${formatIntermediate(totalMB)} MB`,
       ``,
       `Schritt 5: In GB umrechnen (dezimal: ÷ 1000)`,
-      `  GB = ${Math.round(totalMB).toLocaleString()} ÷ 1000`,
-      `  GB = ${totalGB.toFixed(4)} GB`
+      `  GB = ${formatIntermediate(totalMB)} ÷ 1000`,
+      `  GB = ${formatIntermediate(totalGB)} GB`
     );
   }
   
   solutionSteps.push(
     ``,
-    `Ergebnis: ${formattedResult} ${targetUnit.unit}`
+    `Ergebnis: ${formattedResult === resultInUnit ? '' : '≈ '}${formattedResult} ${targetUnit.unit}`
   );
   
   return {
     id: `image-calc-${Date.now()}`,
     theme: 'Bildberechnung & Digitalisierung',
     module: 'imageCalc',
-    questionText: `Berechne die unkomprimierte Dateigröße eines ${resolution.name}-Bildes (${resolution.width}×${resolution.height} Pixel) mit ${colorDepth} Bit Farbtiefe. Gib das Ergebnis in ${targetUnit.unit} an.`,
+    questionText: `Berechne die unkomprimierte Dateigröße eines ${resolution.name}-Bildes (${resolution.width}×${resolution.height} Pixel) mit ${colorDepth} Bit Farbtiefe. Gib das Ergebnis in ${targetUnit.unit} an. Runde erst das Endergebnis auf ${decimalPlaces} Nachkommastellen.`,
     expectedAnswers: {
       size: formattedResult,
       sizeUnit: targetUnit.unit,
