@@ -1,4 +1,9 @@
 import { Question } from '../../types';
+import { buildCalculationLearning } from '../calculationLearning';
+
+export type ForwardCalculationVariant = 'standard' | 'no-customer-skonto';
+export type BackwardCalculationVariant = 'standard' | 'no-supplier-rebate';
+export type DifferentialCalculationVariant = 'standard' | 'matching-market';
 
 export type KalkulationType = 'vorwaerts' | 'rueckwaerts' | 'differenz';
 
@@ -103,18 +108,6 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function formatFactor(value: number): string {
-  return value.toFixed(2).replace('.', ',');
-}
-
-function formatMarkupFactor(percent: number): string {
-  return formatFactor(1 + percent / 100);
-}
-
-function formatDiscountFactor(percent: number): string {
-  return formatFactor(1 - percent / 100);
-}
-
 function randomPercent(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -217,8 +210,9 @@ function computeKalkulationChain(params: BaseKalkulationParams): BaseKalkulation
   };
 }
 
-export function generateVorwaertsCalculation(): GeneratedKalkulation {
+export function generateVorwaertsCalculation(variant: ForwardCalculationVariant = 'standard'): GeneratedKalkulation {
   const params = randomKalkulationParams();
+  if (variant === 'no-customer-skonto') params.kundenSkonto = 0;
   const { lepNetto, ustRate, lieferRabatt, lieferskonto, bezugskosten,
     handlungsKosten, gewinnZuschlag, kundenSkonto, kundenRabatt } = params;
   const chain = computeKalkulationChain(params);
@@ -280,8 +274,9 @@ function calculateBackwardValues(gross: number, params: BaseKalkulationParams): 
   };
 }
 
-export function generateRueckwaertsCalculation(): GeneratedKalkulation {
+export function generateRueckwaertsCalculation(variant: BackwardCalculationVariant = 'standard'): GeneratedKalkulation {
   const params = randomKalkulationParams();
+  if (variant === 'no-supplier-rebate') params.lieferRabatt = 0;
   const bruttovk = computeKalkulationChain(params).ustStep.total;
   const calculated = calculateBackwardValues(bruttovk, params);
   if (!calculated) throw new Error('Konnte keine gültige Rückwärtskalkulation erzeugen.');
@@ -292,7 +287,7 @@ export function generateRueckwaertsCalculation(): GeneratedKalkulation {
   return { given, calculated, schema: RUECKWAERTS_SCHEMA };
 }
 
-export function generateDifferenzCalculation(): GeneratedDifferenz {
+export function generateDifferenzCalculation(variant: DifferentialCalculationVariant = 'standard'): GeneratedDifferenz {
   const params = randomKalkulationParams();
   const chain = computeKalkulationChain(params);
   const { ustRate, lieferRabatt, lieferskonto, bezugskosten,
@@ -302,8 +297,9 @@ export function generateDifferenzCalculation(): GeneratedDifferenz {
   const buildBackwardFromMarket = (marketBruttovk: number) => calculateBackwardValues(marketBruttovk, params);
 
   const forwardBruttovk = round2(ustForwardStep.total);
-  let bruttovkMarkt = 0;
-  let backwardMarket: ReturnType<typeof buildBackwardFromMarket> = null;
+  let bruttovkMarkt = variant === 'matching-market' ? forwardBruttovk : 0;
+  let backwardMarket: ReturnType<typeof buildBackwardFromMarket> = variant === 'matching-market'
+    ? buildBackwardFromMarket(bruttovkMarkt) : null;
 
   for (let attempt = 0; attempt < 25 && !backwardMarket; attempt += 1) {
     const variance = 0.9 + Math.random() * 0.35;
@@ -392,9 +388,10 @@ function buildQuestion(
     forwardSteps?: Record<string, number>;
     backwardSteps?: Record<string, number>;
     moduleId?: string;
+    variantLabel?: string;
   } = {}
 ): Question {
-  const { forwardSteps, backwardSteps, moduleId } = options;
+  const { forwardSteps, backwardSteps, moduleId, variantLabel } = options;
   if (type === 'differenz' && (!forwardSteps || !backwardSteps)) {
     throw new Error('buildQuestion: forwardSteps and backwardSteps are required for differenz type');
   }
@@ -405,6 +402,7 @@ function buildQuestion(
       : 'Differenzkalkulation';
 
   let frage = `Berechne die ${typeLabel}!\n\n`;
+  if (variantLabel) frage += `Variante: ${variantLabel}\n\n`;
   frage += 'Lehrmodell: Alle Einkaufs- und Kostenwerte sind netto, ohne Umsatzsteuer. Umsatzsteuer wird nur beim Übergang Netto-VK ↔ Brutto-VK berücksichtigt. Runde jede Rechenzeile kaufmännisch auf zwei Nachkommastellen und rechne mit diesen Centbeträgen weiter. Alle abgefragten Geldbeträge sind in Euro.\n\n';
   frage += 'Gegebene Werte:\n';
 
@@ -448,125 +446,30 @@ function buildQuestion(
     frage += '\nBerechne alle Zwischen- und Endergebnisse!';
   }
 
-  const solutionSteps: string[] = [typeLabel, ''];
   let expectedAnswers: Record<string, string | number | boolean>;
   let answerInputs;
-
-  if (type === 'differenz' && forwardSteps && backwardSteps) {
+  if (type === 'differenz') {
     expectedAnswers = { ...calculated };
     answerInputs = [
       ...buildAnswerInputs(VORWAERTS_SCHEMA, given, 'forward_', 'Vorwärts').map(input =>
         input.valueKey === 'forward_lep'
-          ? { ...input, label: 'Vorwärts: Listeneinkaufspreis (LEP, netto, gegeben)' }
-          : input),
+          ? { ...input, label: 'Vorwärts: Listeneinkaufspreis (LEP, netto, gegeben)' } : input),
       ...buildAnswerInputs(RUECKWAERTS_SCHEMA, given, 'backward_', 'Rückwärts', ['bruttovk']).map(input =>
         input.valueKey === 'backward_lep'
-          ? { ...input, label: 'Rückwärts: = Listeneinkaufspreis (LEP, netto, aus Marktpreis)' }
-          : input),
-      {
-        valueKey: 'differenz',
-        label: 'Differenz (Markt-Brutto-VK − berechneter Brutto-VK)',
-      },
+          ? { ...input, label: 'Rückwärts: = Listeneinkaufspreis (LEP, netto, aus Marktpreis)' } : input),
+      { valueKey: 'differenz', label: 'Differenz (Markt-Brutto-VK − berechneter Brutto-VK)' },
     ];
-
-    solutionSteps.push('=== VORWÄRTSKALKULATION (LEP → Brutto-VK) ===');
-    solutionSteps.push(`Gegeben: LEP netto = ${formatEuro(given.lepNetto)}`);
-    solutionSteps.push('');
-    solutionSteps.push(`Rabatt = ${formatEuro(given.lepNetto)} × ${given.lieferRabatt}% = ${formatEuro(forwardSteps.rabatt)}`);
-    solutionSteps.push(`ZEP = ${formatEuro(given.lepNetto)} − ${formatEuro(forwardSteps.rabatt)} = ${formatEuro(forwardSteps.zep)}`);
-    solutionSteps.push(`Skonto = ${formatEuro(forwardSteps.zep)} × ${given.lieferskonto}% = ${formatEuro(forwardSteps.skonto)}`);
-    solutionSteps.push(`BEP = ${formatEuro(forwardSteps.zep)} − ${formatEuro(forwardSteps.skonto)} = ${formatEuro(forwardSteps.bep)}`);
-    solutionSteps.push(`BP = ${formatEuro(forwardSteps.bep)} + ${formatEuro(forwardSteps.bezugskosten)} = ${formatEuro(forwardSteps.bp)}`);
-    solutionSteps.push(`Handlungskosten = ${formatEuro(forwardSteps.bp)} × ${given.handlungsKosten}% = ${formatEuro(forwardSteps.handlungskosten)}`);
-    solutionSteps.push(`Selbstkosten = ${formatEuro(forwardSteps.bp)} + ${formatEuro(forwardSteps.handlungskosten)} = ${formatEuro(forwardSteps.selbstkosten)}`);
-    solutionSteps.push(`Gewinn = ${formatEuro(forwardSteps.selbstkosten)} × ${given.gewinnZuschlag}% = ${formatEuro(forwardSteps.gewinn)}`);
-    solutionSteps.push(`BVP = ${formatEuro(forwardSteps.selbstkosten)} + ${formatEuro(forwardSteps.gewinn)} = ${formatEuro(forwardSteps.bvp)}`);
-    solutionSteps.push(`ZVP = ${formatEuro(forwardSteps.bvp)} / ${formatDiscountFactor(given.kundenSkonto)} = ${formatEuro(forwardSteps.zvp)}`);
-    solutionSteps.push(`Kundenskonto = ${formatEuro(forwardSteps.zvp)} − ${formatEuro(forwardSteps.bvp)} = ${formatEuro(forwardSteps.kundenskonto)}`);
-    solutionSteps.push(`Netto-VK = ${formatEuro(forwardSteps.zvp)} / ${formatDiscountFactor(given.kundenRabatt)} = ${formatEuro(forwardSteps.nettovk)}`);
-    solutionSteps.push(`Kundenrabatt = ${formatEuro(forwardSteps.nettovk)} − ${formatEuro(forwardSteps.zvp)} = ${formatEuro(forwardSteps.kundenrabatt)}`);
-    solutionSteps.push(`USt = ${formatEuro(forwardSteps.nettovk)} × ${given.ustRate}% = ${formatEuro(forwardSteps.ust)}`);
-    solutionSteps.push(`Brutto-VK = ${formatEuro(forwardSteps.nettovk)} + ${formatEuro(forwardSteps.ust)} = ${formatEuro(forwardSteps.bruttovk)}`);
-    solutionSteps.push('');
-
-    solutionSteps.push('=== RÜCKWÄRTSKALKULATION (Markt-Brutto-VK → LEP) ===');
-    solutionSteps.push(`Gegeben: Markt-Brutto-VK = ${formatEuro(given.bruttovkMarkt)}`);
-    solutionSteps.push('');
-    solutionSteps.push(`Netto-VK = ${formatEuro(given.bruttovkMarkt)} / ${formatMarkupFactor(given.ustRate)} = ${formatEuro(backwardSteps.nettovk)}`);
-    solutionSteps.push(`USt = ${formatEuro(given.bruttovkMarkt)} − ${formatEuro(backwardSteps.nettovk)} = ${formatEuro(backwardSteps.ust)}`);
-    solutionSteps.push(`Kundenrabatt = ${formatEuro(backwardSteps.nettovk)} × ${given.kundenRabatt}% = ${formatEuro(backwardSteps.kundenrabatt)}`);
-    solutionSteps.push(`ZVP = ${formatEuro(backwardSteps.nettovk)} − ${formatEuro(backwardSteps.kundenrabatt)} = ${formatEuro(backwardSteps.zvp)}`);
-    solutionSteps.push(`Kundenskonto = ${formatEuro(backwardSteps.zvp)} × ${given.kundenSkonto}% = ${formatEuro(backwardSteps.kundenskonto)}`);
-    solutionSteps.push(`BVP = ${formatEuro(backwardSteps.zvp)} − ${formatEuro(backwardSteps.kundenskonto)} = ${formatEuro(backwardSteps.bvp)}`);
-    solutionSteps.push(`Selbstkosten = ${formatEuro(backwardSteps.bvp)} / ${formatMarkupFactor(given.gewinnZuschlag)} = ${formatEuro(backwardSteps.selbstkosten)}`);
-    solutionSteps.push(`Gewinn = ${formatEuro(backwardSteps.bvp)} − ${formatEuro(backwardSteps.selbstkosten)} = ${formatEuro(backwardSteps.gewinn)}`);
-    solutionSteps.push(`BP = ${formatEuro(backwardSteps.selbstkosten)} / ${formatMarkupFactor(given.handlungsKosten)} = ${formatEuro(backwardSteps.bp)}`);
-    solutionSteps.push(`Handlungskosten = ${formatEuro(backwardSteps.selbstkosten)} − ${formatEuro(backwardSteps.bp)} = ${formatEuro(backwardSteps.handlungskosten)}`);
-    solutionSteps.push(`BEP = ${formatEuro(backwardSteps.bp)} − ${formatEuro(backwardSteps.bezugskosten)} = ${formatEuro(backwardSteps.bep)}`);
-    solutionSteps.push(`ZEP = ${formatEuro(backwardSteps.bep)} / ${formatDiscountFactor(given.lieferskonto)} = ${formatEuro(backwardSteps.zep)}`);
-    solutionSteps.push(`Skonto = ${formatEuro(backwardSteps.zep)} − ${formatEuro(backwardSteps.bep)} = ${formatEuro(backwardSteps.skonto)}`);
-    solutionSteps.push(`LEP netto (aus Marktpreis) = ${formatEuro(backwardSteps.zep)} / ${formatDiscountFactor(given.lieferRabatt)} = ${formatEuro(backwardSteps.lep)}`);
-    solutionSteps.push(`Rabatt = ${formatEuro(backwardSteps.lep)} − ${formatEuro(backwardSteps.zep)} = ${formatEuro(backwardSteps.rabatt)}`);
-    solutionSteps.push('Der aus dem Marktpreis abgeleitete LEP netto ist der zu diesem Verkaufspreis und den vorgegebenen Zu- und Abschlägen passende Einkaufspreis. Er kann vom gegebenen LEP netto abweichen, weil der Marktpreis vom vorwärts berechneten Brutto-VK abweicht.');
-    solutionSteps.push('');
-
-    const differenz = calculated.differenz as number;
-    const differenzLabel = differenz >= 0 ? 'Gewinnspielraum' : 'Unterdeckung';
-    solutionSteps.push('=== ERGEBNIS ===');
-    solutionSteps.push('Differenz = Markt-Brutto-VK − berechneter Brutto-VK');
-    solutionSteps.push(`Differenz = ${formatEuro(given.bruttovkMarkt)} − ${formatEuro(forwardSteps.bruttovk)}`);
-    solutionSteps.push(`Differenz = ${formatEuro(differenz)}`);
-    solutionSteps.push('');
-    solutionSteps.push(`${differenz >= 0 ? '✅' : '❌'} ${differenzLabel}: ${formatEuro(differenz)}`);
-    solutionSteps.push(
-      differenz >= 0
-        ? 'Der Marktpreis liegt mindestens auf dem berechneten Niveau.'
-        : 'Der Marktpreis liegt unter dem berechneten Niveau.'
-    );
   } else {
-    expectedAnswers = Object.fromEntries(
-      Object.entries(calculated).filter(([key]) => !Object.prototype.hasOwnProperty.call(given, key))
-    );
+    expectedAnswers = Object.fromEntries(Object.entries(calculated).filter(([key]) => !Object.prototype.hasOwnProperty.call(given, key)));
     answerInputs = buildAnswerInputs(schema, given);
-
-    if (type === 'vorwaerts') {
-      solutionSteps.push(`Gegeben: LEP netto = ${formatEuro(given.lepNetto)}, Rabatt = ${given.lieferRabatt}%, Skonto = ${given.lieferskonto}%`);
-      solutionSteps.push('');
-      solutionSteps.push(`Rabatt = ${formatEuro(given.lepNetto)} × ${given.lieferRabatt}% = ${formatEuro(calculated.rabatt as number)}`);
-      solutionSteps.push(`ZEP = ${formatEuro(given.lepNetto)} − ${formatEuro(calculated.rabatt as number)} = ${formatEuro(calculated.zep as number)}`);
-      solutionSteps.push(`Skonto = ${formatEuro(calculated.zep as number)} × ${given.lieferskonto}% = ${formatEuro(calculated.skonto as number)}`);
-      solutionSteps.push(`BEP = ${formatEuro(calculated.zep as number)} − ${formatEuro(calculated.skonto as number)} = ${formatEuro(calculated.bep as number)}`);
-      solutionSteps.push(`BP = ${formatEuro(calculated.bep as number)} + ${formatEuro(calculated.bezugskosten as number)} = ${formatEuro(calculated.bp as number)}`);
-      solutionSteps.push(`Handlungskosten = ${formatEuro(calculated.bp as number)} × ${given.handlungsKosten}% = ${formatEuro(calculated.handlungskosten as number)}`);
-      solutionSteps.push(`Selbstkosten = ${formatEuro(calculated.bp as number)} + ${formatEuro(calculated.handlungskosten as number)} = ${formatEuro(calculated.selbstkosten as number)}`);
-      solutionSteps.push(`Gewinn = ${formatEuro(calculated.selbstkosten as number)} × ${given.gewinnZuschlag}% = ${formatEuro(calculated.gewinn as number)}`);
-      solutionSteps.push(`BVP = ${formatEuro(calculated.selbstkosten as number)} + ${formatEuro(calculated.gewinn as number)} = ${formatEuro(calculated.bvp as number)}`);
-      solutionSteps.push(`ZVP = ${formatEuro(calculated.bvp as number)} / ${formatDiscountFactor(given.kundenSkonto)} = ${formatEuro(calculated.zvp as number)}`);
-      solutionSteps.push(`Kundenskonto = ${formatEuro(calculated.zvp as number)} − ${formatEuro(calculated.bvp as number)} = ${formatEuro(calculated.kundenskonto as number)}`);
-      solutionSteps.push(`Netto-VK = ${formatEuro(calculated.zvp as number)} / ${formatDiscountFactor(given.kundenRabatt)} = ${formatEuro(calculated.nettovk as number)}`);
-      solutionSteps.push(`Kundenrabatt = ${formatEuro(calculated.nettovk as number)} − ${formatEuro(calculated.zvp as number)} = ${formatEuro(calculated.kundenrabatt as number)}`);
-      solutionSteps.push(`USt = ${formatEuro(calculated.nettovk as number)} × ${given.ustRate}% = ${formatEuro(calculated.ust as number)}`);
-      solutionSteps.push(`Brutto-VK = ${formatEuro(calculated.nettovk as number)} + ${formatEuro(calculated.ust as number)} = ${formatEuro(calculated.bruttovk as number)}`);
-    } else {
-      solutionSteps.push(`Gegeben: Brutto-VK = ${formatEuro(given.bruttovk)}, alle Zu- und Abschläge`);
-      solutionSteps.push('');
-      solutionSteps.push(`Netto-VK = ${formatEuro(given.bruttovk)} / ${formatMarkupFactor(given.ustRate)} = ${formatEuro(calculated.nettovk as number)}`);
-      solutionSteps.push(`USt = ${formatEuro(given.bruttovk)} − ${formatEuro(calculated.nettovk as number)} = ${formatEuro(calculated.ust as number)}`);
-      solutionSteps.push(`Kundenrabatt = ${formatEuro(calculated.nettovk as number)} × ${given.kundenRabatt}% = ${formatEuro(calculated.kundenrabatt as number)}`);
-      solutionSteps.push(`ZVP = ${formatEuro(calculated.nettovk as number)} − ${formatEuro(calculated.kundenrabatt as number)} = ${formatEuro(calculated.zvp as number)}`);
-      solutionSteps.push(`Kundenskonto = ${formatEuro(calculated.zvp as number)} × ${given.kundenSkonto}% = ${formatEuro(calculated.kundenskonto as number)}`);
-      solutionSteps.push(`BVP = ${formatEuro(calculated.zvp as number)} − ${formatEuro(calculated.kundenskonto as number)} = ${formatEuro(calculated.bvp as number)}`);
-      solutionSteps.push(`Selbstkosten = ${formatEuro(calculated.bvp as number)} / ${formatMarkupFactor(given.gewinnZuschlag)} = ${formatEuro(calculated.selbstkosten as number)}`);
-      solutionSteps.push(`Gewinn = ${formatEuro(calculated.bvp as number)} − ${formatEuro(calculated.selbstkosten as number)} = ${formatEuro(calculated.gewinn as number)}`);
-      solutionSteps.push(`BP = ${formatEuro(calculated.selbstkosten as number)} / ${formatMarkupFactor(given.handlungsKosten)} = ${formatEuro(calculated.bp as number)}`);
-      solutionSteps.push(`Handlungskosten = ${formatEuro(calculated.selbstkosten as number)} − ${formatEuro(calculated.bp as number)} = ${formatEuro(calculated.handlungskosten as number)}`);
-      solutionSteps.push(`BEP = ${formatEuro(calculated.bp as number)} − ${formatEuro(calculated.bezugskosten as number)} = ${formatEuro(calculated.bep as number)}`);
-      solutionSteps.push(`ZEP = ${formatEuro(calculated.bep as number)} / ${formatDiscountFactor(given.lieferskonto)} = ${formatEuro(calculated.zep as number)}`);
-      solutionSteps.push(`Skonto = ${formatEuro(calculated.zep as number)} − ${formatEuro(calculated.bep as number)} = ${formatEuro(calculated.skonto as number)}`);
-      solutionSteps.push(`LEP netto = ${formatEuro(calculated.zep as number)} / ${formatDiscountFactor(given.lieferRabatt)} = ${formatEuro(calculated.lep as number)}`);
-      solutionSteps.push(`Rabatt = ${formatEuro(calculated.lep as number)} − ${formatEuro(calculated.zep as number)} = ${formatEuro(calculated.rabatt as number)}`);
-    }
   }
+  const learning = buildCalculationLearning(type, given, calculated, forwardSteps, backwardSteps);
+  const solutionSteps = learning.solutionSteps;
+  const calculationLearning = { rows: answerInputs.map(input => {
+    const row = learning.rows.find(row => row.valueKey === input.valueKey);
+    if (!row) throw new Error(`Missing calculation guidance for ${input.valueKey}`);
+    return row;
+  }) };
 
   const difficulty: 'easy' | 'medium' | 'hard' =
     type === 'vorwaerts' ? 'medium' : 'hard';
@@ -583,26 +486,30 @@ function buildQuestion(
     solutionSteps,
     difficulty,
     answerInputs,
+    calculationLearning,
   };
 }
 
 /** Generates a dedicated Vorwärtskalkulation question with medium difficulty. */
-export function generateVorwaertsKalkulationQuestion(): Question {
-  const { given, calculated, schema } = generateVorwaertsCalculation();
-  return buildQuestion('vorwaerts', given, calculated, schema, { moduleId: 'handelskalkulationVorwaerts' });
+export function generateVorwaertsKalkulationQuestion(variant: ForwardCalculationVariant = Math.random() < 0.25 ? 'no-customer-skonto' : 'standard'): Question {
+  const { given, calculated, schema } = generateVorwaertsCalculation(variant);
+  return buildQuestion('vorwaerts', given, calculated, schema, { moduleId: 'handelskalkulationVorwaerts',
+    variantLabel: variant === 'no-customer-skonto' ? 'Ohne Kundenskonto (0%)' : undefined });
 }
 
 /** Generates a dedicated Rückwärtskalkulation question with hard difficulty. */
-export function generateRueckwaertsKalkulationQuestion(): Question {
-  const { given, calculated, schema } = generateRueckwaertsCalculation();
-  return buildQuestion('rueckwaerts', given, calculated, schema, { moduleId: 'handelskalkulationRueckwaerts' });
+export function generateRueckwaertsKalkulationQuestion(variant: BackwardCalculationVariant = Math.random() < 0.25 ? 'no-supplier-rebate' : 'standard'): Question {
+  const { given, calculated, schema } = generateRueckwaertsCalculation(variant);
+  return buildQuestion('rueckwaerts', given, calculated, schema, { moduleId: 'handelskalkulationRueckwaerts',
+    variantLabel: variant === 'no-supplier-rebate' ? 'Ohne Lieferantenrabatt (0%)' : undefined });
 }
 
 /** Dedicated differential exercise, with its own progress identity and no mixed-mode fallback. */
-export function generateDifferenzKalkulationQuestion(): Question {
-  const { given, calculated, forwardSteps, backwardSteps, schema } = generateDifferenzCalculation();
+export function generateDifferenzKalkulationQuestion(variant: DifferentialCalculationVariant = Math.random() < 0.25 ? 'matching-market' : 'standard'): Question {
+  const { given, calculated, forwardSteps, backwardSteps, schema } = generateDifferenzCalculation(variant);
   return buildQuestion('differenz', given, calculated, schema, {
     moduleId: 'handelskalkulationDifferenz', forwardSteps, backwardSteps,
+    variantLabel: variant === 'matching-market' ? 'Marktpreis auf Kalkulationsniveau (0 € Preisabstand)' : undefined,
   });
 }
 

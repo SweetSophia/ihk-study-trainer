@@ -107,3 +107,23 @@ it('keeps AP2 weak-topic navigation supported through its dedicated trainer', as
  expect(screen.getByRole('button',{name:'Basisplan prüfen'})).toBeEnabled();
  expect(updateProgress).not.toHaveBeenCalled();
 });
+
+it.each([true, false])('keeps learning hints/reveal/navigation separate from attempt bookkeeping, authenticated: %s', async authenticated => {
+ if (!authenticated) localStorage.removeItem('ihk_access_hash');
+ render(<Home/>);
+ fireEvent.click((await screen.findAllByRole('button',{name:/Vorwärtskalk\./}))[0]);
+ for (const input of screen.getAllByRole('textbox')) fireEvent.change(input,{target:{value:'0'}});
+ fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/}));
+ const hints=await screen.findByRole('region',{name:'Hinweise zur Kalkulation'});
+ expect(hints.querySelectorAll('li')).toHaveLength(2);
+ await waitFor(()=>expect(updateProgress).toHaveBeenCalledTimes(authenticated ? 1 : 0));
+ if (authenticated) expect(updateProgress).toHaveBeenCalledWith('test-user-hash','handelskalkulationVorwaerts',false);
+ fireEvent.keyDown(window,{key:'Enter'});
+ fireEvent.click(screen.getByRole('button',{name:'Lösung anzeigen'}));
+ fireEvent.click(screen.getByRole('button',{name:'Lösung ausblenden'}));
+ expect(updateProgress).toHaveBeenCalledTimes(authenticated ? 1 : 0);
+ fireEvent.click(screen.getByRole('button',{name:/Nächste Frage/}));
+ expect(screen.queryByRole('region',{name:'Hinweise zur Kalkulation'})).not.toBeInTheDocument();
+ expect(screen.getAllByRole('textbox').every(input=>(input as HTMLInputElement).value==='')).toBe(true);
+ expect(updateProgress).toHaveBeenCalledTimes(authenticated ? 1 : 0);
+});

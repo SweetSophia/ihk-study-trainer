@@ -236,6 +236,46 @@ describe('readable exercise headings and contextual units', () => {
   });
 });
 
+describe('post-check calculation guidance', () => {
+  const learningQuestion = () => makeQuestion({
+    module: 'handelskalkulationVorwaerts', expectedAnswers: { skonto: 2.70, ust: 19 },
+    answerInputs: [{ valueKey: 'skonto', label: 'Lieferskonto' }, { valueKey: 'ust', label: 'Umsatzsteuer' }],
+    calculationLearning: { rows: [
+      { valueKey: 'skonto', hint: 'Prüfe den ZEP als Basis.' },
+      { valueKey: 'ust', hint: 'Prüfe den Netto-VK als Basis.' },
+    ] },
+  });
+  it('shows contextual hints only after a wrong check, resets them and never submits from hint/reveal actions', async () => {
+    const user = userEvent.setup(); const question = learningQuestion();
+    const check = vi.fn((answers: Record<string,string>) => validateQuestionAnswers(question, answers));
+    const { rerender } = render(<StudyCard question={question} onCheckAnswer={check} onNextQuestion={noNextQuestion} />);
+    expect(screen.queryByRole('region', { name: 'Hinweise zur Kalkulation' })).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText('Lieferskonto'), '3');
+    await user.type(screen.getByLabelText('Umsatzsteuer'), '22,61');
+    await user.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+    const hints = screen.getByRole('region', { name: 'Hinweise zur Kalkulation' });
+    expect(within(hints).getAllByRole('listitem')).toHaveLength(2);
+    expect(hints).toHaveTextContent('Lieferskonto: Prüfe den ZEP als Basis.');
+    expect(hints).toHaveTextContent('Umsatzsteuer: Prüfe den Netto-VK als Basis.');
+    await user.keyboard('{Enter}');
+    await user.click(screen.getByRole('button', { name: 'Lösung anzeigen' }));
+    await user.click(screen.getByRole('button', { name: 'Lösung ausblenden' }));
+    expect(check).toHaveBeenCalledTimes(1);
+    rerender(<StudyCard question={{ ...learningQuestion(), id: 'next-learning' }} onCheckAnswer={check} onNextQuestion={noNextQuestion} />);
+    expect(screen.queryByRole('region', { name: 'Hinweise zur Kalkulation' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Lieferskonto')).toHaveValue('');
+  });
+  it('keeps accepted in-tolerance answers free of corrective hints', async () => {
+    const user = userEvent.setup(); const question = learningQuestion(); question.expectedAnswers.skonto = 3.09;
+    render(<StudyCard question={question} onCheckAnswer={answers => validateQuestionAnswers(question, answers)} onNextQuestion={noNextQuestion} />);
+    await user.type(screen.getByLabelText('Lieferskonto'), '3');
+    await user.type(screen.getByLabelText('Umsatzsteuer'), '19');
+    await user.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+    expect(screen.getByRole('status')).toHaveTextContent('Richtig!');
+    expect(screen.queryByRole('region', { name: 'Hinweise zur Kalkulation' })).not.toBeInTheDocument();
+  });
+});
+
 describe('StudyCard – welcome screen (no question)', () => {
   beforeEach(() => {
     vi.clearAllMocks();

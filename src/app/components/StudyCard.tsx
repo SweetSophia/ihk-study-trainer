@@ -17,6 +17,7 @@ import { fireFirstCorrectConfetti } from '../lib/celebrations';
 import { CHANGELOG_ENTRIES } from '../lib/changelog';
 import { ALL_MODULES, LEGACY_CALCULATION } from '../lib/modules';
 import { toCanonicalModuleId } from '../lib/moduleIds';
+import { getCalculationHints } from '../lib/calculationLearning';
 import LinuxTerminal from './LinuxTerminal';
 import SubnettingVisualizer from './SubnettingVisualizer';
 import RaidVisualizer from './RaidVisualizer';
@@ -429,6 +430,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
   const canonicalModule = toCanonicalModuleId(question.module);
   const moduleName = ALL_MODULES.find(({ id }) => id === canonicalModule)?.name
     ?? (canonicalModule === LEGACY_CALCULATION.id ? LEGACY_CALCULATION.name : 'Übungsaufgabe');
+  const calculationHints = checked && isCorrect === false ? getCalculationHints(question, answers) : [];
 
   const getDifficultyColor = () => {
     switch (question.difficulty) {
@@ -682,6 +684,16 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
               </motion.div>
             )}
           </AnimatePresence>
+          {calculationHints.length > 0 && (
+            <section aria-label="Hinweise zur Kalkulation" className="mt-3 rounded-lg border border-slate-700 bg-slate-950/50 p-4">
+              <h3 className="text-sm font-medium text-slate-200 mb-2">Zum Nachprüfen</h3>
+              <ul className="list-disc pl-5 space-y-2 text-sm text-slate-300">
+                {calculationHints.map(hint => (
+                  <li key={hint.valueKey}><strong>{hint.label}:</strong> {hint.text}</li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       </div>
 
