@@ -1,5 +1,6 @@
 import { CHANGELOG_ENTRIES } from '../../lib/changelog';
 import type { HTMLAttributes, ButtonHTMLAttributes } from 'react';
+import { useLayoutEffect } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -254,6 +255,7 @@ describe('post-check calculation guidance', () => {
     await user.type(screen.getByLabelText('Umsatzsteuer'), '22,61');
     await user.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
     const hints = screen.getByRole('region', { name: 'Hinweise zur Kalkulation' });
+    expect(screen.getByRole('status')).not.toContainElement(hints);
     expect(within(hints).getAllByRole('listitem')).toHaveLength(2);
     expect(hints).toHaveTextContent('Lieferskonto: Prüfe den ZEP als Basis.');
     expect(hints).toHaveTextContent('Umsatzsteuer: Prüfe den Netto-VK als Basis.');
@@ -272,6 +274,29 @@ describe('post-check calculation guidance', () => {
     await user.type(screen.getByLabelText('Umsatzsteuer'), '19');
     await user.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
     expect(screen.getByRole('status')).toHaveTextContent('Richtig!');
+    expect(screen.queryByRole('region', { name: 'Hinweise zur Kalkulation' })).not.toBeInTheDocument();
+  });
+  it('never commits hints for a new question using the previous question answers before passive reset', async () => {
+    const committedHints: string[] = [];
+    function Probe({ question }: { question: Question }) {
+      useLayoutEffect(() => {
+        if (question.id === 'next-question-commit') {
+          committedHints.push(screen.queryByRole('region', { name: 'Hinweise zur Kalkulation' })?.textContent ?? '');
+        }
+      }, [question.id]);
+      return <StudyCard question={question} onCheckAnswer={answers => validateQuestionAnswers(question, answers)} onNextQuestion={noNextQuestion} />;
+    }
+    const first = learningQuestion();
+    const user = userEvent.setup();
+    const { rerender } = render(<Probe question={first} />);
+    await user.type(screen.getByLabelText('Lieferskonto'), '3');
+    await user.type(screen.getByLabelText('Umsatzsteuer'), '19');
+    await user.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+    expect(screen.getByRole('region', { name: 'Hinweise zur Kalkulation' })).toBeInTheDocument();
+    const next = { ...learningQuestion(), id: 'next-question-commit', expectedAnswers: { skonto: 10, ust: 19 },
+      calculationLearning: { rows: [{ valueKey: 'skonto', hint: 'Neue Aufgabe: andere Prozentbasis.' }] } };
+    rerender(<Probe question={next} />);
+    expect(committedHints).toEqual(['']);
     expect(screen.queryByRole('region', { name: 'Hinweise zur Kalkulation' })).not.toBeInTheDocument();
   });
 });

@@ -43,3 +43,10 @@ Pre-flight: tasks share the optional Question learning metadata and builder/sele
 ## Final local verification
 
 137 focused tests/5files passed. Full final suite:1,200 tests/66files passed134.62s. Final lint/types/build all0. Local production Chromium1440/390 exercised all standard/special profiles, positive/negative/zero gaps, independent integer-cent answers, rejected numeric patterns, tolerated-row suppression, input Enter/repetition, disclosure and question-reset. No overflow/page errors/account/progress writes; narrow hint/solution screenshots visually inspected. Independent source review found no material defect; a zero-gap sub-cent hint edge was regression-tested RED→GREEN and reviewed. Earlier full-suite failures were10 obsolete title-only assertions, now aligned with meaningful grouped steps; scoring/field invariants retained.
+
+## Follow-up: checked-question binding and concise live feedback
+
+- [x] RED/GREEN layout-effect commit probe confirms no new-question hints can be committed from old answers before passive reset; bind guidance to the checked question ID and clear on reset/next.
+- [x] RED/GREEN DOM assertion keeps the detailed hint section outside the atomic correctness status.
+- [x] Real-generator tests cover every candidate across seven mode/profile/sign cases: accepted candidates stay silent (also when another row is wrong), rejected candidates select their factual reminder. A real cross-row number coincidence remains a neutral reminder, not an asserted cause. No tolerance change or arbitrary structured-input expansion.
+- [x] Final correction verification:93 focused tests/3files,1,209 full tests/66files139.99s; lint/types/build0. Fresh local production Chromium1440/390 seven-case matrix passed, including hint/status separation and the existing independent-cent, repeat, reveal, reset and no-write guards. Independent source review found no blocker before push.

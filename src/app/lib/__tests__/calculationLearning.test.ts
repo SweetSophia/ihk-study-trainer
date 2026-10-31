@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Question } from '../../types';
 import { getCalculationHints } from '../calculationLearning';
-import { validateQuestionAnswers } from '../answerValidation';
-import { generateVorwaertsKalkulationQuestion, generateDifferenzKalkulationQuestion } from '../generators/handelskalkulation';
+import { validateQuestionAnswers, validateStructuredAnswer } from '../answerValidation';
+import { generateVorwaertsKalkulationQuestion, generateRueckwaertsKalkulationQuestion, generateDifferenzKalkulationQuestion } from '../generators/handelskalkulation';
 
 afterEach(() => vi.restoreAllMocks());
 const fixture = (): Question => ({
@@ -78,5 +78,55 @@ describe('calculation guidance defers to the existing validator', () => {
     expect(hints).toHaveLength(1);
     expect(hints[0].text).toContain('null = gleich');
     expect(hints[0].text).not.toContain('Vorzeichen');
+  });
+  it.each([
+    ['forward standard', () => generateVorwaertsKalkulationQuestion('standard')],
+    ['forward zero customer skonto', () => generateVorwaertsKalkulationQuestion('no-customer-skonto')],
+    ['backward standard', () => generateRueckwaertsKalkulationQuestion('standard')],
+    ['backward zero supplier rebate', () => generateRueckwaertsKalkulationQuestion('no-supplier-rebate')],
+    ['differential positive', () => generateDifferenzKalkulationQuestion('standard')],
+    ['differential negative', () => generateDifferenzKalkulationQuestion('standard')],
+    ['differential matching', () => generateDifferenzKalkulationQuestion('matching-market')],
+  ] as const)('checks every real numeric-pattern candidate against the existing validator: %s', (name, make) => {
+    let calls = 0;
+    vi.spyOn(Math, 'random').mockImplementation(() => name === 'differential negative' && calls++ >= 8 ? 0 : 0.5);
+    const q = make();
+    const answers = Object.fromEntries(Object.entries(q.expectedAnswers).map(([key,value]) => [key,String(value)]));
+    let rejectedPatterns = 0;
+    for (const row of q.calculationLearning!.rows) {
+      expect(Object.hasOwn(q.expectedAnswers, row.valueKey)).toBe(true);
+      const config = q.answerInputs!.find(input => input.valueKey === row.valueKey)!;
+      // The guidance contract is deliberately limited to these monetary rows.
+      expect(config).toBeDefined();
+      expect(config.unitKey).toBeUndefined();
+      expect(config.acceptedValues).toBeUndefined();
+      expect(config.valueOptions).toBeUndefined();
+      for (const pattern of row.alternatives ?? []) {
+        const value = String(pattern.value);
+        const accepted = validateStructuredAnswer([config], { [row.valueKey]: q.expectedAnswers[row.valueKey] }, { [row.valueKey]: value });
+        const hints = getCalculationHints(q, { ...answers, [row.valueKey]: value });
+        if (accepted) {
+          expect(hints).toEqual([]);
+          const otherKey = Object.keys(answers).find(key => key !== row.valueKey)!;
+          expect(getCalculationHints(q, { ...answers, [row.valueKey]: value, [otherKey]: '99999999' }).some(hint => hint.valueKey === row.valueKey)).toBe(false);
+        } else {
+          rejectedPatterns++;
+          expect(hints).toEqual([{ valueKey: row.valueKey, label: config.label, text: pattern.hint }]);
+        }
+      }
+    }
+    expect(rejectedPatterns).toBeGreaterThan(0);
+  });
+  it('keeps a real cross-row numeric coincidence a neutral maths reminder, not a claim about its cause', () => {
+    const randoms = [0.5,0.5,0.5,0.5,0.5,0.5,0.99,0];
+    vi.spyOn(Math, 'random').mockImplementation(() => randoms.shift() ?? 0.5);
+    const q = generateVorwaertsKalkulationQuestion('standard');
+    expect(q.expectedAnswers).toMatchObject({ kundenskonto: 63.19, kundenrabatt: 66.52 });
+    const answers = Object.fromEntries(Object.entries(q.expectedAnswers).map(([key,value]) => [key,String(value)]));
+    const hints = getCalculationHints(q, { ...answers, kundenrabatt: '63,19' });
+    expect(hints).toHaveLength(1);
+    expect(hints[0].valueKey).toBe('kundenrabatt');
+    expect(hints[0].text).toBe('Prüfe die Rabattbasis: Der Kundenrabatt bezieht sich auf den Netto-VK (100%), nicht auf den bereits verminderten ZVP.');
+    expect(hints[0].text).not.toMatch(/du hast|du dachtest|du verwendest|dein fehler|vergessen/i);
   });
 });

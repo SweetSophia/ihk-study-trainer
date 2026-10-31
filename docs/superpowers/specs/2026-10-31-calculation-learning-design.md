@@ -10,6 +10,8 @@ Each solution step groups its named percentage base (100%), direction/reason, co
 
 For hints, first defer to the unchanged full validator. Never object to an accepted answer. On a wrong attempt, select at most the first two rejected rows using the same validator with a one-field expected payload. For malformed numbers give an input-format hint. Otherwise use neutral row guidance; an exact rounded numeric match to a demonstrable alternative (wrong Skonto base, subtracting VAT from gross, direct markup instead of reversing a discount, sign reversal) can select a more specific reminder. Numeric coincidence is not evidence of the learner's reasoning: never say “you used/thought/forgot”. Hints do not expose an extra check/retry or cause progress writes. Reset with the existing question lifecycle.
 
+Bind hints to the ID of the question actually checked, so a new question cannot commit hints derived from old answer state before passive reset. Keep detailed guidance outside the atomic correctness live status, in its own named section. Pattern candidates accepted by the existing tolerance remain silent; numerical matches are neutral maths reminders, not causal diagnoses.
+
 ## Variants
 
 Keep standard generators intact by default. Dedicated question factories additionally choose a clearly stated special profile in 25% of questions, without mixing modes; explicit optional profile arguments allow deterministic tests.
