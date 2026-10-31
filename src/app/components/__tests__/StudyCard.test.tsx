@@ -48,7 +48,8 @@ vi.mock('framer-motion', () => ({
 }));
 
 // Mock lucide-react — render tiny stand-ins.
-vi.mock('lucide-react', () => ({
+vi.mock('lucide-react', async (importOriginal) => ({
+  ...await importOriginal<typeof import('lucide-react')>(),
   Check: () => <svg data-testid="icon-check" />,
   X: () => <svg data-testid="icon-x" />,
   Lightbulb: () => <svg data-testid="icon-lightbulb" />,
@@ -150,7 +151,7 @@ describe('legacy associated answer controls', () => {
     const { rerender } = render(<StudyCard question={structured} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} />);
     expect(screen.getByLabelText('Dateigröße')).toHaveAttribute('type', 'text');
     expect(screen.getByLabelText('Dateigröße')).not.toHaveAttribute('inputmode');
-    expect(screen.getByLabelText('Einheit')).toHaveRole('combobox');
+    expect(screen.getByLabelText('Einheit für Dateigröße')).toHaveRole('combobox');
     expect(screen.getByLabelText('Auswahl')).toHaveRole('combobox');
     rerender(<><StudyCard question={makeQuestion()} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} /><StudyCard question={makeQuestion({ id: 'second' })} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} /></>);
     const widths = screen.getAllByLabelText('width');
@@ -184,6 +185,54 @@ describe('legacy associated answer controls', () => {
     fireEvent.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
     expect(check).toHaveReturnedWith(true);
     expect(screen.getByRole('status')).toHaveTextContent('Richtig!');
+  });
+});
+
+describe('readable exercise headings and contextual units', () => {
+  it.each([
+    ['handelskalkulationVorwaerts', 'Vorwärtskalkulation'],
+    ['handelskalkulationRueckwaerts', 'Rückwärtskalkulation'],
+    ['handelskalkulationDifferenz', 'Differenzkalkulation'],
+    ['handelskalkulation-rueckwaerts', 'Rückwärtskalkulation'],
+    ['image-calc', 'Bildgröße'],
+    ['handelskalkulation', 'Kalkulation (gemischter Altbestand)'],
+    ['unknown-module', 'Übungsaufgabe'],
+    ['constructor', 'Übungsaufgabe'],
+    ['toString', 'Übungsaufgabe'],
+    ['__proto__', 'Übungsaufgabe'],
+  ])('renders a safe readable heading for %s', (module, heading) => {
+    render(<StudyCard question={makeQuestion({ module })} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} />);
+    expect(screen.getByRole('heading', { level: 2, name: heading })).toBeInTheDocument();
+  });
+
+  it('distinguishes both time-unit selectors and submits the original values and keys', async () => {
+    const question = makeQuestion({
+      module: 'bandwidth',
+      expectedAnswers: { minutes: 2, minuteUnit: 'min', seconds: 30, secondUnit: 's' },
+      answerInputs: [
+        { valueKey: 'minutes', label: 'Minuten', unitKey: 'minuteUnit', unitOptions: ['h', 'min', 's'] },
+        { valueKey: 'seconds', label: 'Sekunden', unitKey: 'secondUnit', unitOptions: ['h', 'min', 's'] },
+      ],
+    });
+    const check = vi.fn((answers: Record<string, string>) => validateQuestionAnswers(question, answers));
+    const user = userEvent.setup();
+    render(<StudyCard question={question} onCheckAnswer={check} onNextQuestion={noNextQuestion} />);
+    await user.type(screen.getByLabelText('Minuten'), '2');
+    await user.type(screen.getByLabelText('Sekunden'), '30');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Einheit für Minuten' }), 'min');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Einheit für Sekunden' }), 's');
+    await user.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+    expect(check).toHaveBeenCalledExactlyOnceWith({ minutes: '2', minuteUnit: 'min', seconds: '30', secondUnit: 's' });
+    expect(screen.getByRole('status')).toHaveTextContent('Richtig!');
+  });
+
+  it('uses numbered context when value-field labels are absent', () => {
+    render(<StudyCard question={makeQuestion({ answerInputs: [
+      { valueKey: 'first', unitKey: 'firstUnit', unitOptions: ['s'] },
+      { valueKey: 'second', unitKey: 'secondUnit', unitOptions: ['s'] },
+    ] })} onCheckAnswer={noCheckAnswer} onNextQuestion={noNextQuestion} />);
+    expect(screen.getByRole('combobox', { name: 'Einheit für Wert 1' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Einheit für Wert 2' })).toBeInTheDocument();
   });
 });
 
@@ -921,7 +970,7 @@ describe('decimal input preserves the strict parser contract', () => {
     const input = screen.getByLabelText('Dateigröße');
     await user.type(input, value);
     expect((input as HTMLInputElement).value).toBe(value);
-    await user.selectOptions(screen.getByLabelText('Einheit'), 'MiB');
+    await user.selectOptions(screen.getByLabelText('Einheit für Dateigröße'), 'MiB');
     await user.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
     expect(screen.getByRole('status')).toHaveTextContent(correct ? 'Richtig!' : 'nicht ganz richtig');
   });

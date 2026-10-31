@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { RaidConfig } from '../types';
 
@@ -97,6 +97,7 @@ interface RaidVisualizerProps {
  * constraints — the generator's `calculateRaid` is the source of truth.
  */
 export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
+  const explanationId = useId();
   const prefersReducedMotion = useReducedMotion();
   const disks = useMemo(() => classifyDisks(raid), [raid]);
   const usableLabel = useMemo(() => formatUsableCapacity(raid), [raid]);
@@ -147,6 +148,8 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
       {/* Disk grid */}
       <div
         className="px-5 pt-4 pb-4 border-b border-slate-800/60"
+        role="group"
+        aria-describedby={isParityAccounting ? explanationId : undefined}
         aria-label={isParityAccounting
           ? `${raid.disks} Plattenkapazitäten zur Kapazitätsberechnung`
           : `${raid.disks} Festplatten im Array`}
@@ -155,9 +158,14 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
           {isParityAccounting ? 'Kapazitätsaufteilung (rechnerisch)' : 'Festplatten'}
         </p>
         {isParityAccounting && (
-          <p className="text-xs text-slate-400 mb-3">
+          <p id={explanationId} className="text-xs text-slate-400 mb-3">
             Jeder Anteil entspricht einer Plattenkapazität. Parität wird über alle Festplatten verteilt;
-            der Paritätsanteil entspricht der Kapazität {totalParityDisks === 1 ? 'einer Platte' : 'zweier Platten'}.
+            der Paritätsanteil entspricht der Kapazität {totalParityDisks === 1 ? 'einer Platte' : 'zweier Platten'}. Es gibt keine festen Paritätsplatten.
+          </p>
+        )}
+        {(raid.level === 'RAID 1' || raid.level === 'RAID 10') && (
+          <p className="text-xs text-slate-400 mb-3">
+            Die Kacheln zeigen physische Datenträger; gespiegelte Daten erhöhen die nutzbare Kapazität nicht.
           </p>
         )}
         <div
@@ -174,6 +182,7 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
                 ease: 'easeOut',
                 delay: baseDelay + i * stepDelay,
               }}
+              role="img"
               aria-label={`${isParityAccounting ? 'Kapazitätsanteil' : 'Festplatte'} ${disk.index + 1}: ${disk.diskSizeGb} GB (${
                 roleLabels[disk.role]
               })`}
@@ -214,7 +223,7 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
 
         {/* Compact legend so the colour code is also conveyed in text form
             (don't rely on colour alone — accessibility requirement). */}
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+        <div role="group" aria-label="Legende zur RAID-Darstellung" className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
           <LegendSwatch tone="emerald" label={roleLabels.data} />
           {totalParityDisks > 0 && (
             <LegendSwatch tone="amber" label={roleLabels.parity} />

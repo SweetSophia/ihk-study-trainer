@@ -15,6 +15,8 @@ import {
 import { Question } from '../types';
 import { fireFirstCorrectConfetti } from '../lib/celebrations';
 import { CHANGELOG_ENTRIES } from '../lib/changelog';
+import { ALL_MODULES, LEGACY_CALCULATION } from '../lib/modules';
+import { toCanonicalModuleId } from '../lib/moduleIds';
 import LinuxTerminal from './LinuxTerminal';
 import SubnettingVisualizer from './SubnettingVisualizer';
 import RaidVisualizer from './RaidVisualizer';
@@ -424,6 +426,10 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
   // -----------------------------------------------------------------
   // Active question state
   // -----------------------------------------------------------------
+  const canonicalModule = toCanonicalModuleId(question.module);
+  const moduleName = ALL_MODULES.find(({ id }) => id === canonicalModule)?.name
+    ?? (canonicalModule === LEGACY_CALCULATION.id ? LEGACY_CALCULATION.name : 'Übungsaufgabe');
+
   const getDifficultyColor = () => {
     switch (question.difficulty) {
       case 'easy':
@@ -488,7 +494,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
             <span className="text-xs font-medium text-emerald-400 uppercase tracking-wider">
               {question.theme}
             </span>
-            <h2 className="text-lg font-semibold text-slate-100 mt-1">{question.module}</h2>
+            <h2 className="text-lg font-semibold text-slate-100 mt-1">{moduleName}</h2>
           </div>
           <span className={`text-sm font-medium ${getDifficultyColor()}`}>
             {getDifficultyLabel()}
@@ -595,7 +601,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion }: S
                 {cfg.unitKey && cfg.unitOptions && (
                   <div className="flex-1">
                     <label htmlFor={`${controlId}-unit-${idx}`} className="block text-sm font-medium text-slate-400 mb-2">
-                      Einheit
+                      Einheit für {cfg.label ?? `Wert ${idx + 1}`}
                     </label>
                     <select
                       id={`${controlId}-unit-${idx}`}

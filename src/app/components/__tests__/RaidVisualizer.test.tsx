@@ -69,12 +69,19 @@ vi.mock('lucide-react', () => ({}));
 // ---------------------------------------------------------------------------
 
 function makeRaid(overrides: Partial<RaidConfig> = {}): RaidConfig {
+  const level = overrides.level ?? 'RAID 5';
+  const disks = overrides.disks ?? 4;
+  const diskSizeGb = overrides.diskSizeGb ?? 1000;
+  const usableDisks = level === 'RAID 1' ? 1 : level === 'RAID 10' ? disks / 2
+    : disks - (level === 'RAID 5' ? 1 : level === 'RAID 6' ? 2 : 0);
+  const faultTolerance = level === 'RAID 0' ? 0 : level === 'RAID 1' ? disks - 1
+    : level === 'RAID 6' ? 2 : 1;
   return {
-    level: 'RAID 5',
-    disks: 4,
-    diskSizeGb: 1000,
-    usableCapacityGb: 3000,
-    faultTolerance: 1,
+    level,
+    disks,
+    diskSizeGb,
+    usableCapacityGb: usableDisks * diskSizeGb,
+    faultTolerance,
     ...overrides,
   };
 }
@@ -358,6 +365,7 @@ describe('RaidVisualizer — capacity display', () => {
     );
 
     expect(screen.getByTestId('viz-stat-usable')).toHaveTextContent('1.50 TB');
+    expect(screen.getByTestId('viz-stat-fault-tolerance')).toHaveTextContent('2');
   });
 
   it('shows the per-disk size next to the disk count in the header', () => {
@@ -439,6 +447,40 @@ describe('RaidVisualizer — fault tolerance badge', () => {
 // ===========================================================================
 
 describe('RaidVisualizer — accessibility', () => {
+  it.each([
+    ['RAID 5', 4, 1, 'einer Platte'],
+    ['RAID 6', 4, 2, 'zweier Platten'],
+  ] as const)('exposes %s capacity accounting as a described group of named images and a distinct legend', (level, count, parityCount, overhead) => {
+    render(<RaidVisualizer raid={makeRaid({ level, disks: count })} />);
+    const group = screen.getByRole('group', { name: `${count} Plattenkapazitäten zur Kapazitätsberechnung` });
+    expect(group).toHaveAccessibleDescription(new RegExp(`Parität wird über alle Festplatten verteilt;.*Kapazität ${overhead}`));
+    const images = within(group).getAllByRole('img', { name: /^Kapazitätsanteil \d+: 1000 GB \((Datenanteil|Paritätsanteil)\)$/ });
+    expect(images).toHaveLength(count);
+    expect(images.filter(image => /Paritätsanteil/.test(image.getAttribute('aria-label')!))).toHaveLength(parityCount);
+    const legend = within(group).getByRole('group', { name: 'Legende zur RAID-Darstellung' });
+    expect(within(legend).getByText('Datenanteil')).toBeInTheDocument();
+    expect(within(legend).getByText('Paritätsanteil')).toBeInTheDocument();
+    expect(within(legend).queryByText('Keine Redundanz')).not.toBeInTheDocument();
+  });
+
+  it.each(['RAID 1', 'RAID 10'] as const)('explains mirrored capacity for %s without depicting dedicated parity disks', level => {
+    render(<RaidVisualizer raid={makeRaid({ level })} />);
+    const group = screen.getByRole('group', { name: '4 Festplatten im Array' });
+    expect(within(group).getAllByRole('img', { name: /^Festplatte \d+: 1000 GB \(Datenträger\)$/ })).toHaveLength(4);
+    expect(within(group).getByText(/gespiegelte Daten erhöhen die nutzbare Kapazität nicht/)).toBeVisible();
+    expect(within(group).queryByText('Paritätsanteil')).not.toBeInTheDocument();
+  });
+
+  it('describes RAID 0 physical disks and explicitly includes no redundancy in its legend', () => {
+    render(<RaidVisualizer raid={makeRaid({ level: 'RAID 0', faultTolerance: 0 })} />);
+    const group = screen.getByRole('group', { name: '4 Festplatten im Array' });
+    expect(within(group).getAllByRole('img', { name: /^Festplatte/ })).toHaveLength(4);
+    const legend = within(group).getByRole('group', { name: 'Legende zur RAID-Darstellung' });
+    expect(within(legend).getByText('Datenträger')).toBeInTheDocument();
+    expect(within(legend).getByText('Keine Redundanz')).toBeInTheDocument();
+    expect(within(legend).queryByText('Paritätsanteil')).not.toBeInTheDocument();
+  });
+
   it('marks the wrapper section with a German aria-label', () => {
     render(<RaidVisualizer raid={makeRaid()} />);
 
