@@ -43,6 +43,13 @@ export interface RaidConfig {
   faultTolerance: number;
 }
 
+/** Session-local teaching guidance; never used to grade or persist attempts. */
+export interface CalculationLearningRow {
+  valueKey: string;
+  hint: string;
+  alternatives?: { value: number; hint: string }[];
+}
+
 /** Question interface for all generators */
 export interface Question {
   id: string;
@@ -79,6 +86,7 @@ export interface Question {
    * fault tolerance).
    */
   raid?: RaidConfig;
+  calculationLearning?: { rows: CalculationLearningRow[] };
 }
 
 /** User interface */

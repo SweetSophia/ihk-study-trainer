@@ -3,6 +3,7 @@ import { validateQuestionAnswers } from '../../answerValidation';
 
 import {
   generateDifferenzCalculation,
+  generateDifferenzKalkulationQuestion,
   generateHandelskalkulationQuestion,
   generateRueckwaertsCalculation,
   generateVorwaertsCalculation,
@@ -46,6 +47,114 @@ function centOracle(g: Record<string, number>, backwards = false, gross = g.brut
 }
 
 describe('handelskalkulation generator', () => {
+  it('keeps the no-customer-skonto forward variant on the original cent chain and answer set', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const result = generateVorwaertsCalculation('no-customer-skonto');
+    expect(result.given.kundenSkonto).toBe(0);
+    expect(result.calculated).toEqual(centOracle(result.given));
+    expect(result.calculated.kundenskonto).toBe(0);
+    expect(result.calculated.zvp).toBe(result.calculated.bvp);
+    const question = generateVorwaertsKalkulationQuestion('no-customer-skonto');
+    expect(question.module).toBe('handelskalkulationVorwaerts');
+    expect(question.questionText).toContain('Variante: Ohne Kundenskonto');
+    expect(question.answerInputs).toHaveLength(16);
+    expect(Object.keys(question.expectedAnswers)).toHaveLength(16);
+    expect(question.expectedAnswers).toMatchObject({ kundenskonto: 0 });
+  });
+
+  it('keeps the no-supplier-rebate backward variant on the original cent chain and answer set', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const result = generateRueckwaertsCalculation('no-supplier-rebate');
+    expect(result.given.lieferRabatt).toBe(0);
+    expect(result.calculated).toEqual(centOracle(result.given, true));
+    expect(result.calculated.rabatt).toBe(0);
+    expect(result.calculated.lep).toBe(result.calculated.zep);
+    const question = generateRueckwaertsKalkulationQuestion('no-supplier-rebate');
+    expect(question.module).toBe('handelskalkulationRueckwaerts');
+    expect(question.questionText).toContain('Variante: Ohne Lieferantenrabatt');
+    expect(question.answerInputs).toHaveLength(15);
+    expect(Object.keys(question.expectedAnswers)).toHaveLength(15);
+  });
+
+  it('allows an intentional zero gross gap without forcing a different pure mode', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const result = generateDifferenzCalculation('matching-market');
+    expect(result.given.bruttovkMarkt).toBe(result.forwardSteps.bruttovk);
+    expect(result.calculated.differenz).toBe(0);
+    expect(result.forwardSteps).toEqual(centOracle(result.given));
+    expect(result.backwardSteps).toEqual(centOracle(result.given, true, result.given.bruttovkMarkt));
+    const question = generateDifferenzKalkulationQuestion('matching-market');
+    expect(question.module).toBe('handelskalkulationDifferenz');
+    expect(question.questionText).toContain('Variante: Marktpreis auf Kalkulationsniveau');
+    expect(question.answerInputs).toHaveLength(32);
+    expect(Object.keys(question.expectedAnswers)).toHaveLength(32);
+    expect(validateQuestionAnswers(question, Object.fromEntries(Object.entries(question.expectedAnswers).map(([k, v]) => [k, String(v)])))).toBe(true);
+  });
+
+  it.each([0, 0.12345, 0.25, 0.5, 0.98765, 0.999999])('keeps all special profiles on the independent cent oracle at seed %s', seed => {
+    vi.spyOn(Math, 'random').mockReturnValue(seed);
+    const forward = generateVorwaertsCalculation('no-customer-skonto');
+    const backward = generateRueckwaertsCalculation('no-supplier-rebate');
+    const diff = generateDifferenzCalculation('matching-market');
+    expect(forward.calculated).toEqual(centOracle(forward.given));
+    expect(backward.calculated).toEqual(centOracle(backward.given, true));
+    expect(diff.forwardSteps).toEqual(centOracle(diff.given));
+    expect(diff.backwardSteps).toEqual(centOracle(diff.given, true, diff.given.bruttovkMarkt));
+    expect(diff.calculated.differenz).toBe(0);
+    expect(backward.calculated.bep).toBeGreaterThan(0);
+  });
+
+  it('retains half-cent rounding when customer skonto is zero', () => {
+    vi.spyOn(Math, 'random').mockReturnValueOnce(50.5 / 140001).mockReturnValue(0.5);
+    const forward = generateVorwaertsCalculation('no-customer-skonto');
+    expect(forward.calculated).toMatchObject({ lep: 100.50, rabatt: 13.07, zep: 87.43, kundenskonto: 0 });
+    expect(forward.calculated).toEqual(centOracle(forward.given));
+  });
+
+  it.each([0, 0.9])('keeps standard positive and negative differential cases at market seed %s', marketSeed => {
+    let calls = 0;
+    vi.spyOn(Math, 'random').mockImplementation(() => calls++ < 8 ? 0.5 : marketSeed);
+    const question = generateDifferenzKalkulationQuestion('standard');
+    expect(Math.sign(Number(question.expectedAnswers.differenz))).toBe(marketSeed === 0 ? -1 : 1);
+    const steps = question.solutionSteps.join('\n');
+    expect(steps).toContain('Das ist kein tatsächlicher Gewinn.');
+    expect(steps).toContain('durch Cent-Rundungen abweichen');
+  });
+
+  it.each([0.1, 0.5])('exposes special and standard profiles through each pure factory at selector seed %s', seed => {
+    vi.spyOn(Math, 'random').mockReturnValue(seed);
+    for (const make of [generateVorwaertsKalkulationQuestion, generateRueckwaertsKalkulationQuestion, generateDifferenzKalkulationQuestion]) {
+      const question = make();
+      expect(question.questionText.includes('Variante:')).toBe(seed < 0.25);
+      expect(validateQuestionAnswers(question, Object.fromEntries(Object.entries(question.expectedAnswers).map(([k,v]) => [k,String(v)])))).toBe(true);
+    }
+  });
+
+  it('explains the actual 100% bases and shows the unchanged concrete divisors/results together', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const forward = generateVorwaertsKalkulationQuestion('standard');
+    expect(forward.solutionSteps.find(step => step.includes('Skonto = 696,00 €'))).toContain('Der ZEP nach Rabatt ist jetzt die 100%-Basis');
+    const zvp = forward.solutionSteps.find(step => step.startsWith('Kundenskonto einkalkulieren'))!;
+    expect(zvp).toContain('Der BVP entspricht 96% des ZVP');
+    expect(zvp).toContain('ZVP = 1200,65 € / 0,96 = 1250,68 €');
+    const backward = generateRueckwaertsKalkulationQuestion('standard');
+    expect(backward.solutionSteps[0]).toContain('Brutto-VK enthält 119%');
+    expect(backward.solutionSteps[0]).toContain('Netto-VK = 1710,70 € / 1,19 = 1437,56 €');
+  });
+
+  it.each([
+    [() => generateVorwaertsKalkulationQuestion('no-customer-skonto'), 'ZVP ist die 100%-Basis'],
+    [() => generateRueckwaertsKalkulationQuestion('no-supplier-rebate'), 'Netto-VK ist die 100%-Basis'],
+    [() => generateDifferenzKalkulationQuestion('matching-market'), 'Preisabstand'],
+  ] as const)('groups explanation and equation without empty solution steps', (generate, explanation) => {
+    const question = generate();
+    expect(question.solutionSteps.every(step => step.trim().length > 0)).toBe(true);
+    expect(question.solutionSteps.join('\n')).toContain(explanation);
+    expect(question.solutionSteps.join('\n')).toContain('100%');
+    expect(question.solutionSteps.some(step => /100%/.test(step) && / = /.test(step))).toBe(true);
+    expect(question.calculationLearning?.rows).toHaveLength(question.answerInputs!.length);
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -130,7 +239,7 @@ describe('handelskalkulation generator', () => {
     for (const [seed, mode] of [[0.1, 'Vorwärtskalkulation'], [0.5, 'Rückwärtskalkulation'], [0.9, 'Differenzkalkulation']] as const) {
       vi.spyOn(Math, 'random').mockReturnValue(seed);
       const q = generateHandelskalkulationQuestion();
-      expect(q.solutionSteps[0]).toBe(mode);
+      expect(q.solutionSteps.join('\n')).toContain(mode);
       expect(q.questionText).toContain('ohne Umsatzsteuer');
       expect(q.questionText).toContain('jede Rechenzeile');
       expect(q.questionText).toContain('zwei Nachkommastellen');

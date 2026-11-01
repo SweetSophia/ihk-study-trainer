@@ -31,7 +31,7 @@ describe('three distinct calculation offerings', () => {
       const q = generators[id]();
       expect(q.module).toBe(id);
       expect(q.id).toMatch(new RegExp(`^${id}-`));
-      expect(q.solutionSteps[0]).toBe(mode);
+      expect(q.solutionSteps.some(step => step.startsWith(`${mode}:`))).toBe(true);
       expect(q.answerInputs).toHaveLength(count);
       const keys = q.answerInputs!.map(i => i.valueKey);
       expect(Object.keys(q.expectedAnswers)).toHaveLength(count);
@@ -58,7 +58,7 @@ describe('three distinct calculation offerings', () => {
     expect(result.backwardSteps.bep).toBeGreaterThan(0);
     const question = GENERATORS.handelskalkulationDifferenz();
     expect(question.module).toBe('handelskalkulationDifferenz');
-    expect(question.solutionSteps[0]).toBe('Differenzkalkulation');
+    expect(question.solutionSteps.some(step => step.startsWith('Differenzkalkulation:'))).toBe(true);
     expect(question.answerInputs).toHaveLength(32);
     const answers = Object.fromEntries(question.answerInputs!.map(input => [input.valueKey, String(question.expectedAnswers[input.valueKey])]));
     expect(validateQuestionAnswers(question, answers)).toBe(true);
