@@ -225,6 +225,8 @@ export default function Home() {
     if (currentModule === 'ap2TrainingRun') {
       selectionTrigger.current = document.activeElement as HTMLElement | null;
       setPendingModule(canonicalModule);
+      // Re-requesting the same target does not rerun the pending-state effect.
+      if (pendingModule === canonicalModule) continueButton.current?.focus();
       return;
     }
     commitModule(canonicalModule);

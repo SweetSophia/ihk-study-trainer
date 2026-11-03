@@ -5,6 +5,7 @@ import { getModuleTopic } from '../app/lib/moduleTopics';
 /** Exercise real disclosures instead of reaching through hidden topic panels. */
 export async function chooseModule(module:ModuleId) {
  const nav=within(await screen.findByRole('navigation',{name:'Lernmodule'}));
+ if(!nav.queryByRole('button',{name:/^AP2-Trainingslauf/})) fireEvent.click(nav.getByRole('button',{name:/^Aufgabe wechseln/}));
  const topic=getModuleTopic(module);
  if(topic) {
   const group=nav.getByRole('button',{name:new RegExp(`^${topic.label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`)});

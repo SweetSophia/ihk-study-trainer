@@ -29,7 +29,9 @@ export default function ThemeSelector({currentModule,onSelectModule,isAuthentica
  const [mobileOpen,setMobileOpen]=useState(false);
  const activeTopic=getModuleTopic(currentModule);
  const [browsing,setBrowsing]=useState<{module:string|null;group:string|null}>({module:currentModule,group:activeTopic?.id??null});
- // External selection (e.g. mistake practice) reveals the selected topic without an effect/reset.
+ // Remember every module transition, so revisiting a module cannot revive
+ // a browsing group left over from an earlier visit. Only navigation state changes.
+ if(browsing.module!==currentModule) setBrowsing({module:currentModule,group:activeTopic?.id??null});
  const openGroup=browsing.module===currentModule?browsing.group:activeTopic?.id??null;
  const root=useRef<HTMLElement>(null);
  const toggle=useRef<HTMLButtonElement>(null);

@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import Home from '../page';
@@ -25,6 +25,8 @@ vi.mock('framer-motion', () => ({
     button: ({ children, className, onClick }: ButtonHTMLAttributes<HTMLButtonElement>) => <button className={className} onClick={onClick}>{children}</button>,
   },
 }));
+
+afterEach(()=>vi.unstubAllGlobals());
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -118,4 +120,14 @@ it('moves focus between the progress disclosure and its visible actions at the b
  act(()=>{desktop=true;listeners.forEach(listener=>listener())});
  expect(screen.getByRole('button',{name:'Fehler üben'})).toHaveFocus();
  vi.unstubAllGlobals();
+},15000);
+
+it('refocuses an existing mobile departure confirmation when the same pending target is selected again',async()=>{
+ vi.stubGlobal('matchMedia',vi.fn(()=>({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
+ render(<Home/>);await chooseModule('ap2TrainingRun');
+ const first=screen.getAllByRole('textbox')[0];fireEvent.change(first,{target:{value:'123'}});
+ await chooseModule('subnetting');const proceed=screen.getByRole('button',{name:'Weiterarbeiten'});expect(proceed).toHaveFocus();
+ fireEvent.click(screen.getByRole('button',{name:/^Aufgabe wechseln/}));
+ const target=screen.getByRole('button',{name:'Subnetting'});target.focus();fireEvent.click(target);
+ expect(proceed).toHaveFocus();expect(first).toHaveValue('123');expect(updateProgress).not.toHaveBeenCalled();
 },15000);

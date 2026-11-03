@@ -123,7 +123,7 @@ export default function LinuxTerminal({
               // Show the typed text with a blinking cursor
               <span className={`${inputColor} break-all relative`}>
                 {value}
-                <span className="inline-block w-2 h-4 bg-warning-soft animate-pulse align-text-bottom ml-px" />
+                <span className="inline-block w-2 h-4 bg-warning animate-pulse align-text-bottom ml-px" />
               </span>
             )}
           </div>

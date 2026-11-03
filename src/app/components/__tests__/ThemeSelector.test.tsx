@@ -61,3 +61,14 @@ it('restores breakpoint focus to the visible active group when its current exerc
  expect(group).toHaveFocus();
  vi.unstubAllGlobals();
 });
+it('reveals the correct group when an external selection returns to a previously browsed module',()=>{
+ const onSelectModule=vi.fn();
+ const {rerender}=render(<ThemeSelector currentModule="subnetting" isAuthenticated onSelectModule={onSelectModule}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Rechnen & Zahlensysteme'}));
+ rerender(<ThemeSelector currentModule="binary" isAuthenticated onSelectModule={onSelectModule}/>);
+ expect(screen.getByRole('button',{name:'Binär'})).toHaveAttribute('aria-current','page');
+ rerender(<ThemeSelector currentModule="subnetting" isAuthenticated onSelectModule={onSelectModule}/>);
+ expect(screen.getByRole('button',{name:'Subnetting'})).toHaveAttribute('aria-current','page');
+ expect(screen.getByRole('button',{name:/^Netzwerke/})).toHaveAttribute('aria-expanded','true');
+ expect(onSelectModule).not.toHaveBeenCalled();
+});

@@ -70,6 +70,7 @@ try {
   await appearance.selectOption('dark');await choose('AP2-Trainingslauf');assert.equal(await runInput.inputValue(),'123');
   await choose('Subnetting');const confirmation=page.getByRole('group',{name:'Trainingslauf verlassen',exact:true});await confirmation.waitFor();
   assert.equal(await page.getByRole('button',{name:'Weiterarbeiten',exact:true}).evaluate(element=>element===document.activeElement),true);
+  if(width<1024) {await choose('Subnetting');assert.equal(await page.getByRole('button',{name:'Weiterarbeiten',exact:true}).evaluate(element=>element===document.activeElement),true);}
   if(width>=1024) await nav.getByRole('button',{name:/^Netzwerke/}).click();
   await page.getByRole('button',{name:'Weiterarbeiten',exact:true}).click();assert.equal(await runInput.inputValue(),'123');
   assert.equal(await nav.getByRole('button',{name:width>=1024?/^AP2-Trainingslauf/:/^Aufgabe wechseln/}).evaluate(element=>element===document.activeElement),true);
@@ -78,6 +79,19 @@ try {
    assert.equal(await confirmation.count(),0);assert.equal(await runInput.inputValue(),'123');
   }
   await choose('Subnetting');await page.getByRole('button',{name:'Trainingslauf verlassen',exact:true}).click();await page.getByRole('heading',{name:'Subnetting',exact:true}).waitFor();
+  await page.evaluate(()=>{Math.random=()=>0.25});await choose('Linux');
+  const caret=page.locator('.workspace .animate-pulse');await caret.waitFor();
+  for(const theme of ['light','dark']) {
+   await appearance.selectOption(theme);
+   await page.waitForFunction(expected=>document.documentElement.dataset.theme===expected,theme);
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   const ratio=await caret.evaluate(element=>{
+    const lum=color=>{const c=color.match(/[\d.]+/g).slice(0,3).map(Number).map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});return c[0]*.2126+c[1]*.7152+c[2]*.0722};
+    const a=lum(getComputedStyle(element).backgroundColor),b=lum(getComputedStyle(element.closest('.bg-canvas')).backgroundColor);
+    return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+   });
+   assert.ok(ratio>=3,`terminal caret contrast ${theme}: ${ratio.toFixed(2)}`);
+  }
   // Every guest module must fit and use the same palettes, including disclosures/examples.
   if([390,1440].includes(width)) {
    for(const name of Object.values(groups).flat()) {
