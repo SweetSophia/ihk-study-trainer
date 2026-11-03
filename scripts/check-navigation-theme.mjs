@@ -2,6 +2,7 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
+import { opaqueContrastRatio } from './lib/contrast.mjs';
 const url=process.env.IHK_TEST_URL||'http://127.0.0.1:3133';
 assert.ok(['127.0.0.1','localhost','[::1]'].includes(new URL(url).hostname),'Local server required');
 const out=process.env.IHK_QA_OUTPUT||'/tmp/trainer-navigation-qa';await mkdir(out,{recursive:true});
@@ -40,11 +41,10 @@ try {
   await choose('Bildgröße');const input=page.locator('.workspace input').first();await input.fill('0,75');await input.blur();
   // Computed boundary contrast: catches a faint decorative border reused for inputs.
   const boundary=await input.evaluate(element=>{
-   const style=getComputedStyle(element);
-   const lum=color=>{const channels=color.match(/[\d.]+/g).slice(0,3).map(Number).map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});return channels[0]*.2126+channels[1]*.7152+channels[2]*.0722};
-   const a=lum(style.borderTopColor),b=lum(style.backgroundColor);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+   const style=getComputedStyle(element);return {foreground:style.borderTopColor,background:style.backgroundColor,width:parseFloat(style.borderTopWidth),style:style.borderTopStyle};
   });
-  assert.ok(boundary>=3,`input boundary contrast ${boundary.toFixed(2)} at ${width}`);
+  assert.ok(boundary.width>=1&&boundary.style!=='none','input boundary must be painted');
+  requireOpaqueContrast(boundary.foreground,boundary.background,3,'input boundary');
   for(const theme of ['dark','light']) {
    await appearance.selectOption(theme);if(width===320) await checkPalette(page);assert.equal(await input.inputValue(),'0,75');
    await choose('Bildgröße');assert.equal(await input.inputValue(),'0,75');
@@ -53,6 +53,12 @@ try {
    if([390,1440].includes(width)) await page.screenshot({path:`${out}/${width}-${theme}.png`});
   }
   await page.locator('.workspace select').first().selectOption({index:1});
+  await page.getByRole('button',{name:'Anmelden',exact:true}).click();
+  await page.getByRole('button',{name:/Ich habe einen Code/}).click();
+  await page.getByLabel(/^Zugangscode/).fill('test');await page.getByLabel(/^Zugangscode/).press('Enter');
+  await page.getByLabel(/^Zugangscode/).press('Escape');
+  await page.getByRole('button',{name:'Schließen',exact:true}).waitFor({state:'hidden'});
+  assert.equal(await input.isDisabled(),false,'account Enter must not check the hidden exercise');
   await assertShortcutContrast(page.getByRole('button',{name:/Antwort prüfen/}).locator('kbd'));
   await page.getByRole('button',{name:/Antwort prüfen/}).click();
   await assertShortcutContrast(page.getByRole('button',{name:/Nächste Frage/}).locator('kbd'));
@@ -85,12 +91,25 @@ try {
    await appearance.selectOption(theme);
    await page.waitForFunction(expected=>document.documentElement.dataset.theme===expected,theme);
    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-   const ratio=await caret.evaluate(element=>{
-    const lum=color=>{const c=color.match(/[\d.]+/g).slice(0,3).map(Number).map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});return c[0]*.2126+c[1]*.7152+c[2]*.0722};
-    const a=lum(getComputedStyle(element).backgroundColor),b=lum(getComputedStyle(element.closest('.bg-canvas')).backgroundColor);
-    return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
-   });
-   assert.ok(ratio>=3,`terminal caret contrast ${theme}: ${ratio.toFixed(2)}`);
+   const colors=await caret.evaluate(element=>({foreground:getComputedStyle(element).backgroundColor,background:getComputedStyle(element.closest('.bg-canvas')).backgroundColor}));
+   requireOpaqueContrast(colors.foreground,colors.background,3,`terminal caret ${theme}`);
+  }
+  await page.evaluate(()=>{Math.random=()=>0.75});await choose('OSI-Modell');
+  const drag=page.getByTestId('drag-order-handle-0');await drag.waitFor();
+  assert.equal(await drag.evaluate(element=>getComputedStyle(element).cursor),'grab');
+  await drag.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');
+  assert.notEqual(await drag.evaluate(element=>getComputedStyle(element).boxShadow),'none','keyboard drag focus remains visible');
+  await choose('Subnetting');await page.getByRole('button',{name:'Lösung anzeigen',exact:true}).click();
+  const bits=page.getByRole('img',{name:/^32-Bit-Aufteilung/}).locator('rect[width="9"]');
+  assert.equal(await bits.count(),32);
+  for(const theme of ['light','dark']) {
+   await appearance.selectOption(theme);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   const markers=await bits.evaluateAll(elements=>elements.map(element=>{
+    let parent=element.parentElement;let background='';
+    while(parent){background=getComputedStyle(parent).backgroundColor;if(background!=='rgba(0, 0, 0, 0)')break;parent=parent.parentElement}
+    return {foreground:getComputedStyle(element).fill,background,opacity:Number(getComputedStyle(element).fillOpacity)};
+   }));
+   for(const marker of markers){assert.equal(marker.opacity,1);requireOpaqueContrast(marker.foreground,marker.background,3,'bit-cell marker');}
   }
   // Every guest module must fit and use the same palettes, including disclosures/examples.
   if([390,1440].includes(width)) {
@@ -101,9 +120,14 @@ try {
    }
    await openNav();const data=nav.getByRole('button',{name:/^Daten & Algorithmen/});if(await data.getAttribute('aria-expanded')!=='true') await data.click();assert.equal(await nav.getByRole('button',{name:'SQL',exact:true}).count(),0);
    // Breakpoint focus survives removal of either responsive control.
-   await page.setViewportSize({width:1024,height:900});await page.getByRole('button',{name:/^Daten & Algorithmen/}).focus();await page.setViewportSize({width:1023,height:900});
+   await page.setViewportSize({width:1024,height:900});
+   await choose('Subnetting');await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   await nav.getByRole('button',{name:'Subnetting',exact:true}).focus();await page.setViewportSize({width:1023,height:900});
    await page.waitForFunction(()=>document.activeElement?.textContent?.includes('Aufgabe wechseln'));
-   await openNav();const business=nav.getByRole('button',{name:/^Wirtschaft & Projekt/});
+   await page.setViewportSize({width:1024,height:900});await page.waitForFunction(()=>document.activeElement?.textContent?.trim()==='Subnetting');
+   await page.getByRole('button',{name:/^Daten & Algorithmen/}).focus();await page.setViewportSize({width:1023,height:900});
+   await page.waitForFunction(()=>document.activeElement?.textContent?.includes('Aufgabe wechseln'));
+   await choose('AP2 Projektplanung');await openNav();const business=nav.getByRole('button',{name:/^Wirtschaft & Projekt/});
    if(await business.getAttribute('aria-expanded')==='true') await business.click();
    await nav.getByRole('button',{name:/^Aufgabe wechseln/}).click();
    await page.setViewportSize({width:1024,height:900});
@@ -121,30 +145,27 @@ try {
  assert.equal(await initial.locator('html').getAttribute('data-theme'),'dark');
  assert.equal(await initial.locator('html').getAttribute('lang'),'de');
  assert.equal(await initial.locator('body').evaluate(element=>getComputedStyle(element).backgroundColor),'rgb(16, 26, 36)');
- await beforeHydration.close();console.log(JSON.stringify({savedDarkBeforeHydration:true,productionCspUnchanged:true}));
+ const loading=initial.getByRole('status',{name:'Lernumgebung wird geladen'});
+ assert.equal(await loading.evaluate(element=>getComputedStyle(element).animationName),'spin');
+ await initial.emulateMedia({reducedMotion:'reduce'});
+ await initial.waitForFunction(()=>getComputedStyle(document.querySelector('[role="status"]')).animationName==='none');
+ await beforeHydration.close();console.log(JSON.stringify({savedDarkBeforeHydration:true,loadingRespectsReducedMotion:true}));
 } finally {await browser.close();}
 
 async function checkPalette(page) {
- const failures=await page.evaluate(()=>{
-  const css=getComputedStyle(document.documentElement);
-  function luminance(role) {
-   const value=css.getPropertyValue(`--ui-${role}`).trim().slice(1);
-   const channels=[0,2,4].map(index=>parseInt(value.slice(index,index+2),16)/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);
-   return channels[0]*.2126+channels[1]*.7152+channels[2]*.0722;
-  }
-  const pairs=[['ink','surface',4.5],['muted','surface',4.5],['muted','subtle',4.5],['onaction','action',4.5],['onaction','action-hover',4.5],['accent','accent-soft',4.5],['danger','danger-soft',4.5],['warning','warning-soft',4.5],['success','success-soft',4.5],['info','info-soft',4.5],['control','canvas',3],['accent','canvas',3]];
-  return pairs.map(([a,b,minimum])=>{const first=luminance(a),second=luminance(b);return {a,b,minimum,ratio:(Math.max(first,second)+.05)/(Math.min(first,second)+.05)}}).filter(pair=>pair.ratio<pair.minimum);
+ const palette=await page.evaluate(()=>{
+  const css=getComputedStyle(document.documentElement);return Object.fromEntries(['ink','muted','surface','subtle','subtle-hover','onaction','action','action-hover','accent','accent-soft','accent-soft-hover','danger','danger-soft','danger-soft-hover','warning','warning-soft','success','success-soft','info','info-soft','control','canvas'].map(role=>[role,css.getPropertyValue(`--ui-${role}`).trim()]));
  });
- assert.deepEqual(failures,[],'resolved semantic palette contrast');
+ const pairs=[['ink','surface',4.5],['muted','surface',4.5],['muted','subtle',4.5],['muted','subtle-hover',4.5],['onaction','action',4.5],['onaction','action-hover',4.5],['accent','accent-soft',4.5],['accent','accent-soft-hover',4.5],['danger','danger-soft',4.5],['danger','danger-soft-hover',4.5],['warning','warning-soft',4.5],['success','success-soft',4.5],['info','info-soft',4.5],['control','canvas',3],['accent','canvas',3]];
+ for(const [a,b,minimum] of pairs)requireOpaqueContrast(palette[a],palette[b],minimum,`${a}/${b}`);
 }
-
-
 async function assertShortcutContrast(locator) {
- if(!await locator.isVisible()) return;
- const ratio=await locator.evaluate(element=>{
-  const css=getComputedStyle(element);
-  const lum=color=>{const c=color.match(/[\d.]+/g).slice(0,3).map(Number).map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});return c[0]*.2126+c[1]*.7152+c[2]*.0722};
-  const a=lum(css.color),b=lum(css.backgroundColor);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
- });
- assert.ok(ratio>=4.5,`keyboard hint contrast ${ratio.toFixed(2)}`);
+ if(!await locator.isVisible())return;
+ const colors=await locator.evaluate(element=>({foreground:getComputedStyle(element).color,background:getComputedStyle(element).backgroundColor}));
+ requireOpaqueContrast(colors.foreground,colors.background,4.5,'keyboard hint');
+}
+function requireOpaqueContrast(foreground,background,minimum,label) {
+ const ratio=opaqueContrastRatio(foreground,background);
+ assert.notEqual(ratio,null,`${label}: transparent/unsupported pair is not verified`);
+ assert.ok(ratio>=minimum,`${label}: contrast ${ratio?.toFixed(2)} is below ${minimum}`);
 }

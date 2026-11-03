@@ -221,7 +221,9 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div data-study-chrome className="fixed inset-0 z-50 flex items-center justify-center p-4" onKeyDown={event=>{
+        if(event.key==='Escape'){event.preventDefault();event.stopPropagation();onClose()}
+      }}>
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -239,7 +241,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
           className="relative w-full max-w-md bg-surface rounded-2xl border border-line shadow-2xl shadow-ink/10 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-line">
+          <div className="sticky top-0 z-10 flex items-center justify-between bg-surface px-6 py-4 border-b border-line">
             <h2 className="text-xl font-semibold text-ink">
               {mode === 'select' && 'Anmelden'}
               {mode === 'register' && 'Dein Zugangscode'}
@@ -247,7 +249,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
             </h2>
             <button
               onClick={onClose}
-              className="p-2 text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
+              className="p-2 text-muted hover:text-ink hover:bg-subtle-hover rounded-lg transition-colors"
               aria-label="Schließen"
             >
               <X className="w-5 h-5" />
@@ -281,9 +283,9 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                 <button
                   onClick={handleRegister}
                   disabled={loading || !!hash}
-                  className="w-full flex items-center gap-3 p-4 bg-subtle hover:bg-subtle border border-line hover:border-accent rounded-xl transition-all group"
+                  className="disabled:hover:bg-subtle w-full flex items-center gap-3 p-4 bg-subtle hover:bg-subtle-hover border border-line hover:border-accent rounded-xl transition-all group"
                 >
-                  <div className="p-3 bg-accent-soft rounded-lg group-hover:bg-accent-soft transition-colors">
+                  <div className="p-3 bg-accent-soft rounded-lg group-hover:bg-accent-soft-hover transition-colors">
                     <Key className="w-6 h-6 text-accent" />
                   </div>
                   <div className="text-left">
@@ -294,9 +296,9 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
 
                 <button
                   onClick={() => changeView('login')}
-                  className="w-full flex items-center gap-3 p-4 bg-subtle hover:bg-subtle border border-line hover:border-accent rounded-xl transition-all group"
+                  className="w-full flex items-center gap-3 p-4 bg-subtle hover:bg-subtle-hover border border-line hover:border-accent rounded-xl transition-all group"
                 >
-                  <div className="p-3 bg-subtle rounded-lg group-hover:bg-subtle transition-colors">
+                  <div className="p-3 bg-subtle rounded-lg group-hover:bg-subtle-hover transition-colors">
                     <LogIn className="w-6 h-6 text-muted" />
                   </div>
                   <div className="text-left">
@@ -333,7 +335,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                     </div>
                     <button
                       onClick={copyToClipboard}
-                      className="px-4 py-3 bg-subtle hover:bg-subtle border border-line rounded-lg transition-colors"
+                      className="px-4 py-3 bg-subtle hover:bg-subtle-hover border border-line rounded-lg transition-colors"
                       aria-label="Code in die Zwischenablage kopieren"
                     >
                       {copied ? (

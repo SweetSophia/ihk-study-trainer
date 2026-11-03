@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { Shield, User, LogOut, GraduationCap } from 'lucide-react';
 import StudyCard from './components/StudyCard';
 import AuthModal from './components/AuthModal';
@@ -27,6 +26,7 @@ import {
 } from './lib/auth';
 import { validateQuestionAnswers } from './lib/answerValidation';
 import { toCanonicalModuleId } from './lib/moduleIds';
+import { useLastFocusWithin } from './lib/useLastFocusWithin';
 import { getModuleTopic } from './lib/moduleTopics';
 import { isModuleId, MODULE_NAMES } from './lib/modules';
 import { GENERATORS } from './lib/generators/registry';
@@ -49,6 +49,8 @@ export default function Home() {
   const continueButton = useRef<HTMLButtonElement>(null);
   const selectionTrigger = useRef<HTMLElement | null>(null);
   const progressPanel = useRef<HTMLDivElement>(null);
+  const progressRegion = useRef<HTMLElement>(null);
+  const lastProgressFocus = useLastFocusWithin(progressRegion);
   const progressToggle = useRef<HTMLButtonElement>(null);
   const previousDesktop = useRef(desktop);
   const focusSelection = useRef(false);
@@ -66,14 +68,15 @@ export default function Home() {
     return () => cancelAnimationFrame(frame);
   }, [currentModule, focusWorkspaceHeading]);
   useEffect(() => { if (pendingModule) continueButton.current?.focus(); }, [pendingModule]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (previousDesktop.current !== desktop) {
-      const focused = document.activeElement;
+      const active = document.activeElement;
+      const focused = active === document.body || active === document.documentElement ? lastProgressFocus.current : active;
       if (!desktop && progressPanel.current?.contains(focused)) progressToggle.current?.focus();
       if (desktop && focused === progressToggle.current) progressPanel.current?.querySelector<HTMLElement>('button:not(:disabled)')?.focus();
       previousDesktop.current = desktop;
     }
-  }, [desktop]);
+  }, [desktop, lastProgressFocus]);
 
 
   const progressIdentity = useRef<string | null>(null);
@@ -235,7 +238,7 @@ export default function Home() {
     setPendingModule(null);
     const previous = selectionTrigger.current;
     const fallback = document.querySelector<HTMLElement>(desktop ? 'nav[aria-label="Lernmodule"] .navigation-panel button' : 'nav[aria-label="Lernmodule"] > button');
-    (previous?.isConnected && previous.getClientRects().length ? previous : fallback)?.focus();
+    (previous?.isConnected && previous !== document.body && previous !== document.documentElement && previous.getClientRects().length ? previous : fallback)?.focus();
   };
 
   const generateNewQuestion = (module: string) => {
@@ -281,11 +284,7 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full"
-        />
+        <div role="status" aria-label="Lernumgebung wird geladen" className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full motion-safe:animate-spin" />
       </div>
     );
   }
@@ -351,7 +350,7 @@ export default function Home() {
               <ThemeSelector currentModule={currentModule} onSelectModule={handleSelectModule}
                 isAuthenticated={!!accessHash} onDismiss={cancelDeparture} />
             </div>
-            {user && <section className="order-2 lg:order-1 rounded-xl border border-line bg-surface p-3" aria-label="Lernfortschritt">
+            {user && <section ref={progressRegion} className="order-2 lg:order-1 rounded-xl border border-line bg-surface p-3" aria-label="Lernfortschritt">
               <button ref={progressToggle} type="button" className="min-h-11 w-full text-left font-semibold lg:hidden" aria-expanded={progressOpen} aria-controls="progress-panel" onClick={() => setProgressOpen(old => !old)}>Fortschritt</button>
               <div ref={progressPanel} id="progress-panel" hidden={!desktop && !progressOpen}>
                 <ProgressDashboard progress={progress} streakDays={streakDays} onPracticeMistakes={handlePracticeMistakes} />
@@ -360,7 +359,7 @@ export default function Home() {
           </aside>
 
           <div ref={workspace} className="workspace min-w-0 flex-1">
-            {currentModule && isModuleId(currentModule) && <p className="mb-3 text-sm text-muted" aria-label="Aktuelle Aufgabe">{getModuleTopic(currentModule)?.label}{getModuleTopic(currentModule) ? ' / ' : ''}{MODULE_NAMES[currentModule]}</p>}
+            {currentModule && isModuleId(currentModule) && <p className="mb-3 text-sm text-muted">{getModuleTopic(currentModule)?.label}{getModuleTopic(currentModule) ? ' / ' : ''}{MODULE_NAMES[currentModule]}</p>}
             {pendingModule && isModuleId(pendingModule) && <section role="group" aria-label="Trainingslauf verlassen" className="mb-5 space-y-3 rounded-xl border border-warning bg-warning-soft p-4" onKeyDown={event => {
               if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelDeparture(); }
             }}>

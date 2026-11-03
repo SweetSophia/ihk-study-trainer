@@ -68,7 +68,7 @@ export default function NetworkPlanningTrainer({ onAttempt, isAuthenticated }: N
   }
 
   const inputClass = 'w-full min-w-0 rounded-lg border border-control bg-canvas px-3 py-2 text-ink focus-visible:outline-2 focus-visible:outline-accent';
-  const secondaryButton = 'rounded-lg border border-control px-4 py-2 text-sm text-ink hover:bg-subtle focus-visible:outline-2 focus-visible:outline-accent';
+  const secondaryButton = 'rounded-lg border border-control px-4 py-2 text-sm text-ink hover:bg-subtle-hover focus-visible:outline-2 focus-visible:outline-accent';
 
   return (
     <section aria-labelledby="network-planning-title" className="space-y-6 rounded-xl border border-line bg-surface p-4 sm:p-6">
@@ -132,7 +132,7 @@ export default function NetworkPlanningTrainer({ onAttempt, isAuthenticated }: N
           </ul>
         )}
         <div className="flex flex-wrap gap-3">
-          <button type="submit" className="rounded-lg bg-action px-4 py-2 font-medium text-onaction hover:bg-action focus-visible:outline-2 focus-visible:outline-accent">Netzplan prüfen</button>
+          <button type="submit" className="rounded-lg bg-action px-4 py-2 font-medium text-onaction hover:bg-action-hover focus-visible:outline-2 focus-visible:outline-accent">Netzplan prüfen</button>
           <button type="button" onClick={newRun} className={secondaryButton}>Neuer Durchlauf</button>
         </div>
       </form>

@@ -355,7 +355,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
                 type="button"
                 onClick={dismissChangelog}
                 aria-label="Hinweis schließen"
-                className="ml-auto p-1 rounded-md text-muted hover:text-ink hover:bg-subtle transition-colors"
+                className="ml-auto p-1 rounded-md text-muted hover:text-ink hover:bg-subtle-hover transition-colors"
               >
                 <CloseIcon className="w-3.5 h-3.5" />
               </button>

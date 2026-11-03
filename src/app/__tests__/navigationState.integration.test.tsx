@@ -26,7 +26,7 @@ vi.mock('framer-motion', () => ({
   },
 }));
 
-afterEach(()=>vi.unstubAllGlobals());
+afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks()});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -114,9 +114,9 @@ it('does not route chrome keyboard input to the checked exercise next-question s
 it('moves focus between the progress disclosure and its visible actions at the breakpoint',async()=>{
  let desktop=true;const listeners=new Set<()=>void>();
  vi.stubGlobal('matchMedia',vi.fn((query:string)=>({get matches(){return query.includes('min-width')?desktop:false},addEventListener:(_event:string,callback:()=>void)=>{if(query.includes('min-width'))listeners.add(callback)},removeEventListener:(_event:string,callback:()=>void)=>listeners.delete(callback)})));
- render(<Home/>);const details=await screen.findByRole('button',{name:'Details anzeigen'});details.focus();
+ render(<Home/>);const details=await screen.findByRole('button',{name:'Details anzeigen'});details.focus();details.blur(); // Simulate CSS hiding focus before the effect.
  act(()=>{desktop=false;listeners.forEach(listener=>listener())});
- const toggle=screen.getByRole('button',{name:'Fortschritt'});expect(toggle).toHaveFocus();
+ const toggle=screen.getByRole('button',{name:'Fortschritt'});expect(toggle).toHaveFocus();toggle.blur();
  act(()=>{desktop=true;listeners.forEach(listener=>listener())});
  expect(screen.getByRole('button',{name:'Fehler üben'})).toHaveFocus();
  vi.unstubAllGlobals();
@@ -130,4 +130,13 @@ it('refocuses an existing mobile departure confirmation when the same pending ta
  fireEvent.click(screen.getByRole('button',{name:/^Aufgabe wechseln/}));
  const target=screen.getByRole('button',{name:'Subnetting'});target.focus();fireEvent.click(target);
  expect(proceed).toHaveFocus();expect(first).toHaveValue('123');expect(updateProgress).not.toHaveBeenCalled();
+},15000);
+
+it('uses the visible cancellation fallback when a mouse selection leaves body as activeElement',async()=>{
+ vi.spyOn(document.body,'getClientRects').mockReturnValue({length:1} as DOMRectList);
+ render(<Home/>);await chooseModule('ap2TrainingRun');
+ (document.activeElement as HTMLElement).blur();expect(document.activeElement).toBe(document.body);
+ await chooseModule('subnetting');fireEvent.click(screen.getByRole('button',{name:'Weiterarbeiten'}));
+ expect(screen.getByRole('button',{name:/^AP2-Trainingslauf/})).toHaveFocus();
+ expect(updateProgress).not.toHaveBeenCalled();
 },15000);

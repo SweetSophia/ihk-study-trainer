@@ -1,8 +1,9 @@
-import { beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import ThemeSelector from '../ThemeSelector';
 
 beforeEach(()=>vi.restoreAllMocks());
+afterEach(()=>vi.unstubAllGlobals());
 function setup(authenticated=true,currentModule:string|null=null) {
  const onSelectModule=vi.fn();
  render(<ThemeSelector currentModule={currentModule} isAuthenticated={authenticated} onSelectModule={onSelectModule}/>);
@@ -21,6 +22,7 @@ it.each([false,true])('keeps SQL gated but AP2 database available, authenticated
  const select=setup(auth);
  fireEvent.click(screen.getByRole('button',{name:'Daten & Algorithmen'}));
  expect(screen.queryByRole('button',{name:'SQL'})).toBe(auth ? screen.getByRole('button',{name:'SQL'}):null);
+ if(auth){fireEvent.click(screen.getByRole('button',{name:'SQL'}));expect(select).toHaveBeenCalledWith('sql');select.mockClear()}
  fireEvent.click(screen.getByRole('button',{name:/AP2 Datenbankentwurf & SQL/}));
  expect(select).toHaveBeenCalledWith('ap2DatabaseDesign');
 });
@@ -56,7 +58,7 @@ it('restores breakpoint focus to the visible active group when its current exerc
  vi.stubGlobal('matchMedia',vi.fn(()=>({get matches(){return desktop},addEventListener:(_event:string,callback:()=>void)=>{notify=callback},removeEventListener:vi.fn()})));
  setup(false,'subnetting');
  const toggle=screen.getByRole('button',{name:/^Aufgabe wechseln/});fireEvent.click(toggle);
- const group=screen.getByRole('button',{name:/^Netzwerke/});fireEvent.click(group);fireEvent.click(toggle);toggle.focus();
+ const group=screen.getByRole('button',{name:/^Netzwerke/});fireEvent.click(group);fireEvent.click(toggle);toggle.focus();toggle.blur(); // Browser may blur the hidden toggle before React effects.
  act(()=>{desktop=true;notify()});
  expect(group).toHaveFocus();
  vi.unstubAllGlobals();
@@ -71,4 +73,11 @@ it('reveals the correct group when an external selection returns to a previously
  expect(screen.getByRole('button',{name:'Subnetting'})).toHaveAttribute('aria-current','page');
  expect(screen.getByRole('button',{name:/^Netzwerke/})).toHaveAttribute('aria-expanded','true');
  expect(onSelectModule).not.toHaveBeenCalled();
+});
+it('does not steal focus after an intentional outside pointer action before resizing',()=>{
+ let desktop=false;let notify=()=>{};
+ vi.stubGlobal('matchMedia',vi.fn(()=>({get matches(){return desktop},addEventListener:(_event:string,callback:()=>void)=>{notify=callback},removeEventListener:vi.fn()})));
+ setup(false,'subnetting');const toggle=screen.getByRole('button',{name:/^Aufgabe wechseln/});toggle.focus();
+ fireEvent.pointerDown(document.body);toggle.blur();act(()=>{desktop=true;notify()});
+ expect(document.activeElement).toBe(document.body);
 });

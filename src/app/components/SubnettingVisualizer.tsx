@@ -344,7 +344,7 @@ function BitBar({ cidr }: { cidr: number }) {
             height={22}
             rx={1}
             fill={isNetwork ? 'var(--ui-accent)' : 'var(--ui-control)'}
-            fillOpacity={isNetwork ? 0.85 : 0.45}
+            fillOpacity={1}
             stroke="var(--ui-canvas)"
             strokeWidth={0.5}
           />

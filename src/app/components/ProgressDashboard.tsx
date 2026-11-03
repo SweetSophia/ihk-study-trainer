@@ -183,7 +183,7 @@ export default function ProgressDashboard({
         <button
           onClick={onPracticeMistakes}
           disabled={!hasActiveMistakes}
-          className="flex items-center gap-2 px-4 py-2.5 bg-danger-soft hover:bg-danger-soft border border-danger text-danger rounded-lg transition-colors disabled:bg-subtle disabled:text-muted disabled:border-line disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2.5 bg-danger-soft hover:bg-danger-soft-hover border border-danger text-danger rounded-lg transition-colors disabled:bg-subtle disabled:text-muted disabled:border-line disabled:hover:bg-subtle disabled:hover:text-muted disabled:cursor-not-allowed"
         >
           <RotateCcw className="w-4 h-4" />
           <span className="text-sm font-medium">Fehler üben</span>
@@ -191,7 +191,7 @@ export default function ProgressDashboard({
 
         <button
           onClick={toggleShowDetails}
-          className="flex items-center gap-2 px-4 py-2.5 bg-subtle hover:bg-subtle border border-line text-ink rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-subtle hover:bg-subtle-hover border border-line text-ink rounded-lg transition-colors"
         >
           <TrendingUp className="w-4 h-4" />
           <span className="text-sm font-medium">

@@ -138,7 +138,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
         <button
           onClick={fetchNewExercise}
           disabled={isPending}
-          className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action disabled:bg-subtle disabled:text-muted disabled:border-line text-onaction rounded-lg font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action-hover disabled:bg-subtle disabled:text-muted disabled:border-line disabled:hover:bg-subtle disabled:hover:text-muted text-onaction rounded-lg font-medium transition-colors"
         >
           {isPending ? (
             <>
@@ -222,7 +222,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
             <button
               onClick={validateAnswer}
               disabled={!userQuery.trim() || isPending || isValidating || completed.current}
-              className="flex items-center gap-2 px-5 py-2.5 bg-action-hover hover:bg-action-hover disabled:bg-subtle disabled:text-muted disabled:border-line disabled:cursor-not-allowed text-onaction font-semibold rounded-lg transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-action hover:bg-action-hover disabled:bg-subtle disabled:text-muted disabled:border-line disabled:hover:bg-subtle disabled:hover:text-muted disabled:cursor-not-allowed text-onaction font-semibold rounded-lg transition-colors"
             >
               <Play className="w-4 h-4" />
               Query ausführen & prüfen
