@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useLayoutEffect, useRef, useId, type ClipboardEvent } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useId, type ClipboardEvent, type RefObject } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -16,6 +16,7 @@ import {
 
 interface AuthModalProps {
   isOpen: boolean;
+  fallbackFocusRef?: RefObject<HTMLElement | null>;
   onClose: () => void;
   onLogin: (hash: string) => Promise<{ success: boolean; error?: string }>;
   onRegister: () => Promise<string | null>;
@@ -61,7 +62,7 @@ function validateHashShape(raw: string): {
   return { trimmed, length, lengthOk, formatOk, isValid: lengthOk && formatOk };
 }
 
-export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, onLogin, onRegister, fallbackFocusRef }: AuthModalProps) {
   const titleId=useId();
   const dialog=useRef<HTMLDivElement>(null);
   const closeButton=useRef<HTMLButtonElement>(null);
@@ -84,9 +85,11 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
     document.addEventListener('focusin',contain);
     return ()=>{
       document.removeEventListener('focusin',contain);
-      if(trigger?.isConnected&&trigger!==document.body&&trigger!==document.documentElement)trigger.focus();
+      // Successful login replaces its opener; return to the stable page title.
+      const target=trigger?.isConnected&&trigger!==document.body&&trigger!==document.documentElement?trigger:fallbackFocusRef?.current;
+      target?.focus();
     };
-  },[isOpen]);
+  },[isOpen,fallbackFocusRef]);
   useLayoutEffect(()=>{
     if(isOpen)(mode==='login'&&!loading?dialog.current?.querySelector<HTMLElement>('input:not(:disabled)'):closeButton.current)?.focus();
   },[isOpen,mode,loading]);

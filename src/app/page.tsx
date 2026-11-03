@@ -46,6 +46,7 @@ export default function Home() {
   const [autoFocusAnswers, setAutoFocusAnswers] = useState(true);
   const desktop = useDesktopNavigation();
   const workspace = useRef<HTMLDivElement>(null);
+  const pageTitle = useRef<HTMLHeadingElement>(null);
   const continueButton = useRef<HTMLButtonElement>(null);
   const selectionTrigger = useRef<HTMLElement | null>(null);
   const progressPanel = useRef<HTMLDivElement>(null);
@@ -300,7 +301,7 @@ export default function Home() {
                 <Shield className="w-6 h-6 text-accent" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-ink">
+                <h1 ref={pageTitle} tabIndex={-1} className="text-lg sm:text-xl font-bold text-ink">
                   IHK Study Trainer
                 </h1>
                 <p className="text-xs text-muted hidden sm:block">
@@ -462,6 +463,7 @@ export default function Home() {
       {/* Auth Modal */}
       <AuthModal
         isOpen={showAuthModal}
+        fallbackFocusRef={pageTitle}
         onClose={() => setShowAuthModal(false)}
         onLogin={handleLogin}
         onRegister={handleRegister}
