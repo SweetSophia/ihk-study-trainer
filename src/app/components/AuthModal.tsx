@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, type ClipboardEvent } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useId, type ClipboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -62,12 +62,34 @@ function validateHashShape(raw: string): {
 }
 
 export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalProps) {
+  const titleId=useId();
+  const dialog=useRef<HTMLDivElement>(null);
+  const closeButton=useRef<HTMLButtonElement>(null);
   const [mode, setMode] = useState<'select' | 'register' | 'login'>('select');
   const [hash, setHash] = useState('');
   const [inputHash, setInputHash] = useState('');
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Keep keyboard interaction inside the visible dialog. Closing mirrors the
+  // existing close button; in-flight account requests are not cancelled.
+  useLayoutEffect(()=>{
+    if(!isOpen)return;
+    const trigger=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    const contain=(event:FocusEvent)=>{
+      if(dialog.current&&event.target instanceof Node&&!dialog.current.contains(event.target)){
+        (dialog.current.querySelector<HTMLElement>('input:not(:disabled)')??closeButton.current)?.focus();
+      }
+    };
+    document.addEventListener('focusin',contain);
+    return ()=>{
+      document.removeEventListener('focusin',contain);
+      if(trigger?.isConnected&&trigger!==document.body&&trigger!==document.documentElement)trigger.focus();
+    };
+  },[isOpen]);
+  useLayoutEffect(()=>{
+    if(isOpen)(mode==='login'&&!loading?dialog.current?.querySelector<HTMLElement>('input:not(:disabled)'):closeButton.current)?.focus();
+  },[isOpen,mode,loading]);
   // Ignore obsolete view feedback while retaining created codes; requests are not retried/cancelled.
   const viewVersion = useRef(0);
   const changeView = (next: 'select' | 'login' | 'register') => {
@@ -221,8 +243,15 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
 
   return (
     <AnimatePresence>
-      <div data-study-chrome className="fixed inset-0 z-50 flex items-center justify-center p-4" onKeyDown={event=>{
+      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} data-study-chrome className="fixed inset-0 z-50 flex items-center justify-center p-4" onKeyDown={event=>{
         if(event.key==='Escape'){event.preventDefault();event.stopPropagation();onClose()}
+        if(event.key==='Tab'){
+          const controls=dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href],[tabindex]:not([tabindex="-1"])');
+          if(!controls?.length)return;
+          const first=controls[0],last=controls[controls.length-1];
+          if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+          else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+        }
       }}>
         {/* Backdrop */}
         <motion.div
@@ -242,12 +271,13 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
         >
           {/* Header */}
           <div className="sticky top-0 z-10 flex items-center justify-between bg-surface px-6 py-4 border-b border-line">
-            <h2 className="text-xl font-semibold text-ink">
+            <h2 id={titleId} className="text-xl font-semibold text-ink">
               {mode === 'select' && 'Anmelden'}
               {mode === 'register' && 'Dein Zugangscode'}
               {mode === 'login' && 'Mit Code anmelden'}
             </h2>
             <button
+              ref={closeButton}
               onClick={onClose}
               className="p-2 text-muted hover:text-ink hover:bg-subtle-hover rounded-lg transition-colors"
               aria-label="Schließen"

@@ -24,3 +24,15 @@ it('allows Escape to close the account dialog without starting a backend request
  fireEvent.keyDown(screen.getByLabelText(/^Zugangscode/),{key:'Escape'});
  expect(close).toHaveBeenCalledTimes(1);expect(login).not.toHaveBeenCalled();expect(register).not.toHaveBeenCalled();
 });
+it('places and contains focus on opening so Escape works immediately and returns to its trigger',()=>{
+ const close=vi.fn();
+ const view=(open:boolean)=><><button>Kontodialog öffnen</button><AuthModal isOpen={open} onClose={close} onLogin={async()=>({success:false})} onRegister={async()=>null}/></>;
+ const {rerender}=render(view(false));const trigger=screen.getByRole('button',{name:'Kontodialog öffnen'});trigger.focus();
+ rerender(view(true));const dismiss=screen.getByRole('button',{name:'Schließen'});expect(dismiss).toHaveFocus();
+ trigger.focus();expect(dismiss).toHaveFocus();
+ fireEvent.keyDown(dismiss,{key:'Tab',shiftKey:true});const login=screen.getByRole('button',{name:/Ich habe einen Code/});expect(login).toHaveFocus();
+ fireEvent.keyDown(login,{key:'Tab'});expect(dismiss).toHaveFocus();
+ login.focus();fireEvent.click(login);expect(screen.getByLabelText(/^Zugangscode/)).toHaveFocus();
+ fireEvent.keyDown(screen.getByLabelText(/^Zugangscode/),{key:'Escape'});expect(close).toHaveBeenCalledTimes(1);
+ rerender(view(false));expect(trigger).toHaveFocus();
+});

@@ -53,8 +53,18 @@ try {
    if([390,1440].includes(width)) await page.screenshot({path:`${out}/${width}-${theme}.png`});
   }
   await page.locator('.workspace select').first().selectOption({index:1});
-  await page.getByRole('button',{name:'Anmelden',exact:true}).click();
-  await page.getByRole('button',{name:/Ich habe einen Code/}).click();
+  const accountTrigger=page.getByRole('button',{name:'Anmelden',exact:true});
+  await accountTrigger.click();
+  const dismiss=page.getByRole('button',{name:'Schließen',exact:true});
+  assert.equal(await dismiss.evaluate(element=>element===document.activeElement),true,'initial account focus');
+  await page.keyboard.press('Escape');await dismiss.waitFor({state:'hidden'});
+  assert.equal(await accountTrigger.evaluate(element=>element===document.activeElement),true,'account trigger focus restored');
+  await accountTrigger.click();await page.keyboard.press('Shift+Tab');
+  const existingCode=page.getByRole('button',{name:/Ich habe einen Code/});
+  assert.equal(await existingCode.evaluate(element=>element===document.activeElement),true,'backward focus wraps within dialog');
+  await page.keyboard.press('Tab');assert.equal(await dismiss.evaluate(element=>element===document.activeElement),true,'forward focus wraps within dialog');
+  await existingCode.click();
+  assert.equal(await page.getByLabel(/^Zugangscode/).evaluate(element=>element===document.activeElement),true,'login view focus');
   await page.getByLabel(/^Zugangscode/).fill('test');await page.getByLabel(/^Zugangscode/).press('Enter');
   await page.getByLabel(/^Zugangscode/).press('Escape');
   await page.getByRole('button',{name:'Schließen',exact:true}).waitFor({state:'hidden'});
