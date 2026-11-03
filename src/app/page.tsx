@@ -291,7 +291,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-canvas">
       {/* Header */}
-      <header data-study-chrome className="sticky top-0 z-40 border-b border-line bg-canvas backdrop-blur-md">
+      <header data-study-chrome className="relative lg:sticky top-0 z-40 border-b border-line bg-canvas backdrop-blur-md">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-3 py-3">
             <div className="flex items-center gap-3">
@@ -308,7 +308,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
               <AppearanceSelector />
               {user ? (
                 <>
@@ -329,7 +329,7 @@ export default function Home() {
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action-hover text-onaction font-medium rounded-lg transition-colors"
+                  className="flex min-w-0 items-center gap-2 px-3 sm:px-4 py-2 bg-action hover:bg-action-hover text-onaction font-medium rounded-lg transition-colors"
                 >
                   <GraduationCap className="w-4 h-4" />
                   Anmelden

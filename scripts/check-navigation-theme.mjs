@@ -20,6 +20,13 @@ try {
   await context.route('**/*',route=>new URL(route.request().url()).origin===new URL(url).origin&&['GET','HEAD'].includes(route.request().method())?route.continue():route.abort());
   const page=await context.newPage();const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(url);await page.getByRole('button',{name:'Schließen',exact:true}).click();
+  if(width<=390) {
+   await page.evaluate(()=>document.documentElement.style.fontSize='200%');
+   const login=await page.getByRole('button',{name:'Anmelden',exact:true}).boundingBox();
+   assert.ok(login.x>=0&&login.x+login.width<=width,`enlarged login control outside viewport: ${login.x+login.width}`);
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'200% text reflow');
+   await page.evaluate(()=>document.documentElement.style.fontSize='100%');
+  }
   const nav=page.getByRole('navigation',{name:'Lernmodule',exact:true});
   async function openNav() {if(!await nav.locator('.navigation-panel').isVisible()) await nav.getByRole('button',{name:/^Aufgabe wechseln/}).click();}
   async function choose(name) {
