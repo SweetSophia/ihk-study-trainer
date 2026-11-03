@@ -21,6 +21,8 @@ export interface LinuxQuestion {
   expectedAnswers: { answer: string };
   answerInputs?: AnswerInputConfig[];
   solutionSteps: string[];
+  /** Display-only explanation of the canonical example, never used for grading. */
+  answerExplanation: string;
   difficulty: 'easy' | 'medium' | 'hard';
 }
 
@@ -58,6 +60,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'ls -la /home/user',
     category: 'Datei- und Verzeichnisverwaltung',
     difficulty: 'easy',
+    acceptedCommands: ['dir', 'vdir'],
   },
   {
     command: 'cd',
@@ -90,7 +93,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'rm',
     description: 'Löscht Dateien oder Verzeichnisse',
     explanation:
-      'rm (remove) löscht Dateien. Mit -r werden Verzeichnisse rekursiv gelöscht, -f erzwingt das Löschen ohne Nachfrage. Achtung: rm -rf / löscht das gesamte System!',
+      'rm (remove) löscht Dateien. Mit -r werden Verzeichnisse rekursiv gelöscht, -f erzwingt das Löschen ohne Nachfrage. Rekursives Löschen mit -rf ist gefährlich: Pfade vorher prüfen. GNU rm schützt standardmäßig die Wurzel / vor rekursivem Löschen; andere falsche Zielpfade sind dadurch nicht geschützt.',
     example: 'rm -rf /tmp/old',
     category: 'Datei- und Verzeichnisverwaltung',
     difficulty: 'easy',
@@ -171,13 +174,14 @@ const COMMAND_DATABASE: CommandEntry[] = [
   },
   {
     command: 'nano',
-    description: 'Einfacher terminalbasierter Texteditor',
+    description: 'Bildschirmorientierter Texteditor mit eingeblendeten Tastenkürzeln (Strg+O: speichern, Strg+X: beenden)',
     explanation:
-      'nano ist ein anfängerfreundlicher Texteditor im Terminal. Befehle werden unten angezeigt (Strg+O speichern, Strg+X beenden). Weitere einfache Editoren: ed (Zeileneditor), red (reduziertes ed), pico (älterer, ähnlicher Editor).',
+      'nano ist ein bildschirmorientierter Texteditor im Terminal. Tastenkürzel werden unten angezeigt (Strg+O speichern, Strg+X beenden). Auch pico passt zu dieser Beschreibung; ed und red sind dagegen zeilenorientierte Editoren.',
     example: 'nano /etc/hosts',
     category: 'Dateibetrachtung und -bearbeitung',
     difficulty: 'easy',
     aliases: [],
+    acceptedCommands: ['pico'],
   },
   {
     command: 'vim',
@@ -199,10 +203,11 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'top',
     category: 'Systeminformationen und Ressourcenüberwachung',
     difficulty: 'easy',
+    acceptedCommands: ['htop'],
   },
   {
     command: 'htop',
-    description: 'Verbesserte, interaktive Prozessanzeige mit Farbausgabe',
+    description: 'Interaktive Prozessanzeige mit F6-Sortiermenü und F10 zum Beenden (Standardbelegung)',
     explanation:
       'htop ist eine erweiterte Alternative zu top mit farbiger Ausgabe, Mausunterstützung und einer übersichtlicheren Darstellung von CPU-Kernen und Prozessbäumen.',
     example: 'htop',
@@ -264,10 +269,11 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'ps aux | grep nginx',
     category: 'Prozess- und Dienstverwaltung',
     difficulty: 'easy',
+    acceptedCommands: ['top', 'htop'],
   },
   {
     command: 'kill',
-    description: 'Sendet ein Signal an einen Prozess (standardmäßig SIGTERM, mit -9: SIGKILL)',
+    description: 'Sendet anhand einer PID ein Signal an einen Prozess (standardmäßig SIGTERM, mit -9: SIGKILL)',
     explanation:
       'kill beendet Prozesse anhand ihrer PID. kill PID sendet SIGTERM (höflich), kill -9 PID sendet SIGKILL (erzwungen).',
     example: 'kill -9 12345',
@@ -276,7 +282,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
   },
   {
     command: 'killall',
-    description: 'Beendet alle Prozesse mit einem bestimmten Namen',
+    description: 'Sendet standardmäßig ein Signal an alle Prozesse mit exakt dem angegebenen Namen (kein Namensmuster)',
     explanation:
       'killall sendet Signale an alle Prozesse, die einen bestimmten Namen tragen. killall nginx beendet z.B. alle nginx-Prozesse.',
     example: 'killall nginx',
@@ -330,12 +336,13 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'ss -tulpn',
     category: 'Netzwerk',
     difficulty: 'medium',
+    acceptedCommands: ['netstat'],
   },
   {
     command: 'curl',
     description: 'Überträgt Daten von oder zu einem Server (HTTP, FTP usw.)',
     explanation:
-      'curl (Client URL) ist ein vielseitiges Tool für Datenübertragungen. Ideal für API-Aufrufe und komplexe Übertragungen. Für einfache Downloads ist wget bevorzugt. Unterstützt HTTP, HTTPS, FTP und viele weitere Protokolle. -o speichert die Ausgabe, -I zeigt nur Header.',
+      'curl (Client URL) ist ein vielseitiges Tool für Datenübertragungen. Ideal für API-Aufrufe und komplexe Übertragungen. Für Downloads eignet sich auch wget; die unterstützten Optionen und Übertragungsrichtungen unterscheiden sich. Unterstützt HTTP, HTTPS, FTP und viele weitere Protokolle. -o speichert die Ausgabe, -I zeigt nur Header.',
     example: 'curl -I https://example.com',
     category: 'Netzwerk',
     difficulty: 'easy',
@@ -343,13 +350,14 @@ const COMMAND_DATABASE: CommandEntry[] = [
   },
   {
     command: 'wget',
-    description: 'Lädt Dateien aus dem Internet herunter (non-interaktiv, bevorzugt für Downloads)',
+    description: 'Lädt Dateien nichtinteraktiv über HTTP, HTTPS oder FTP herunter',
     explanation:
-      'wget (Web Get) lädt Dateien von Webservern herunter. Bevorzugt für Downloads wegen Fortsetzung abgebrochener Downloads, rekursivem Spiegeln und einfacher Nutzung. Alternative: curl (für API-Aufrufe und komplexere Übertragungen).',
+      'wget lädt Dateien nichtinteraktiv herunter und kann beispielsweise Downloads fortsetzen oder Webseiten rekursiv spiegeln. Auch curl kann Dateien herunterladen und mit -o oder -O speichern; die Optionen sind nicht identisch.',
     example: 'wget https://example.com/file.tar.gz',
     category: 'Netzwerk',
     difficulty: 'easy',
     aliases: [],
+    acceptedCommands: ['curl'],
   },
   {
     command: 'ssh',
@@ -397,15 +405,17 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'locate nginx.conf',
     category: 'Suche, Filter und Datenmanipulation',
     difficulty: 'easy',
+    acceptedCommands: ['plocate'],
   },
   {
     command: 'awk',
     description: 'Verarbeitet und analysiert Textdaten spaltenweise',
     explanation:
-      'awk ist eine mächtige Textverarbeitungssprache. Es teilt Zeilen in Felder auf und ermöglicht komplexe Transformationen. {print $1} gibt die erste Spalte aus.',
-    example: "awk '{print $1, $3}' /etc/passwd",
+      'awk ist eine mächtige Textverarbeitungssprache. Es teilt Zeilen in Felder auf und ermöglicht komplexe Transformationen. {print $1} gibt das erste Feld aus. Für die durch Doppelpunkte getrennte /etc/passwd setzt -F: das passende Trennzeichen.',
+    example: "awk -F: '{print $1, $3}' /etc/passwd",
     category: 'Suche, Filter und Datenmanipulation',
     difficulty: 'hard',
+    acceptedCommands: ['gawk', 'mawk'],
   },
   {
     command: 'sed',
@@ -429,7 +439,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
   },
   {
     command: 'chown',
-    description: 'Ändert den Besitzer und/oder die Gruppe einer Datei',
+    description: 'Ändert den Besitzer einer Datei und optional auch ihre Gruppe',
     explanation:
       'chown (change owner) ändert den Dateibesitzer. chown user:gruppe datei ändert Besitzer und Gruppe. Mit -R rekursiv.',
     example: 'chown -R www-data:www-data /var/www',
@@ -500,6 +510,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'gzip -k datei.txt',
     category: 'Archivierung und Komprimierung',
     difficulty: 'easy',
+    acceptedCommands: ['pigz'],
   },
 
   // ── User Management ────────────────────────────────────────────────────
@@ -573,6 +584,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'who',
     category: 'Benutzerverwaltung',
     difficulty: 'easy',
+    acceptedCommands: ['users', 'w'],
   },
   {
     command: 'w',
@@ -612,6 +624,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     category: 'Paketverwaltung',
     difficulty: 'easy',
     aliases: [],
+    acceptedCommands: ['apt-get'],
   },
   {
     command: 'dnf',
@@ -733,7 +746,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
   },
   {
     command: 'pkill',
-    description: 'Beendet Prozesse anhand ihres Namens oder anderer Attribute',
+    description: 'Sendet Signale an Prozesse nach einem Namensmuster (regulärer Ausdruck) und weiteren Attributfiltern',
     explanation:
       'pkill sendet Signale an Prozesse, die auf ein Muster passen. Ähnlich wie killall, aber mit erweiterten Filtermöglichkeiten.',
     example: 'pkill -f "python script.py"',
@@ -744,7 +757,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'nice',
     description: 'Startet einen Prozess mit einer bestimmten Priorität',
     explanation:
-      'nice startet Prozesse mit angepasster Scheduling-Priorität. Der Wert reicht von -20 (höchste Priorität) bis 19 (niedrigste). Standard ist 0.',
+      'nice startet Prozesse mit angepasster Scheduling-Priorität. Der Nice-Wert reicht von -20 (höhere Scheduling-Priorität) bis 19 (niedrigere). Die normale Ausgangsbasis ist 0; nice erhöht den geerbten Wert ohne -n standardmäßig um 10.',
     example: 'nice -n 10 backup.sh',
     category: 'Prozessverwaltung (erweitert)',
     difficulty: 'hard',
@@ -820,12 +833,12 @@ const COMMAND_DATABASE: CommandEntry[] = [
     command: 'nslookup',
     description: 'Führt DNS-Abfragen durch (Name → IP oder IP → Name)',
     explanation:
-      'nslookup (Name Server Lookup) fragt DNS-Server ab, um IP-Adressen zu Hostnamen aufzulösen oder umgekehrt. Alternative: dig (detailliertere Ausgabe, mehr Record-Typen). In dieser allgemein formulierten Aufgabe werden daher nslookup und dig akzeptiert.',
+      'nslookup (Name Server Lookup) fragt DNS-Server für Vorwärts- und Rückwärtsauflösung ab. Auch dig und host passen zu dieser allgemeinen Aufgabe; Ausgabe und Optionen unterscheiden sich.',
     example: 'nslookup google.de',
     category: 'Netzwerk (erweitert)',
     difficulty: 'easy',
     aliases: [],
-    acceptedCommands: ['dig'],
+    acceptedCommands: ['dig', 'host'],
   },
   {
     command: 'dig',
@@ -867,6 +880,7 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: "cut -d':' -f1 /etc/passwd",
     category: 'Shell und Datenverarbeitung',
     difficulty: 'easy',
+    acceptedCommands: ['awk', 'gawk', 'mawk'],
   },
   {
     command: 'sort',
@@ -950,10 +964,11 @@ const COMMAND_DATABASE: CommandEntry[] = [
     example: 'screen -S session_name',
     category: 'Terminal-Multiplexer',
     difficulty: 'medium',
+    acceptedCommands: ['tmux'],
   },
   {
     command: 'tmux',
-    description: 'Moderner Terminal-Multiplexer mit Fenster- und Pane-Verwaltung',
+    description: 'Terminal-Multiplexer mit Fenster- und Pane-Verwaltung und Standard-Befehlspräfix Strg+b',
     explanation:
       'tmux (Terminal Multiplexer) ist eine moderne Alternative zu screen. Es unterstützt Fenster, Panes und Sitzungen. Strg+b ist der Standard-Präfix.',
     example: 'tmux new -s arbeit',
@@ -1074,6 +1089,13 @@ const COMMAND_DATABASE: CommandEntry[] = [
 const ALL_DESCRIPTIONS = COMMAND_DATABASE.map((c) => c.description);
 const ALL_COMMANDS = COMMAND_DATABASE.map((c) => c.command);
 
+/** Curated recognized forms, not shell parsing or universal tool equivalence. */
+function supportedForms(entry: CommandEntry): string[] {
+  return Array.from(new Set([entry.command, ...(entry.aliases ?? []), ...(entry.acceptedCommands ?? [])]
+    .map(value => value.trim().replace(/\s+/g, ' ')).filter(Boolean)));
+}
+
+
 // ---------------------------------------------------------------------------
 // Generator
 // ---------------------------------------------------------------------------
@@ -1098,10 +1120,12 @@ export function generateLinuxQuestion(): LinuxQuestion {
  *  - User picks the correct description from a dropdown
  */
 function buildCommandToDescription(entry: CommandEntry): LinuxQuestion {
-  // Pick 4 random wrong descriptions
-  const wrongDescriptions = ALL_DESCRIPTIONS.filter(
-    (d) => d !== entry.description
-  );
+  // A generic description may also fit this tool. Never present a known-valid
+  // capability as a wrong distractor (e.g. htop also fits top's broad prompt).
+  const acceptedDescriptions = COMMAND_DATABASE
+    .filter(candidate => supportedForms(candidate).includes(entry.command))
+    .map(candidate => candidate.description);
+  const wrongDescriptions = ALL_DESCRIPTIONS.filter(d => !acceptedDescriptions.includes(d));
   const shuffled = wrongDescriptions.sort(() => Math.random() - 0.5).slice(0, 4);
   const options = [entry.description, ...shuffled].sort(() => Math.random() - 0.5);
 
@@ -1109,6 +1133,7 @@ function buildCommandToDescription(entry: CommandEntry): LinuxQuestion {
     theme: entry.category,
     questionText: `Was macht der Befehl ${entry.command}?${entry.example ? `\n\nBeispiel: ${entry.example}` : ''}`,
     command: entry.command,
+    answerExplanation: entry.explanation,
     example: entry.example,
     direction: 'commandToDescription',
     expectedAnswers: { answer: entry.description },
@@ -1117,7 +1142,7 @@ function buildCommandToDescription(entry: CommandEntry): LinuxQuestion {
         valueKey: 'answer',
         label: 'Beschreibung',
         valueOptions: options,
-        acceptedValues: [entry.description],
+        acceptedValues: acceptedDescriptions,
       },
     ],
     solutionSteps: [
@@ -1142,19 +1167,13 @@ function buildCommandToDescription(entry: CommandEntry): LinuxQuestion {
  *  - User types the command name in a terminal-style text input
  */
 function buildDescriptionToCommand(entry: CommandEntry): LinuxQuestion {
-  const acceptedValues = Array.from(
-    new Set(
-      [entry.command, ...(entry.aliases ?? []), ...(entry.acceptedCommands ?? [])]
-        .filter((value): value is string => typeof value === 'string')
-        .map((value) => value.trim())
-        .filter(Boolean)
-    )
-  );
+  const acceptedValues = supportedForms(entry);
 
   return {
     theme: entry.category,
     questionText: `Welcher Linux-Befehl wird hier beschrieben?\n\n"${entry.description}"`,
     command: entry.command,
+    answerExplanation: entry.explanation,
     example: entry.example,
     direction: 'descriptionToCommand',
     expectedAnswers: { answer: entry.command },

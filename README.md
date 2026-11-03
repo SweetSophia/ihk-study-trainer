@@ -70,7 +70,7 @@ Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist an
 12. **Ports** – Dienste, Portnummern und Protokolle korrekt zuordnen
 13. **OSI-Modell** – Schichten, Aufgaben und Zuordnungen trainieren
 14. **Kabel** – passende Kabeltypen anhand von Strecke, Geschwindigkeit und Umgebung wählen
-15. **Linux** – Linux-Befehle und typische Admin-Kommandos üben
+15. **Linux** – Befehlsnamen und Shell-Operatoren zuordnen, mit gezielt hinterlegten Werkzeug-Alternativen und erklärendem Feedback. Die Übung vergleicht Befehlsformen; sie parst oder führt keine vollständigen Kommandozeilen aus.
 16. **Cloud** – Cloud-Computing-Konzepte, Provider-Modelle und Sicherheitsgrundlagen wiederholen
 17. **Differenzkalkulation** – Vorwärts- und marktpreisbasierte Rückwärtsrechnung gezielt vergleichen
 18. **Vorwärtskalkulation** – vom Listeneinkaufspreis zum Bruttoverkaufspreis

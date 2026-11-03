@@ -58,6 +58,8 @@ export interface Question {
   questionText: string;
   expectedAnswers: Record<string, string | number | boolean>;
   solutionSteps: string[];
+  /** Post-check teaching copy for a canonical example; never used to grade or persist attempts. */
+  answerExplanation?: string;
   difficulty: 'easy' | 'medium' | 'hard';
   /**
    * When present, StudyCard renders one [input + dropdown] row per entry
