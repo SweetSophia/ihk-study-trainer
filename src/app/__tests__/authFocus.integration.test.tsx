@@ -1,0 +1,25 @@
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import Home from '../page';
+import { getAllProgress, getUserByHash } from '../lib/auth';
+vi.mock('../lib/auth',()=>({getUserByHash:vi.fn(),getAllProgress:vi.fn(),updateProgress:vi.fn(),generateUniqueUser:vi.fn()}));
+vi.mock('../lib/databaseWorkerClient',()=>({checkDatabaseTask:vi.fn()}));
+vi.mock('../actions/generate-sql-exercise',()=>({generateSqlExercise:vi.fn()}));
+vi.mock('canvas-confetti',()=>({default:vi.fn()}));
+beforeEach(()=>{localStorage.clear();vi.clearAllMocks()});
+afterEach(()=>{localStorage.clear()});
+it('returns focus to a stable page destination when successful login removes its opener',async()=>{
+ vi.mocked(getUserByHash).mockResolvedValue({id:'synthetic-user',access_hash:'Ab12cD34eF56',created_at:'',last_login:null});
+ vi.mocked(getAllProgress).mockResolvedValue([]);
+ render(<Home/>);
+ await screen.findByRole('dialog');fireEvent.keyDown(screen.getByRole('button',{name:'Schließen'}),{key:'Escape'});
+ const opener=screen.getByRole('button',{name:'Anmelden'});opener.focus();fireEvent.click(opener);
+ fireEvent.click(screen.getByRole('button',{name:/Ich habe einen Code/}));
+ fireEvent.change(screen.getByLabelText(/^Zugangscode/),{target:{value:'Ab12cD34eF56'}});
+ fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Anmelden'}));
+ await waitFor(()=>expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+ expect(opener.isConnected).toBe(false);
+ expect(screen.getByRole('button',{name:'Abmelden'})).toBeInTheDocument();
+ expect(document.activeElement).not.toBe(document.body);
+ expect(screen.getByRole('heading',{name:'IHK Study Trainer'})).toHaveFocus();
+},15000);

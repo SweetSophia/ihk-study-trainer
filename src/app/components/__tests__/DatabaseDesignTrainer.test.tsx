@@ -84,9 +84,9 @@ it('completed guest grading never scores and warns about login reset', async () 
 it('labels incorrect and unscored outcomes and links the model disclosure', async () => {
  check.mockResolvedValueOnce({correct:false});render(<DatabaseDesignTrainer isAuthenticated onAttempt={vi.fn()}/>);
  fireEvent.change(query(),{target:{value:'SELECT 1'}});fireEvent.click(button());
- const wrong=await screen.findByText(/Nicht korrekt:/);expect(wrong).toHaveClass('text-rose-200');
+ const wrong=await screen.findByText(/Nicht korrekt:/);expect(wrong).toHaveClass('text-danger');
  check.mockRejectedValueOnce(new Error('Fehler'));fireEvent.click(button());
- expect(await screen.findByText(/Ohne Wertung:/)).toHaveClass('text-amber-200');
+ expect(await screen.findByText(/Ohne Wertung:/)).toHaveClass('text-warning');
  fireEvent.click(screen.getByRole('button',{name:'Modellbeispiel anzeigen'}));
  const hide=screen.getByRole('button',{name:'Modellbeispiel verbergen'});
  expect(hide).toHaveAttribute('aria-controls','db-model-example');expect(document.getElementById('db-model-example')).toBeInTheDocument();

@@ -1,55 +1,116 @@
 @import "tailwindcss";
 
+/* Shared learning surfaces, controls and diagram paints. Default is light;
+   CSS respects the OS even before the small preference bootstrap executes. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ui-canvas: #f7f8f5;
+  --ui-surface: #ffffff;
+  --ui-subtle: #edf2f0;
+  --ui-subtle-hover: #e0eae6;
+  --ui-ink: #172d34;
+  --ui-muted: #4c626b;
+  --ui-line: #cfdcda;
+  --ui-control: #72858b;
+  --ui-action: #0f766e;
+  --ui-action-hover: #115e59;
+  --ui-onaction: #ffffff;
+  --ui-accent: #0f766e;
+  --ui-accent-soft: #e1f1ec;
+  --ui-accent-soft-hover: #ebf7f2;
+  --ui-success: #166534;
+  --ui-success-soft: #e8f4e9;
+  --ui-warning: #854d0e;
+  --ui-warning-soft: #fff4d6;
+  --ui-danger: #b4233b;
+  --ui-danger-soft: #fff0f1;
+  --ui-danger-soft-hover: #ffe0e4;
+  --ui-info: #1e5ca8;
+  --ui-info-soft: #eaf2ff;
+  color-scheme: light;
 }
-
+:root[data-theme="dark"] {
+  --ui-canvas: #101a24;
+  --ui-surface: #172733;
+  --ui-subtle: #203642;
+  --ui-subtle-hover: #2b414e;
+  --ui-ink: #e7eff2;
+  --ui-muted: #b1c4cc;
+  --ui-line: #405966;
+  --ui-control: #78929e;
+  --ui-action: #63d8cb;
+  --ui-action-hover: #92e9dd;
+  --ui-onaction: #102a2c;
+  --ui-accent: #63d8cb;
+  --ui-accent-soft: #183e40;
+  --ui-accent-soft-hover: #20504e;
+  --ui-success: #8fdfa9;
+  --ui-success-soft: #183d31;
+  --ui-warning: #f2cf85;
+  --ui-warning-soft: #3b3323;
+  --ui-danger: #ffadb8;
+  --ui-danger-soft: #412b38;
+  --ui-danger-soft-hover: #53313f;
+  --ui-info: #a5caff;
+  --ui-info-soft: #21374e;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --ui-canvas: #101a24; --ui-surface: #172733; --ui-subtle: #203642; --ui-subtle-hover: #2b414e;
+    --ui-ink: #e7eff2; --ui-muted: #b1c4cc; --ui-line: #405966; --ui-control: #78929e;
+    --ui-action: #63d8cb; --ui-action-hover: #92e9dd; --ui-onaction: #102a2c;
+    --ui-accent: #63d8cb; --ui-accent-soft: #183e40; --ui-accent-soft-hover: #20504e;
+    --ui-success: #8fdfa9; --ui-success-soft: #183d31;
+    --ui-warning: #f2cf85; --ui-warning-soft: #3b3323;
+    --ui-danger: #ffadb8; --ui-danger-soft: #412b38; --ui-danger-soft-hover: #53313f;
+    --ui-info: #a5caff; --ui-info-soft: #21374e;
+    color-scheme: dark;
+  }
+}
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-canvas: var(--ui-canvas);
+  --color-surface: var(--ui-surface);
+  --color-subtle-hover: var(--ui-subtle-hover);
+  --color-accent-soft-hover: var(--ui-accent-soft-hover);
+  --color-danger-soft-hover: var(--ui-danger-soft-hover);
+  --color-subtle: var(--ui-subtle);
+  --color-ink: var(--ui-ink);
+  --color-muted: var(--ui-muted);
+  --color-line: var(--ui-line);
+  --color-control: var(--ui-control);
+  --color-action: var(--ui-action);
+  --color-action-hover: var(--ui-action-hover);
+  --color-onaction: var(--ui-onaction);
+  --color-accent: var(--ui-accent);
+  --color-accent-soft: var(--ui-accent-soft);
+  --color-success: var(--ui-success);
+  --color-success-soft: var(--ui-success-soft);
+  --color-warning: var(--ui-warning);
+  --color-warning-soft: var(--ui-warning-soft);
+  --color-danger: var(--ui-danger);
+  --color-danger-soft: var(--ui-danger-soft);
+  --color-info: var(--ui-info);
+  --color-info-soft: var(--ui-info-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body { background: var(--ui-canvas); color: var(--ui-ink); font-family: var(--font-geist-sans), Arial, sans-serif; }
+@layer base {
+  button, select, summary { touch-action: manipulation; }
+  button:not(:disabled), select, summary { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
 }
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.workspace h2, .workspace h3 { scroll-margin-top: 9rem; }
+.navigation-panel { max-height: 60dvh; overflow-y: auto; overscroll-behavior: contain; }
+@media (min-width: 1024px) {
+  .navigation-panel { max-height: none; overflow: visible; }
+  .trainer-sidebar { position: sticky; top: 7rem; max-height: calc(100dvh - 8rem); overflow-y: auto; scrollbar-gutter: stable; }
 }
-
-/* Custom scrollbar hide for mobile */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Text overflow utilities */
-.line-clamp-1 {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.text-balance {
-  text-wrap: balance;
-}
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.text-balance { text-wrap: balance; }

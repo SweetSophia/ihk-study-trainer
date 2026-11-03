@@ -169,10 +169,10 @@ describe('DragOrderExercise', () => {
 
     // SAMPLE_ITEMS is [Alpha, Bravo, Charlie, Delta]; correctOrder is the
     // reverse. So every item is in the wrong slot → all four should carry the
-    // "wrong" visual marker (border-rose-500/60 class on the surrounding li).
+    // "wrong" visual marker (border-danger class on the surrounding li).
     const items = screen.getAllByRole('listitem');
     for (const item of items) {
-      expect(item.className).toContain('border-rose-500/60');
+      expect(item.className).toContain('border-danger');
     }
   });
 
@@ -187,7 +187,7 @@ describe('DragOrderExercise', () => {
 
     const items = screen.getAllByRole('listitem');
     for (const item of items) {
-      expect(item.className).toContain('border-emerald-500/60');
+      expect(item.className).toContain('border-accent');
     }
   });
 

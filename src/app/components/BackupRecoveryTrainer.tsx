@@ -5,8 +5,8 @@ import type { TrainingRunContext } from '../lib/trainingRun';
 import { BACKUPS, RECOVERY, TIMELINE_FIELDS, validateTimeline, validateRestoreChain, type RecoveryResult } from '../lib/backupRecovery';
 
 type Props = { isAuthenticated: boolean; onAttempt: (correct: boolean) => void; trainingRun?: TrainingRunContext };
-const inputClass = 'w-full min-w-0 rounded-lg border border-slate-600 bg-slate-950 p-2 text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
-const buttonClass = 'rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
+const inputClass = 'w-full min-w-0 rounded-lg border border-control bg-canvas p-2 text-ink focus-visible:outline-2 focus-visible:outline-accent';
+const buttonClass = 'rounded-lg border border-control px-4 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent';
 
 function ObjectiveSection({ chain, isAuthenticated, onAttempt, trainingRun }: Props & { chain: boolean }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -29,10 +29,10 @@ function ObjectiveSection({ chain, isAuthenticated, onAttempt, trainingRun }: Pr
       <label htmlFor={id} className="block text-sm">{label}</label>
       <input id={id} className={inputClass} inputMode={chain ? 'text' : 'numeric'} value={answers[key] ?? ''}
         onChange={e => edit(key, e.target.value)} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />
-      {error && <p id={`${id}-error`} className="text-sm text-rose-200">{error}</p>}
+      {error && <p id={`${id}-error`} className="text-sm text-danger">{error}</p>}
     </div>;
   }
-  return <section aria-labelledby={`${prefix}-title`} className="space-y-4 rounded-lg border border-slate-700 p-4">
+  return <section aria-labelledby={`${prefix}-title`} className="space-y-4 rounded-lg border border-line p-4">
     <h3 id={`${prefix}-title`} className="font-semibold">{chain ? '2. Sicherungskette auswählen' : '1. Wiederherstellungsziele prüfen'}</h3>
     <p>{chain
       ? 'Gib eine vollständige Kette zum neuesten rekonstruierbaren Datenstand in Abspielreihenfolge an. Trenne die unveränderten IDs mit Kommas, ohne doppelte oder zusätzliche Images. Mehrere gültige Lösungen sind möglich. Ein älterer nutzbarer Stand erfüllt diese Aufgabenstellung nicht.'
@@ -58,11 +58,11 @@ function ObjectiveSection({ chain, isAuthenticated, onAttempt, trainingRun }: Pr
               aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined}>
               <option value="">Bitte wählen</option><option value="met">Erfüllt</option><option value="missed">Nicht erfüllt</option>
             </select>
-            {error && <p id={`${id}-error`} className="text-sm text-rose-200">{error}</p>}
+            {error && <p id={`${id}-error`} className="text-sm text-danger">{error}</p>}
           </div>;
         })}</div>
       </>}
-      <p role="status" className={result ? (result.valid ? 'text-emerald-200' : 'text-rose-200') : 'text-slate-400'}>
+      <p role="status" className={result ? (result.valid ? 'text-accent' : 'text-danger') : 'text-muted'}>
         {`${action}: ${result ? (result.valid ? 'Korrekt für die vorgegebenen Annahmen.' : 'Bitte die markierten Eingaben prüfen.') : 'Noch keine aktuelle Prüfung.'}`}
       </p>
       <div className="flex flex-wrap gap-3">
@@ -70,7 +70,7 @@ function ObjectiveSection({ chain, isAuthenticated, onAttempt, trainingRun }: Pr
         <button type="button" className={buttonClass} aria-expanded={example} aria-controls={`${prefix}-solution`}
           onClick={() => { revealed.current = true; trainingRun?.onEvent({ type: 'reveal', section }); setExample(!example); }}>{action}: Lösung {example ? 'verbergen' : 'anzeigen'}</button>
       </div>
-      {example && <div id={`${prefix}-solution`} className="space-y-2 text-sm text-slate-300">
+      {example && <div id={`${prefix}-solution`} className="space-y-2 text-sm text-ink">
         {chain ? <><p>Zwei mögliche Ketten: F1,I1,I2 oder F2,I4. Beide enden bei 09:40. Jede inkrementelle Sicherung benötigt ihre angegebene Vorgängerkette; I3 scheitert am fehlenden X.</p><p>Die Anzahl der Images beweist keine Wiederherstellungsdauer.</p></>
           : <><p>Mögliches Datenverlustfenster: 20 Minuten (10:00 − 09:40). Ausfalldauer: 70 Minuten (11:10 − 10:00). RPO: erfüllt, da 20 ≤ 30. RTO: erfüllt, da 70 ≤ 90.</p><p>Der Zeitabstand beweist keine tatsächlich verlorenen Datensätze und garantiert keine zukünftige Wiederherstellung.</p></>}
         <p>Eine vor der ersten Prüfung angezeigte Lösung macht diesen Abschnitt für den restlichen Durchlauf ungewertet, auch nach dem Verbergen.</p>
@@ -89,7 +89,7 @@ export default function BackupRecoveryTrainer(props: Props) {
   const [reasoning, setReasoning] = useState('');
   const [ticks, setTicks] = useState<boolean[]>(RUBRIC.map(() => false));
   const [example, setExample] = useState(false);
-  return <section aria-labelledby="recovery-title" className="space-y-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-slate-200 sm:p-6">
+  return <section aria-labelledby="recovery-title" className="space-y-6 rounded-xl border border-line bg-surface p-4 text-ink sm:p-6">
     <h2 id="recovery-title" className="text-xl font-bold">AP2 Datensicherung</h2>
     <p>Wiederherstellung und RPO/RTO · eigene Übungsaufgabe · Schwerpunkt Baden-Württemberg · keine Original-Prüfungsaufgabe</p>
     <p>Eine fiktive Werkstatt wertet einen abgeschlossenen Wiederherstellungstest ihres Dateidienstes aus. Alle Zeiten liegen am selben Tag und bezeichnen verstrichene Minuten, ohne Zeitzonenwechsel. Es werden keine Befehle ausgeführt und keine echten Sicherungen verändert.</p>
@@ -98,12 +98,12 @@ export default function BackupRecoveryTrainer(props: Props) {
       <li>RPO (Recovery Point Objective): höchstens {RECOVERY.rpoMinutes} Minuten möglicher Datenverlust. RTO (Recovery Time Objective): höchstens {RECOVERY.rtoMinutes} Minuten vom Ausfall bis zum abgenommenen Wiederanlauf.</li>
     </ul>
     <p>Alle gelisteten Sicherungsdateien sind vorhanden und integritätsgeprüft. X fehlt; zusätzliche Protokolle, Snapshots oder andere Wiederherstellungswege stehen nicht zur Verfügung. Die Zeiten im Katalog bezeichnen den enthaltenen Datenstand, keine Laufzeit der Sicherung.</p>
-    <ul aria-label="Sicherungskatalog" className="space-y-2">{BACKUPS.map(backup => <li key={backup.id} className="rounded-lg border border-slate-700 p-3">
+    <ul aria-label="Sicherungskatalog" className="space-y-2">{BACKUPS.map(backup => <li key={backup.id} className="rounded-lg border border-line p-3">
       <strong>{backup.id}</strong>: {backup.kind === 'full' ? 'Vollsicherung' : 'Inkrementelle Sicherung'} · Datenstand {backup.state} · {backup.parent ? `benötigt ${backup.parent} und dessen vollständige Vorgängerkette` : 'unabhängig, kein Vorgänger'}
     </li>)}</ul>
     <p>Eine inkrementelle Sicherung ist nur mit genau ihrer angegebenen Vorgängerkette nutzbar. Eine andere Vollsicherung ersetzt diesen Vorgänger nicht. RAID-Ausfallsicherheit ersetzt keine Datensicherung. Aus den Datenständen folgt weder die Zahl tatsächlich verlorener Datensätze noch die Dauer einer künftigen Wiederherstellung.</p>
     <p className="text-sm">Nur die erste abgeschlossene Prüfung je Abschnitt zählt pro Durchlauf (maximal zwei), auch eine leere oder fehlerhafte Abgabe. Wiederholungen geben Rückmeldung ohne zusätzliche Punkte. Eine zuvor angezeigte Lösung macht nur den betreffenden Abschnitt ungewertet. Begründung und Selbstbewertung vergeben nie Punkte.</p>
-    <p className="text-sm text-amber-200">Beim Anmelden oder Wechseln des Kontos wird dieser Durchlauf zurückgesetzt. {props.trainingRun ? 'Beim Aufgabenwechsel innerhalb des Trainingslaufs bleiben Eingaben, Häkchen und Lösungen erhalten; beim Verlassen des Trainingslaufs gehen sie verloren.' : 'Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung; auch beim Verlassen gehen sie verloren.'} {props.isAuthenticated ? 'Nur objektive Versuche werden als Fortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
+    <p className="text-sm text-warning">Beim Anmelden oder Wechseln des Kontos wird dieser Durchlauf zurückgesetzt. {props.trainingRun ? 'Beim Aufgabenwechsel innerhalb des Trainingslaufs bleiben Eingaben, Häkchen und Lösungen erhalten; beim Verlassen des Trainingslaufs gehen sie verloren.' : 'Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung; auch beim Verlassen gehen sie verloren.'} {props.isAuthenticated ? 'Nur objektive Versuche werden als Fortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
     <ObjectiveSection key={`time-${run}`} chain={false} {...props} />
     <ObjectiveSection key={`chain-${run}`} chain {...props} />
     <section aria-labelledby="recovery-reasoning-title" className="space-y-3">

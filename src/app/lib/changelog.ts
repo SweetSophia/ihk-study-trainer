@@ -6,12 +6,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
-  // New AP2 releases use UTC merge dates; older entries retain their originally recorded dates.
+  // New releases use UTC merge dates; older entries retain their originally recorded dates.
+  {
+    date: '03/11/2026',
+    summary: 'Neue Themen-Navigation: fünf aufklappbare Gruppen, eigener AP2-Trainingslauf und mobile Aufgabenauswahl statt Kachelwand. System-, Hell- und Dunkelmodus für alle Lernansichten. Öffnen der Navigation und Farbwechsel erhalten Eingaben; vor dem Verlassen eines Trainingslaufs wird gewarnt. Keine neue Entwurfsspeicherung.',
+    highlight: true,
+    tag: 'Aktuell',
+  },
   {
     date: '29/10/2026',
     summary: 'AP2 Berechtigungen: effektive Zugriffe aus überlappenden positiven Gruppengewährungen bestimmen und eine begrenzte Korrektur mit passenden Kontrollen planen. Zwei objektive Prüfungen; Least Privilege, Freigabe und Rücknahme bleiben Selbstbewertung. Eigenes fiktives Lehrmodell ohne echte Rechteänderungen.',
-    highlight: true,
-    tag: 'Aktuell',
   },
   {
     date: '28/10/2026',

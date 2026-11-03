@@ -1,3 +1,4 @@
+import { chooseModule } from '../../test/navigation';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -40,7 +41,7 @@ beforeEach(() => {
 
 it('wires algorithm progress once, resets guest input on login and preserves drills',async()=>{
  localStorage.clear();render(<Home/>);
- fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Algorithmen/}))[0]);
+ await chooseModule('ap2AlgorithmTracing');
  fireEvent.change(screen.getByLabelText('Korrigierter Vergleich'),{target:{value:'<='}});
  fireEvent.click(screen.getByRole('button',{name:'Grenzfall prüfen'}));expect(updateProgress).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button',{name:'Test login'}));await waitFor(()=>expect(screen.getByLabelText('Korrigierter Vergleich')).toHaveValue(''));
@@ -48,5 +49,5 @@ it('wires algorithm progress once, resets guest input on login and preserves dri
  const trainer=within(screen.getByRole('region',{name:'AP2 Algorithmen: Speicherüberwachung'}));
  fireEvent.click(trainer.getByRole('button',{name:'Grenzfall prüfen'}));await waitFor(()=>expect(updateProgress).toHaveBeenCalledExactlyOnceWith('other-user-hash','ap2AlgorithmTracing',true));
  fireEvent.click(trainer.getByRole('button',{name:'Grenzfall prüfen'}));expect(updateProgress).toHaveBeenCalledTimes(1);
- fireEvent.click(screen.getAllByRole('button',{name:/Subnetting/})[0]);expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
+ await chooseModule('subnetting');expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
 },15000);

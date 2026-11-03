@@ -5,8 +5,8 @@ import { ACCESS_CHOICES, CORRECTION_CHOICES, FOLDERS, GROUPS, PEOPLE, VERIFICATI
 
 type Props = { isAuthenticated: boolean; onAttempt: (correct: boolean) => void };
 type Section = 'matrix' | 'correction';
-const inputClass = 'w-full min-w-0 rounded-lg border border-slate-600 bg-slate-950 p-2 text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
-const buttonClass = 'rounded-lg border border-slate-600 px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-emerald-400';
+const inputClass = 'w-full min-w-0 rounded-lg border border-control bg-canvas p-2 text-ink focus-visible:outline-2 focus-visible:outline-accent';
+const buttonClass = 'rounded-lg border border-control px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-accent';
 const RUBRIC = [
   'Ich leite die nötigen Rechte aus den Aufgaben ab und vergebe nicht mehr als erforderlich.',
   'Ich hole die zuständige Freigabe ein und dokumentiere Ausgangszustand, Änderung und Rücknahmeplan.',
@@ -33,14 +33,14 @@ export default function AccessControlTrainer({ isAuthenticated, onAttempt }: Pro
         onChange={event => { setAnswers(old => ({ ...old, [key]: event.target.value })); setResults(old => ({ ...old, [section]: undefined })); }}>
         <option value="">Bitte wählen</option>{options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
-      {selected && <p aria-hidden="true" className="mt-1 break-words text-sm text-slate-300">Auswahl: {selected.label}</p>}
-      {error && <p id={`${id}-error`} className="text-sm text-rose-200">{error}</p>}
+      {selected && <p aria-hidden="true" className="mt-1 break-words text-sm text-ink">Auswahl: {selected.label}</p>}
+      {error && <p id={`${id}-error`} className="text-sm text-danger">{error}</p>}
     </div>;
   }
   function objective(section: Section, title: string, children: ReactNode, solution: ReactNode) {
     const action = section === 'matrix' ? 'Zugriffe' : 'Korrektur';
     const result = results[section];
-    return <section aria-labelledby={`access-${section}-title`} className="space-y-4 rounded-lg border border-slate-700 p-4">
+    return <section aria-labelledby={`access-${section}-title`} className="space-y-4 rounded-lg border border-line p-4">
       <h3 id={`access-${section}-title`} className="font-semibold">{title}</h3>
       <form noValidate className="space-y-4" onSubmit={event => {
         event.preventDefault();
@@ -52,7 +52,7 @@ export default function AccessControlTrainer({ isAuthenticated, onAttempt }: Pro
         }
       }}>
         {children}
-        <p role="status" className={result ? (result.valid ? 'text-emerald-200' : 'text-rose-200') : 'text-slate-400'}>
+        <p role="status" className={result ? (result.valid ? 'text-accent' : 'text-danger') : 'text-muted'}>
           {action}: {result ? (result.valid ? 'Korrekt für das vorgegebene Modell.' : 'Bitte die markierten Eingaben prüfen.') : 'Noch keine aktuelle Prüfung.'}
         </p>
         <div className="flex flex-wrap gap-3">
@@ -60,25 +60,25 @@ export default function AccessControlTrainer({ isAuthenticated, onAttempt }: Pro
           <button type="button" className={buttonClass} aria-expanded={shown[section]} aria-controls={`access-${section}-solution`}
             onClick={() => { revealed.current[section] = true; setShown(old => ({ ...old, [section]: !old[section] })); }}>{action}: Lösung {shown[section] ? 'verbergen' : 'anzeigen'}</button>
         </div>
-        {shown[section] && <div id={`access-${section}-solution`} className="space-y-2 text-sm text-slate-300">{solution}<p>Eine vor der ersten Prüfung angezeigte Lösung macht diesen Abschnitt für den restlichen Durchlauf ungewertet, auch nach dem Verbergen.</p></div>}
+        {shown[section] && <div id={`access-${section}-solution`} className="space-y-2 text-sm text-ink">{solution}<p>Eine vor der ersten Prüfung angezeigte Lösung macht diesen Abschnitt für den restlichen Durchlauf ungewertet, auch nach dem Verbergen.</p></div>}
       </form>
     </section>;
   }
-  return <section aria-labelledby="access-title" className="space-y-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-slate-200 sm:p-6">
+  return <section aria-labelledby="access-title" className="space-y-6 rounded-xl border border-line bg-surface p-4 text-ink sm:p-6">
     <h2 id="access-title" className="text-xl font-bold">AP2 Berechtigungen: Zugriffe prüfen und sicher korrigieren</h2>
     <p>Eigene fiktive Übung · Schwerpunkt Baden-Württemberg · keine Original-Prüfungsaufgabe</p>
     <p>Ein Handwerksbetrieb prüft die Gruppenrechte seiner Projektablage. Bestimme zuerst die aktuellen Zugriffe, danach eine begrenzte Korrektur und passende Kontrollen. Es werden keine echten Berechtigungen verändert, Befehle ausgeführt oder Konten bearbeitet.</p>
     <p>Nur für dieses Lehrmodell: Positive Gruppengewährungen werden kombiniert. Bearbeiten umfasst Lesen und Schreiben von Testdateien; Lesen allein erlaubt keine Bearbeitung. Ohne Gewährung besteht kein Zugriff. Es gibt keine individuellen Rechte, Vererbung, ausdrücklichen Verbote oder Administrator-Ausnahmen. Dies ist kein vollständiges Windows-/Linux-ACL-Modell.</p>
     <section aria-labelledby="access-grants-title" className="space-y-3">
       <h3 id="access-grants-title" className="font-semibold">Vorgegebene Gruppen und aktuelle Mitgliedschaften</h3>
-      <ul className="space-y-2">{GROUPS.map(group => <li key={group.id} className="rounded-lg border border-slate-700 p-3"><strong>{group.label}</strong>: {FOLDERS.map(folder => `${folder.label}: ${group.rights[folder.id] === 'none' ? 'keine Gewährung' : ACCESS_CHOICES.find(choice => choice.value === group.rights[folder.id])!.label}`).join(' · ')}</li>)}</ul>
+      <ul className="space-y-2">{GROUPS.map(group => <li key={group.id} className="rounded-lg border border-line p-3"><strong>{group.label}</strong>: {FOLDERS.map(folder => `${folder.label}: ${group.rights[folder.id] === 'none' ? 'keine Gewährung' : ACCESS_CHOICES.find(choice => choice.value === group.rights[folder.id])!.label}`).join(' · ')}</li>)}</ul>
       <ul className="space-y-1">{PEOPLE.map(person => <li key={person.id}>{person.label}: {person.groups.map(id => GROUPS.find(group => group.id === id)!.label).join(' und ')}</li>)}</ul>
     </section>
     <p className="text-sm">Nur die erste abgeschlossene Prüfung je Abschnitt zählt pro Durchlauf (maximal zwei), auch eine leere oder falsche Abgabe. Weitere Prüfungen geben Rückmeldung ohne zusätzliche Punkte. Eine vorher angezeigte Lösung macht nur den betreffenden Abschnitt ungewertet. Begründung und Selbstbewertung vergeben nie Punkte.</p>
-    <p className="text-sm text-amber-200">Beim Anmelden oder Kontowechsel wird dieser Durchlauf zurückgesetzt. Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung und gehen beim Neuladen oder Verlassen verloren. {isAuthenticated ? 'Nur objektive Versuche werden als Themenfortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
+    <p className="text-sm text-warning">Beim Anmelden oder Kontowechsel wird dieser Durchlauf zurückgesetzt. Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung und gehen beim Neuladen oder Verlassen verloren. {isAuthenticated ? 'Nur objektive Versuche werden als Themenfortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
     {objective('matrix', '1. Effektive Zugriffe bestimmen', <>
       <p>Gesucht sind die aktuellen effektiven Rechte aus den oben genannten Mitgliedschaften, nicht die gewünschten Rechte nach einer Korrektur. Für jede Person und jeden Ordner genau einen Zugriffsstand wählen.</p>
-      {PEOPLE.map(person => <fieldset key={person.id} className="rounded-lg border border-slate-700 p-3"><legend>{person.label}</legend><div className="grid gap-3 sm:grid-cols-2">{FOLDERS.map(folder => field('matrix', `${person.id}.${folder.id}`, `${person.label} · ${folder.label}`, ACCESS_CHOICES))}</div></fieldset>)}
+      {PEOPLE.map(person => <fieldset key={person.id} className="rounded-lg border border-line p-3"><legend>{person.label}</legend><div className="grid gap-3 sm:grid-cols-2">{FOLDERS.map(folder => field('matrix', `${person.id}.${folder.id}`, `${person.label} · ${folder.label}`, ACCESS_CHOICES))}</div></fieldset>)}
     </>, <>{PEOPLE.map(person => <p key={person.id}>{person.label}: {FOLDERS.map(folder => `${folder.label}: ${ACCESS_CHOICES.find(choice => choice.value === effectiveAccess(person.groups, folder.id))!.label}`).join(' · ')}</p>)}<p>Überlappende Gewährungen werden kombiniert; eine zusätzliche Gruppe nimmt kein bereits gewährtes Recht weg.</p></>)}
     {objective('correction', '2. Korrektur und Kontrolle planen', <>
       <p>Genehmigte Sollrechte: Lea darf Aufträge bearbeiten und hat keinen Zugriff auf Personalakten. Tom darf Aufträge nur lesen und hat keinen Zugriff auf Personalakten. Mira darf Personalakten bearbeiten und hat keinen Zugriff auf Aufträge.</p>

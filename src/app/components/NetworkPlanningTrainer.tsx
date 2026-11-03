@@ -67,27 +67,27 @@ export default function NetworkPlanningTrainer({ onAttempt, isAuthenticated }: N
     setShowExample(false);
   }
 
-  const inputClass = 'w-full min-w-0 rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
-  const secondaryButton = 'rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-emerald-400';
+  const inputClass = 'w-full min-w-0 rounded-lg border border-control bg-canvas px-3 py-2 text-ink focus-visible:outline-2 focus-visible:outline-accent';
+  const secondaryButton = 'rounded-lg border border-control px-4 py-2 text-sm text-ink hover:bg-subtle-hover focus-visible:outline-2 focus-visible:outline-accent';
 
   return (
-    <section aria-labelledby="network-planning-title" className="space-y-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
+    <section aria-labelledby="network-planning-title" className="space-y-6 rounded-xl border border-line bg-surface p-4 sm:p-6">
       <header className="space-y-3">
-        <h2 id="network-planning-title" className="text-xl font-bold text-slate-100">AP2 Netzwerkplanung</h2>
-        <p className="text-sm text-slate-400">Eigene Übungsaufgabe · Schwerpunkt Baden-Württemberg · keine Original-Prüfungsaufgabe</p>
-        <p className="text-slate-200">
+        <h2 id="network-planning-title" className="text-xl font-bold text-ink">AP2 Netzwerkplanung</h2>
+        <p className="text-sm text-muted">Eigene Übungsaufgabe · Schwerpunkt Baden-Württemberg · keine Original-Prüfungsaufgabe</p>
+        <p className="text-ink">
           Ein fiktiver Handwerksbetrieb in Baden-Württemberg plant Büro, Werkstatt und Gäste-WLAN
           im Netz <strong className="font-mono">{NETWORK_PARENT}</strong>. Plane für jeden Bereich ein eigenes Teilnetz und VLAN.
         </p>
-        <p className="text-sm text-slate-300">Die benötigten nutzbaren Adressen sind einschließlich jeweils einer Gateway-Adresse angegeben. Netz- und Broadcast-Adresse zählen nicht dazu.</p>
-        <p className="text-sm text-slate-300">Erlaubt sind unterschiedliche, ganzzahlige VLAN-IDs von 2–4094; VLAN 1 bleibt in dieser Aufgabe frei. Teilnetze müssen ausgerichtet, ausreichend groß, vollständig im übergeordneten Netz und überschneidungsfrei sein. Größere passende Teilnetze sind erlaubt.</p>
+        <p className="text-sm text-ink">Die benötigten nutzbaren Adressen sind einschließlich jeweils einer Gateway-Adresse angegeben. Netz- und Broadcast-Adresse zählen nicht dazu.</p>
+        <p className="text-sm text-ink">Erlaubt sind unterschiedliche, ganzzahlige VLAN-IDs von 2–4094; VLAN 1 bleibt in dieser Aufgabe frei. Teilnetze müssen ausgerichtet, ausreichend groß, vollständig im übergeordneten Netz und überschneidungsfrei sein. Größere passende Teilnetze sind erlaubt.</p>
       </header>
 
       <form noValidate onSubmit={event => { event.preventDefault(); checkPlan(); }} className="space-y-4" aria-label="Netzplanung">
-        <h3 className="font-semibold text-slate-100">1. Teilnetze und VLANs planen</h3>
+        <h3 className="font-semibold text-ink">1. Teilnetze und VLANs planen</h3>
         {NETWORK_GROUPS.map(group => (
-          <fieldset key={group.id} className="min-w-0 rounded-lg border border-slate-700 p-4">
-            <legend className="px-2 font-medium text-slate-100">{group.label} · {group.hosts} nutzbare Adressen</legend>
+          <fieldset key={group.id} className="min-w-0 rounded-lg border border-line p-4">
+            <legend className="px-2 font-medium text-ink">{group.label} · {group.hosts} nutzbare Adressen</legend>
             <div className="grid gap-4 sm:grid-cols-3">
               {FIELDS.map(field => {
                 const id = `network-plan-${group.id}-${field.key}`;
@@ -99,7 +99,7 @@ export default function NetworkPlanningTrainer({ onAttempt, isAuthenticated }: N
                 }) ?? [];
                 return (
                   <div key={field.key} className="min-w-0 space-y-1">
-                    <label htmlFor={id} className="block text-sm text-slate-200">{field.label}</label>
+                    <label htmlFor={id} className="block text-sm text-ink">{field.label}</label>
                     <input
                       id={id} type="text" inputMode={field.key === 'network' ? 'text' : 'numeric'}
                       autoComplete="off" spellCheck={false} value={plan[group.id][field.key]}
@@ -108,9 +108,9 @@ export default function NetworkPlanningTrainer({ onAttempt, isAuthenticated }: N
                       aria-describedby={[`${id}-hint`, ...(errors.length ? [`${id}-errors`] : []), ...conflictIds].join(' ')}
                       className={inputClass}
                     />
-                    <p id={`${id}-hint`} className="text-xs text-slate-400">{field.hint}</p>
+                    <p id={`${id}-hint`} className="text-xs text-muted">{field.hint}</p>
                     {errors.length > 0 && (
-                      <ul id={`${id}-errors`} className="space-y-1 text-sm text-rose-300">
+                      <ul id={`${id}-errors`} className="space-y-1 text-sm text-danger">
                         {errors.map(error => <li key={error}>{error}</li>)}
                       </ul>
                     )}
@@ -120,46 +120,46 @@ export default function NetworkPlanningTrainer({ onAttempt, isAuthenticated }: N
             </div>
           </fieldset>
         ))}
-        <p className="text-sm text-slate-300">Nur die erste objektive Prüfung pro Durchlauf zählt zum Fortschritt. Weitere Prüfungen geben Rückmeldung ohne zusätzliche Wertung. Begründung und Selbstbewertung zählen nicht zur Trefferquote.</p>
-        {!isAuthenticated && <p className="text-sm text-amber-300">Als Gast kannst du üben; dein Fortschritt wird nicht gespeichert.</p>}
-        {showExample && <p className="text-sm text-amber-300">Beispiel geöffnet: Weitere Prüfungen in diesem Durchlauf sind ohne Wertung.</p>}
-        <div role="status" aria-live="polite" aria-atomic="true" className="text-sm text-slate-200">
+        <p className="text-sm text-ink">Nur die erste objektive Prüfung pro Durchlauf zählt zum Fortschritt. Weitere Prüfungen geben Rückmeldung ohne zusätzliche Wertung. Begründung und Selbstbewertung zählen nicht zur Trefferquote.</p>
+        {!isAuthenticated && <p className="text-sm text-warning">Als Gast kannst du üben; dein Fortschritt wird nicht gespeichert.</p>}
+        {showExample && <p className="text-sm text-warning">Beispiel geöffnet: Weitere Prüfungen in diesem Durchlauf sind ohne Wertung.</p>}
+        <div role="status" aria-live="polite" aria-atomic="true" className="text-sm text-ink">
           {result ? (result.valid ? 'Dein Netzplan erfüllt alle objektiven Anforderungen. Die Begründung bleibt selbst zu bewerten.' : 'Bitte die markierten Eingaben und Konflikte korrigieren.') : 'Noch keine aktuelle Prüfung. Nach Änderungen bitte erneut prüfen.'}
         </div>
         {!!result?.conflicts.length && (
-          <ul aria-label="Konflikte zwischen Bereichen" className="space-y-2 text-sm text-rose-300">
+          <ul aria-label="Konflikte zwischen Bereichen" className="space-y-2 text-sm text-danger">
             {result.conflicts.map((conflict, index) => <li id={`network-conflict-${index}`} key={`${conflict.kind}-${conflict.groups.join('-')}`}>{conflict.message}</li>)}
           </ul>
         )}
         <div className="flex flex-wrap gap-3">
-          <button type="submit" className="rounded-lg bg-emerald-400 px-4 py-2 font-medium text-slate-950 hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-200">Netzplan prüfen</button>
+          <button type="submit" className="rounded-lg bg-action px-4 py-2 font-medium text-onaction hover:bg-action-hover focus-visible:outline-2 focus-visible:outline-accent">Netzplan prüfen</button>
           <button type="button" onClick={newRun} className={secondaryButton}>Neuer Durchlauf</button>
         </div>
       </form>
 
-      <section aria-labelledby="network-policy-title" className="space-y-3 border-t border-slate-700 pt-5">
-        <h3 id="network-policy-title" className="font-semibold text-slate-100">2. Verkehrsregeln begründen · Selbstbewertung</h3>
-        <p className="text-sm text-slate-300">Für Gäste ist Internetzugang erlaubt, Zugriff auf Büro und Werkstatt verboten. Beschreibe die dafür notwendigen Regeln.</p>
-        <p className="text-sm text-slate-300">Plane DNS über einen vorgesehenen Resolver und DHCP am Gäste-Gateway oder über einen gezielten Relay ein. Dafür ist kein allgemeiner Zugriff auf Büro oder Werkstatt nötig.</p>
-        <label htmlFor="network-policy" className="block text-sm text-slate-200">Begründung der Verkehrsregeln</label>
+      <section aria-labelledby="network-policy-title" className="space-y-3 border-t border-line pt-5">
+        <h3 id="network-policy-title" className="font-semibold text-ink">2. Verkehrsregeln begründen · Selbstbewertung</h3>
+        <p className="text-sm text-ink">Für Gäste ist Internetzugang erlaubt, Zugriff auf Büro und Werkstatt verboten. Beschreibe die dafür notwendigen Regeln.</p>
+        <p className="text-sm text-ink">Plane DNS über einen vorgesehenen Resolver und DHCP am Gäste-Gateway oder über einen gezielten Relay ein. Dafür ist kein allgemeiner Zugriff auf Büro oder Werkstatt nötig.</p>
+        <label htmlFor="network-policy" className="block text-sm text-ink">Begründung der Verkehrsregeln</label>
         <textarea id="network-policy" rows={5} className={inputClass} value={reasoning} onChange={event => setReasoning(event.target.value)} aria-describedby="network-rubric-note" />
-        <p id="network-rubric-note" className="text-sm text-slate-400">Dein Text wird nicht automatisch bewertet. Text und Häkchen bleiben nur in diesem Durchlauf und werden beim Verlassen des Moduls oder beim Neustart verworfen.</p>
+        <p id="network-rubric-note" className="text-sm text-muted">Dein Text wird nicht automatisch bewertet. Text und Häkchen bleiben nur in diesem Durchlauf und werden beim Verlassen des Moduls oder beim Neustart verworfen.</p>
         <fieldset className="space-y-3">
-          <legend className="mb-3 text-sm font-semibold text-slate-200">Prüfe deine Begründung anhand dieser Kriterien</legend>
+          <legend className="mb-3 text-sm font-semibold text-ink">Prüfe deine Begründung anhand dieser Kriterien</legend>
           {RUBRIC.map((criterion, index) => (
-            <label key={criterion} className="flex items-start gap-3 text-sm text-slate-300">
-              <input type="checkbox" checked={rubric[index]} onChange={event => setRubric(previous => previous.map((value, item) => item === index ? event.target.checked : value))} className="mt-1 accent-emerald-400" />
+            <label key={criterion} className="flex items-start gap-3 text-sm text-ink">
+              <input type="checkbox" checked={rubric[index]} onChange={event => setRubric(previous => previous.map((value, item) => item === index ? event.target.checked : value))} className="mt-1 accent-accent" />
               <span>{criterion}</span>
             </label>
           ))}
         </fieldset>
       </section>
 
-      <section aria-label="Beispiellösung" className="space-y-3 border-t border-slate-700 pt-5">
+      <section aria-label="Beispiellösung" className="space-y-3 border-t border-line pt-5">
         <button type="button" aria-expanded={showExample} aria-controls="network-example" className={secondaryButton} onClick={() => { exampleSeen.current = true; setShowExample(true); }}>Beispiel anzeigen (anschließend ohne Wertung)</button>
         {showExample && (
-          <div id="network-example" className="space-y-3 text-sm text-slate-300">
-            <h3 className="font-semibold text-slate-100">Eine mögliche Lösung</h3>
+          <div id="network-example" className="space-y-3 text-sm text-ink">
+            <h3 className="font-semibold text-ink">Eine mögliche Lösung</h3>
             <ul className="space-y-2">
               {NETWORK_GROUPS.map(group => {
                 const example = NETWORK_EXAMPLE[group.id];

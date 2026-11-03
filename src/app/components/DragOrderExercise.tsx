@@ -75,16 +75,16 @@ function SortableItem({ id, label, disabled, position, status }: SortableItemPro
 
   const statusRing =
     status === 'correct'
-      ? 'border-emerald-500/60 bg-emerald-950/20'
+      ? 'border-accent bg-accent-soft'
       : status === 'wrong'
-        ? 'border-rose-500/60 bg-rose-950/20'
-        : 'border-slate-700 bg-slate-900/60';
+        ? 'border-danger bg-danger-soft'
+        : 'border-line bg-surface';
 
   const statusIcon =
     status === 'correct' ? (
-      <Check className="w-4 h-4 text-emerald-400" aria-hidden="true" />
+      <Check className="w-4 h-4 text-accent" aria-hidden="true" />
     ) : status === 'wrong' ? (
-      <X className="w-4 h-4 text-rose-400" aria-hidden="true" />
+      <X className="w-4 h-4 text-danger" aria-hidden="true" />
     ) : null;
 
   // Screen-reader-only status text. Color + the aria-hidden icon above are
@@ -116,14 +116,14 @@ function SortableItem({ id, label, disabled, position, status }: SortableItemPro
         {...listeners}
         disabled={disabled}
         aria-label={`Element verschieben: ${label}. Aktuelle Position ${position + 1}.`}
-        className="cursor-grab active:cursor-grabbing text-slate-500 hover:text-slate-300 disabled:cursor-default disabled:text-slate-700 p-2.5 -ml-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded"
+        className="cursor-grab active:cursor-grabbing text-muted hover:text-ink disabled:cursor-default disabled:text-muted p-2.5 -ml-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface rounded"
         data-testid={`drag-order-handle-${position}`}
       >
         <GripVertical className="w-4 h-4" aria-hidden="true" />
       </button>
 
       <span
-        className="font-mono text-xs w-6 text-center text-slate-500 select-none"
+        className="font-mono text-xs w-6 text-center text-muted select-none"
         aria-hidden="true"
       >
         {position + 1}
@@ -135,14 +135,14 @@ function SortableItem({ id, label, disabled, position, status }: SortableItemPro
           // wrapping unit — without it the "/" separator can land on its
           // own line on narrow viewports.
           <div className="text-sm whitespace-nowrap">
-            <span className="font-medium text-slate-100">{split.english}</span>
-            <span className="text-slate-500 mx-1.5" aria-hidden="true">
+            <span className="font-medium text-ink">{split.english}</span>
+            <span className="text-muted mx-1.5" aria-hidden="true">
               /
             </span>
-            <span className="text-slate-300">{split.german}</span>
+            <span className="text-ink">{split.german}</span>
           </div>
         ) : (
-          <span className="text-sm text-slate-100">{label}</span>
+          <span className="text-sm text-ink">{label}</span>
         )}
       </div>
 
@@ -228,7 +228,7 @@ export default function DragOrderExercise({
     <div className="space-y-2">
       <p
         id={instructionsId}
-        className="text-xs text-slate-400"
+        className="text-xs text-muted"
       >
         Ziehe die Elemente mit der Maus oder per Tastatur (Leertaste zum Aufnehmen,
         Pfeile zum Verschieben, Leertaste zum Ablegen) in die richtige Reihenfolge.

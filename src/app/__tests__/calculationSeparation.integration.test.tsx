@@ -1,3 +1,4 @@
+import { chooseModule } from '../../test/navigation';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -69,7 +70,7 @@ it('keeps the selected forward draft when legacy-only history disables the real 
  render(<Home/>);
  const practice=await screen.findByRole('button',{name:'Fehler üben'});
  expect(practice).toBeDisabled();
- fireEvent.click(screen.getAllByRole('button',{name:/Vorwärtskalk\./})[0]);
+ await chooseModule('handelskalkulationVorwaerts');
  const question=await screen.findByText(/^Berechne die Vorwärtskalkulation!/);
  const text=question.textContent;
  const firstInput=screen.getAllByRole('textbox')[0];fireEvent.change(firstInput,{target:{value:'123,45'}});
@@ -111,7 +112,7 @@ it('keeps AP2 weak-topic navigation supported through its dedicated trainer', as
 it.each([true, false])('keeps learning hints/reveal/navigation separate from attempt bookkeeping, authenticated: %s', async authenticated => {
  if (!authenticated) localStorage.removeItem('ihk_access_hash');
  render(<Home/>);
- fireEvent.click((await screen.findAllByRole('button',{name:/Vorwärtskalk\./}))[0]);
+ await chooseModule('handelskalkulationVorwaerts');
  for (const input of screen.getAllByRole('textbox')) fireEvent.change(input,{target:{value:'0'}});
  fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/}));
  const hints=await screen.findByRole('region',{name:'Hinweise zur Kalkulation'});

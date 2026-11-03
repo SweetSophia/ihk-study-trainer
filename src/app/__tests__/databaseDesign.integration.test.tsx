@@ -1,3 +1,4 @@
+import { chooseModule } from '../../test/navigation';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -43,14 +44,14 @@ describe('AP2 database module integration', () => {
  it('records its own progress once and preserves navigation to existing drills', async () => {
   vi.mocked(checkDatabaseTask).mockResolvedValue({correct:true});
   render(<Home />);
-  fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Datenbank/}))[0]);
+  await chooseModule('ap2DatabaseDesign');
   fireEvent.change(screen.getByLabelText('SQL für Aufgabe 1'),{target:{value:'SELECT 1'}});
   fireEvent.click(screen.getByRole('button',{name:'Aufgabe 1 prüfen'}));
   await waitFor(()=>expect(updateProgress).toHaveBeenCalledExactlyOnceWith('test-user-hash','ap2DatabaseDesign',true));
   fireEvent.click(screen.getByRole('button',{name:'Aufgabe 1 prüfen'}));
   await waitFor(()=>expect(checkDatabaseTask).toHaveBeenCalledTimes(2));
   expect(updateProgress).toHaveBeenCalledTimes(1);
-  fireEvent.click(screen.getAllByRole('button',{name:/Subnetting/})[0]);
+  await chooseModule('subnetting');
   expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
  });
 });
@@ -58,7 +59,7 @@ describe('AP2 database module integration', () => {
 it('ignores older progress replies and replies after logout', async () => {
  vi.mocked(checkDatabaseTask).mockResolvedValue({correct:true});
  render(<Home />);
- fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Datenbank/}))[0]);
+ await chooseModule('ap2DatabaseDesign');
  let old!: (v: Awaited<ReturnType<typeof getAllProgress>>) => void;
  let newest!: (v: Awaited<ReturnType<typeof getAllProgress>>) => void;
  vi.mocked(getAllProgress).mockImplementationOnce(()=>new Promise(r=>{old=r})).mockImplementationOnce(()=>new Promise(r=>{newest=r}));

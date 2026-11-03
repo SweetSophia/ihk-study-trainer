@@ -1,409 +1,83 @@
-import type { ButtonHTMLAttributes } from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import ThemeSelector from '../ThemeSelector';
 
-// Mock framer-motion to avoid animation complexity in tests
-vi.mock("framer-motion", () => ({
-  motion: {
-    button: ({
-      children,
-      onClick,
-      className,
-    }: ButtonHTMLAttributes<HTMLButtonElement>) => (
-      <button onClick={onClick} className={className}>
-        {children}
-      </button>
-    ),
-  },
-}));
-
-// Mock lucide-react icons used by ThemeSelector
-vi.mock("lucide-react", () => ({
-  Calculator: () => <svg data-testid="icon-calculator" />,
-  Image: () => <svg data-testid="icon-image" />,
-  Network: () => <svg data-testid="icon-network" />,
-  ArrowLeftRight: () => <svg data-testid="icon-arrow-left-right" />,
-  Binary: () => <svg data-testid="icon-binary" />,
-  Hexagon: () => <svg data-testid="icon-hexagon" />,
-  Repeat: () => <svg data-testid="icon-repeat" />,
-  Shield: () => <svg data-testid="icon-shield" />,
-  Layers: () => <svg data-testid="icon-layers" />,
-  Cable: () => <svg data-testid="icon-cable" />,
-  Server: () => <svg data-testid="icon-server" />,
-  Globe: () => <svg data-testid="icon-globe" />,
-  Settings: () => <svg data-testid="icon-settings" />,
-  Database: () => <svg data-testid="icon-database" />,
-  Terminal: () => <svg data-testid="icon-terminal" />,
-  Cloud: () => <svg data-testid="icon-cloud" />,
-}));
-
-import ThemeSelector from "../ThemeSelector";
-
-describe("ThemeSelector - SQL module addition", () => {
-  const onSelectModule = vi.fn();
-
-  function getMobileGrid() {
-    const mobileSqlLabel = screen.getAllByText("SQL").find((node) =>
-      node.closest("div")?.className.includes("lg:hidden"),
-    );
-
-    if (!mobileSqlLabel) {
-      throw new Error("Mobile grid not found");
-    }
-
-    const grid = mobileSqlLabel.closest("div.grid");
-    if (!grid) {
-      throw new Error("Mobile grid container not found");
-    }
-
-    return grid;
-  }
-
-  function getMobileModuleButton(name: string) {
-    return within(getMobileGrid() as HTMLElement).getByRole("button", { name: new RegExp(name, "i") });
-  }
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe("SQL module presence", () => {
-    it("renders the SQL module button when authenticated", () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      // There should be multiple "SQL" text nodes (mobile + desktop)
-      const sqlButtons = screen.getAllByText("SQL");
-      expect(sqlButtons.length).toBeGreaterThan(0);
-    });
-
-    it("does not render SQL module when not authenticated", () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={false}
-        />,
-      );
-      const sqlButtons = screen.queryAllByText("SQL");
-      expect(sqlButtons.length).toBe(0);
-    });
-
-    it('renders the SQL module description "Datenbankabfragen" when authenticated', () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      const descriptions = screen.getAllByText("Datenbankabfragen");
-      expect(descriptions.length).toBeGreaterThan(0);
-    });
-
-    it("renders the Database icon for the SQL module when authenticated", () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      const dbIcons = screen.getAllByTestId("icon-database");
-      expect(dbIcons.length).toBeGreaterThan(0);
-    });
-
-    it('calls onSelectModule with "sql" when SQL module is clicked (mobile strip)', async () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-
-      await userEvent.click(getMobileModuleButton("SQL"));
-
-      expect(onSelectModule).toHaveBeenCalledWith("sql");
-    });
-
-    it('marks the SQL module as active when currentModule is "sql"', () => {
-      render(
-        <ThemeSelector
-          currentModule="sql"
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-
-      expect(getMobileModuleButton("SQL")).toHaveClass("bg-emerald-500/10");
-    });
-
-    it("does not mark SQL module as active when currentModule is something else", () => {
-      render(
-        <ThemeSelector
-          currentModule="binary"
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-
-      expect(getMobileModuleButton("SQL")).not.toHaveClass("bg-emerald-500/10");
-    });
-  });
-
-  describe("all modules present", () => {
-    it("renders all 19 module names including Bild-Transfer, Linux, Cloud, Vorwärts/Rückwärtskalk. and SQL when authenticated", () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-
-      const moduleNames = [
-        "Übertragungszeit",
-        "Bildgröße",
-        "Bild-Transfer",
-        "Overhead",
-        "Subnetting",
-        "Einheiten",
-        "Binär",
-        "Hex",
-        "Hex/Binär",
-        "Subnetzmaske",
-        "Aggregation",
-        "Ports",
-        "OSI",
-        "Kabel",
-        "Linux",
-        "Cloud",
-        "Differenzkalk.",
-        "Vorwärtskalk.",
-        "Rückwärtskalk.",
-        "SQL",
-      ];
-
-      for (const name of moduleNames) {
-        // Each module appears in both mobile and desktop, so use getAllByText
-        const elements = screen.getAllByText(name);
-        expect(elements.length).toBeGreaterThan(0);
-      }
-    });
-
-    it("renders 18 base modules without SQL when not authenticated", () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={false}
-        />,
-      );
-
-      const moduleNames = [
-        "Übertragungszeit",
-        "Bildgröße",
-        "Bild-Transfer",
-        "Overhead",
-        "Subnetting",
-        "Einheiten",
-        "Binär",
-        "Hex",
-        "Hex/Binär",
-        "Subnetzmaske",
-        "Aggregation",
-        "Ports",
-        "OSI",
-        "Kabel",
-        "Linux",
-        "Cloud",
-        "Differenzkalk.",
-        "Vorwärtskalk.",
-        "Rückwärtskalk.",
-      ];
-
-      for (const name of moduleNames) {
-        const elements = screen.getAllByText(name);
-        expect(elements.length).toBeGreaterThan(0);
-      }
-
-      // SQL should not be present
-      const sqlButtons = screen.queryAllByText("SQL");
-      expect(sqlButtons.length).toBe(0);
-    });
-
-    it("calls onSelectModule with correct id for each module click", async () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-
-      // Click SQL module
-      await userEvent.click(getMobileModuleButton("SQL"));
-      expect(onSelectModule).toHaveBeenLastCalledWith("sql");
-    });
-  });
-
-  describe("module selection behavior", () => {
-    it("passes the selected module id to onSelectModule, not the display name", async () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-
-      await userEvent.click(getMobileModuleButton("SQL"));
-
-      // Should pass 'sql' (the id), not 'SQL' (the display name)
-      expect(onSelectModule).toHaveBeenCalledWith("sql");
-      expect(onSelectModule).not.toHaveBeenCalledWith("SQL");
-    });
-
-    it("onSelectModule is called exactly once per click", async () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-
-      const sqlTexts = screen.getAllByText("SQL");
-      await userEvent.click(sqlTexts[0]);
-
-      expect(onSelectModule).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it('offers differential in both layouts and never offers the mixed legacy module', async () => {
-    render(<ThemeSelector currentModule={null} onSelectModule={onSelectModule} isAuthenticated={false} />);
-    expect(screen.queryByText('Kalkulation')).not.toBeInTheDocument();
-    const buttons = screen.getAllByRole('button', { name: /Differenzkalk\./ });
-    expect(buttons).toHaveLength(2);
-    for (const button of buttons) {
-      await userEvent.click(button);
-      expect(onSelectModule).toHaveBeenLastCalledWith('handelskalkulationDifferenz');
-    }
-  });
-
-  describe("handelskalkulation module additions", () => {
-    it('calls onSelectModule with "handelskalkulationVorwaerts" when Vorwärtskalk. is clicked', async () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      const texts = screen.getAllByText("Vorwärtskalk.");
-      await userEvent.click(texts[0]);
-      expect(onSelectModule).toHaveBeenCalledWith(
-        "handelskalkulationVorwaerts",
-      );
-    });
-
-    it('calls onSelectModule with "handelskalkulationRueckwaerts" when Rückwärtskalk. is clicked', async () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      const texts = screen.getAllByText("Rückwärtskalk.");
-      await userEvent.click(texts[0]);
-      expect(onSelectModule).toHaveBeenCalledWith(
-        "handelskalkulationRueckwaerts",
-      );
-    });
-
-    it('marks Vorwärtskalk. as active when currentModule is "handelskalkulationVorwaerts"', () => {
-      render(
-        <ThemeSelector
-          currentModule="handelskalkulationVorwaerts"
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      const texts = screen.getAllByText("Vorwärtskalk.");
-      const button = texts[0].closest("button");
-      expect(button).toHaveClass("bg-emerald-500/10");
-    });
-
-    it('marks Rückwärtskalk. as active when currentModule is "handelskalkulationRueckwaerts"', () => {
-      render(
-        <ThemeSelector
-          currentModule="handelskalkulationRueckwaerts"
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      const texts = screen.getAllByText("Rückwärtskalk.");
-      const button = texts[0].closest("button");
-      expect(button).toHaveClass("bg-emerald-500/10");
-    });
-  });
-
-  describe("imageTransferCombo module addition", () => {
-    it("renders the Bild-Transfer module button", () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      const buttons = screen.getAllByText("Bild-Transfer");
-      expect(buttons.length).toBeGreaterThan(0);
-    });
-
-    it('calls onSelectModule with "imageTransferCombo" when Bild-Transfer is clicked', async () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      const texts = screen.getAllByText("Bild-Transfer");
-      await userEvent.click(texts[0]);
-      expect(onSelectModule).toHaveBeenCalledWith("imageTransferCombo");
-    });
-
-    it('marks Bild-Transfer as active when currentModule is "imageTransferCombo"', () => {
-      render(
-        <ThemeSelector
-          currentModule="imageTransferCombo"
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      const texts = screen.getAllByText("Bild-Transfer");
-      const button = texts[0].closest("button");
-      expect(button).toHaveClass("bg-emerald-500/10");
-    });
-
-    it('renders the Bild-Transfer description "Bild + Übertragung"', () => {
-      render(
-        <ThemeSelector
-          currentModule={null}
-          onSelectModule={onSelectModule}
-          isAuthenticated={true}
-        />,
-      );
-      const descs = screen.getAllByText("Bild + Übertragung");
-      expect(descs.length).toBeGreaterThan(0);
-    });
-  });
+beforeEach(()=>vi.restoreAllMocks());
+afterEach(()=>vi.unstubAllGlobals());
+function setup(authenticated=true,currentModule:string|null=null) {
+ const onSelectModule=vi.fn();
+ render(<ThemeSelector currentModule={currentModule} isAuthenticated={authenticated} onSelectModule={onSelectModule}/>);
+ return onSelectModule;
+}
+it('shows exactly five topics and a separate run without the old wall of exercise buttons',()=>{
+ const select=setup();
+ expect(screen.getAllByRole('button',{expanded:false})).toHaveLength(6); // mobile switcher plus five groups
+ expect(screen.getByRole('button',{name:/AP2-Trainingslauf/})).toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'Vorwärtskalkulation'})).not.toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'Wirtschaft & Projekt'}));
+ expect(screen.getByRole('button',{name:'Vorwärtskalkulation'})).toBeInTheDocument();
+ expect(select).not.toHaveBeenCalled();
+});
+it.each([false,true])('keeps SQL gated but AP2 database available, authenticated %s',auth=>{
+ const select=setup(auth);
+ fireEvent.click(screen.getByRole('button',{name:'Daten & Algorithmen'}));
+ expect(screen.queryByRole('button',{name:'SQL'})).toBe(auth ? screen.getByRole('button',{name:'SQL'}):null);
+ if(auth){fireEvent.click(screen.getByRole('button',{name:'SQL'}));expect(select).toHaveBeenCalledWith('sql');select.mockClear()}
+ fireEvent.click(screen.getByRole('button',{name:/AP2 Datenbankentwurf & SQL/}));
+ expect(select).toHaveBeenCalledWith('ap2DatabaseDesign');
+});
+it('opens the active topic and keeps its marker when browsing another topic',()=>{
+ const select=setup(true,'handelskalkulationDifferenz');
+ expect(screen.getByRole('button',{name:'Differenzkalkulation'})).toHaveAttribute('aria-current','page');
+ fireEvent.click(screen.getByRole('button',{name:'Netzwerke'}));
+ expect(screen.getByRole('button',{name:/^Wirtschaft & Projekt/})).toHaveTextContent('Aktiv');
+ expect(screen.queryByRole('button',{name:'Differenzkalkulation'})).not.toBeInTheDocument();
+ expect(select).not.toHaveBeenCalled();
+});
+it('uses one mobile tree, preserves selection while browsing, and restores focus on Escape',()=>{
+ vi.stubGlobal('matchMedia',vi.fn(()=>({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
+ const select=setup(false);
+ const toggle=screen.getByRole('button',{name:/Aufgabe wechseln/});
+ expect(screen.queryByRole('button',{name:'Netzwerke'})).not.toBeInTheDocument();
+ fireEvent.click(toggle);
+ fireEvent.click(screen.getByRole('button',{name:'Netzwerke'}));
+ const subnet=screen.getByRole('button',{name:'Subnetting'});subnet.focus();
+ fireEvent.keyDown(subnet,{key:'Escape'});
+ expect(toggle).toHaveFocus();
+ expect(toggle).toHaveAttribute('aria-expanded','false');
+ expect(select).not.toHaveBeenCalled();
+ fireEvent.click(toggle);
+ fireEvent.click(screen.getByRole('button',{name:'Subnetting'}));
+ expect(select).toHaveBeenCalledTimes(1);
+ expect(toggle).toHaveAttribute('aria-expanded','false');
+ expect(within(screen.getByRole('navigation')).getAllByRole('button',{name:/Aufgabe wechseln/})).toHaveLength(1);
+ vi.unstubAllGlobals();
+});
+it('restores breakpoint focus to the visible active group when its current exercise is collapsed',()=>{
+ let desktop=false;let notify=()=>{};
+ vi.stubGlobal('matchMedia',vi.fn(()=>({get matches(){return desktop},addEventListener:(_event:string,callback:()=>void)=>{notify=callback},removeEventListener:vi.fn()})));
+ setup(false,'subnetting');
+ const toggle=screen.getByRole('button',{name:/^Aufgabe wechseln/});fireEvent.click(toggle);
+ const group=screen.getByRole('button',{name:/^Netzwerke/});fireEvent.click(group);fireEvent.click(toggle);toggle.focus();toggle.blur(); // Browser may blur the hidden toggle before React effects.
+ act(()=>{desktop=true;notify()});
+ expect(group).toHaveFocus();
+ vi.unstubAllGlobals();
+});
+it('reveals the correct group when an external selection returns to a previously browsed module',()=>{
+ const onSelectModule=vi.fn();
+ const {rerender}=render(<ThemeSelector currentModule="subnetting" isAuthenticated onSelectModule={onSelectModule}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Rechnen & Zahlensysteme'}));
+ rerender(<ThemeSelector currentModule="binary" isAuthenticated onSelectModule={onSelectModule}/>);
+ expect(screen.getByRole('button',{name:'Binär'})).toHaveAttribute('aria-current','page');
+ rerender(<ThemeSelector currentModule="subnetting" isAuthenticated onSelectModule={onSelectModule}/>);
+ expect(screen.getByRole('button',{name:'Subnetting'})).toHaveAttribute('aria-current','page');
+ expect(screen.getByRole('button',{name:/^Netzwerke/})).toHaveAttribute('aria-expanded','true');
+ expect(onSelectModule).not.toHaveBeenCalled();
+});
+it('does not steal focus after an intentional outside pointer action before resizing',()=>{
+ let desktop=false;let notify=()=>{};
+ vi.stubGlobal('matchMedia',vi.fn(()=>({get matches(){return desktop},addEventListener:(_event:string,callback:()=>void)=>{notify=callback},removeEventListener:vi.fn()})));
+ setup(false,'subnetting');const toggle=screen.getByRole('button',{name:/^Aufgabe wechseln/});toggle.focus();
+ fireEvent.pointerDown(document.body);toggle.blur();act(()=>{desktop=true;notify()});
+ expect(document.activeElement).toBe(document.body);
 });

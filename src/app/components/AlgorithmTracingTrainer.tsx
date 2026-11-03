@@ -5,8 +5,8 @@ import { SERVERS, THRESHOLD, PSEUDOCODE, BOUNDARY_CASES, traceServers, validateT
 
 type Section = 'trace'|'boundary';
 type Props = { isAuthenticated:boolean; onAttempt:(correct:boolean)=>void };
-const inputClass='w-full min-w-0 rounded-lg border border-slate-600 bg-slate-950 p-2 text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
-const buttonClass='rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
+const inputClass='w-full min-w-0 rounded-lg border border-control bg-canvas p-2 text-ink focus-visible:outline-2 focus-visible:outline-accent';
+const buttonClass='rounded-lg border border-control px-4 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent';
 const blank=():TraceAnswers=>({rows:{},output:''});
 const RUBRIC=[
  'Ich begründe die Wartungsausnahme und berücksichtige, dass unterdrückte Warnungen nach der Wartung wieder aktiv werden müssen.',
@@ -25,31 +25,31 @@ export default function AlgorithmTracingTrainer({isAuthenticated,onAttempt}:Prop
  }
  function field(section:Section,key:string,label:string,value:string,change:(v:string)=>void,options?:readonly {value:string;label:string}[]){
   const id=`algorithm-${section}-${key}`;const error=results[section]?.errors[key];const props={id,value,className:inputClass,'aria-invalid':!!error,'aria-describedby':error?`${id}-error`:undefined,onChange:(e:React.ChangeEvent<HTMLInputElement|HTMLSelectElement>)=>{change(e.target.value);clear(section);}};
-  return <div key={key}><label htmlFor={id} className="block text-sm text-slate-300">{label}</label>{options?<select {...props}><option value="">Bitte wählen</option>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select>:<input {...props} inputMode={key==='output'?'text':'numeric'}/>} {error&&<p id={`${id}-error`} className="text-sm text-rose-200">{error}</p>}</div>;
+  return <div key={key}><label htmlFor={id} className="block text-sm text-ink">{label}</label>{options?<select {...props}><option value="">Bitte wählen</option>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select>:<input {...props} inputMode={key==='output'?'text':'numeric'}/>} {error&&<p id={`${id}-error`} className="text-sm text-danger">{error}</p>}</div>;
  }
  function objective(section:Section,title:string,children:ReactNode,solution:ReactNode){
   const name=section==='trace'?'Ablauf':'Grenzfall';const result=results[section];
-  return <section aria-labelledby={`algorithm-${section}-title`} className="space-y-3 rounded-lg border border-slate-700 p-4"><h3 id={`algorithm-${section}-title`} className="font-semibold">{title}</h3>
+  return <section aria-labelledby={`algorithm-${section}-title`} className="space-y-3 rounded-lg border border-line p-4"><h3 id={`algorithm-${section}-title`} className="font-semibold">{title}</h3>
    <form noValidate className="space-y-4" onSubmit={e=>{e.preventDefault();check(section);}}>{children}
-    <p role="status" className={result?(result.valid?'text-emerald-200':'text-rose-200'):'text-slate-400'}>{result?`${name}: ${result.valid?'Korrekt.':'Bitte die markierten Eingaben prüfen.'}`:'Noch keine aktuelle Prüfung.'}</p>
+    <p role="status" className={result?(result.valid?'text-accent':'text-danger'):'text-muted'}>{result?`${name}: ${result.valid?'Korrekt.':'Bitte die markierten Eingaben prüfen.'}`:'Noch keine aktuelle Prüfung.'}</p>
     <div className="flex flex-wrap gap-3"><button type="submit" className={buttonClass}>{name} prüfen</button><button type="button" className={buttonClass} aria-expanded={shown[section]} aria-controls={`algorithm-${section}-solution`} onClick={()=>{revealed.current[section]=true;setShown(old=>({...old,[section]:!old[section]}));}}>{name}: Lösung {shown[section]?'verbergen':'anzeigen'}</button></div>
-    {shown[section]&&<div id={`algorithm-${section}-solution`} className="space-y-2 text-sm text-slate-300">{solution}</div>}
+    {shown[section]&&<div id={`algorithm-${section}-solution`} className="space-y-2 text-sm text-ink">{solution}</div>}
    </form>
   </section>;
  }
  const reference=traceServers(SERVERS,THRESHOLD);
- return <section aria-labelledby="algorithm-title" className="space-y-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-slate-200 sm:p-6">
+ return <section aria-labelledby="algorithm-title" className="space-y-6 rounded-xl border border-line bg-surface p-4 text-ink sm:p-6">
   <h2 id="algorithm-title" className="text-xl font-bold">AP2 Algorithmen: Speicherüberwachung</h2>
   <p>Eigene Übungsaufgabe · Schwerpunkt Baden-Württemberg · keine Original-Prüfungsaufgabe</p>
   <p>Ein fiktives IT-Service-Team prüft fünf Server. Während einer Wartung wird ein Server übersprungen. Sonst wird bei höchstens {THRESHOLD} GiB freiem Speicher seine ID gemeldet. Die Grenze ist {THRESHOLD} GiB.</p>
   <ul className="space-y-1">{SERVERS.map(s=><li key={s.id}>{s.id}: {s.freeGiB} GiB frei · Wartung: {s.maintenance?'WAHR':'FALSCH'}</li>)}</ul>
   <p className="text-sm">Die Liste wird in der gezeigten Reihenfolge genau einmal durchlaufen. Einrückung definiert die Blöcke; ← weist zu, = vergleicht und ≤ schließt Gleichheit ein. Zähler und leere Meldungsliste werden einmal vor der Schleife initialisiert. Eingaben bleiben unverändert; Zahlen sind nichtnegative ganze Zahlen, Wartung ist ein Wahrheitswert. Ein übersprungener Server ändert weder Zähler noch Meldungen. Es gibt keine impliziten Typumwandlungen. Es wird kein eingegebener Code ausgeführt.</p>
-  <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-slate-950 p-3 text-sm"><code>{PSEUDOCODE}</code></pre>
+  <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-canvas p-3 text-sm"><code>{PSEUDOCODE}</code></pre>
   <p className="text-sm">Nur die erste abgeschlossene Prüfung je Abschnitt zählt pro Durchlauf (maximal zwei), auch eine leere oder falsche Abgabe. Weitere Prüfungen geben Rückmeldung ohne Punkte. Eine vorher angezeigte Lösung macht nur den betreffenden Abschnitt ungewertet. Begründung und Häkchen vergeben nie Punkte.</p>
-  <p className="text-sm text-amber-200">Beim Anmelden oder Kontowechsel wird dieser Durchlauf zurückgesetzt. Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung und gehen auch beim Verlassen verloren. {isAuthenticated?'Nur objektive Versuche werden als Fortschritt gespeichert.':'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
+  <p className="text-sm text-warning">Beim Anmelden oder Kontowechsel wird dieser Durchlauf zurückgesetzt. Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung und gehen auch beim Verlassen verloren. {isAuthenticated?'Nur objektive Versuche werden als Fortschritt gespeichert.':'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
   {objective('trace','1. Ablauf nachvollziehen',<>
    <p>Gib die beiden Zähler jeweils nach der gesamten Iteration dieses Servers an, auch bei Wartung. Anfangswerte: jeweils 0.</p>
-   {SERVERS.map(s=><fieldset key={s.id} className="rounded border border-slate-700 p-3"><legend>Nach Server {s.id}</legend><div className="grid gap-3 sm:grid-cols-2">{(['checked','warnings'] as const).map(key=>field('trace',`${s.id}.${key}`,`${s.id}: ${key==='checked'?'geprüft':'warnungen'}`,answers.rows[s.id]?.[key]??'',value=>setAnswers(old=>({...old,rows:{...old.rows,[s.id]:{checked:old.rows[s.id]?.checked??'',warnings:old.rows[s.id]?.warnings??'',[key]:value}}}))))}</div></fieldset>)}
+   {SERVERS.map(s=><fieldset key={s.id} className="rounded border border-line p-3"><legend>Nach Server {s.id}</legend><div className="grid gap-3 sm:grid-cols-2">{(['checked','warnings'] as const).map(key=>field('trace',`${s.id}.${key}`,`${s.id}: ${key==='checked'?'geprüft':'warnungen'}`,answers.rows[s.id]?.[key]??'',value=>setAnswers(old=>({...old,rows:{...old.rows,[s.id]:{checked:old.rows[s.id]?.checked??'',warnings:old.rows[s.id]?.warnings??'',[key]:value}}}))))}</div></fieldset>)}
    <p className="text-sm">Endgültige Meldungsliste: IDs mit Kommas trennen, zum Beispiel A, B. Großschreibung und Reihenfolge zählen; Leerzeichen um IDs werden ignoriert. Keine Sortierung und keine doppelten Einträge. Eine leere Liste wird als [] geschrieben.</p>
    {field('trace','output','Geordnete Meldungsliste',answers.output,value=>setAnswers(old=>({...old,output:value})))}
   </>,<>{reference.rows.map(r=><p key={r.id}>Nach {r.id}: geprüft = {r.checked}, warnungen = {r.warnings}</p>)}<p>Meldungen: {reference.output.join(', ')}. B wird vollständig übersprungen; A löst bei Gleichheit eine Warnung aus.</p></>)}

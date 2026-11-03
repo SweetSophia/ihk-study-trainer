@@ -1,72 +1,87 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { BASE_MODULES, SQL_MODULE, type ModuleDescriptor } from '../lib/modules';
+import { useLayoutEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { ChevronDown, Layers } from 'lucide-react';
+import { ALL_MODULES, MODULE_NAMES, type ModuleId } from '../lib/modules';
+import { useLastFocusWithin } from '../lib/useLastFocusWithin';
+import { getModuleTopic, MODULE_TOPICS } from '../lib/moduleTopics';
 
 interface ThemeSelectorProps {
-  currentModule: string | null;
-  onSelectModule: (module: string) => void;
-  isAuthenticated: boolean;
+ currentModule:string|null;
+ onSelectModule:(module:string)=>void;
+ isAuthenticated:boolean;
+ onDismiss?:()=>void;
 }
+const query='(min-width: 1024px)';
+function subscribe(callback:()=>void) {
+ const media=window.matchMedia?.(query);
+ media?.addEventListener('change',callback);
+ return ()=>media?.removeEventListener('change',callback);
+}
+function desktopSnapshot() { return window.matchMedia?.(query).matches??true; }
 
-export default function ThemeSelector({ currentModule, onSelectModule, isAuthenticated }: ThemeSelectorProps) {
-  const modules: readonly ModuleDescriptor[] = isAuthenticated
-    ? [...BASE_MODULES, SQL_MODULE]
-    : BASE_MODULES;
+export function useDesktopNavigation() {return useSyncExternalStore(subscribe,desktopSnapshot,()=>false)}
 
-  return (
-    <>
-      {/* Mobile: wrapped grid of topic cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 lg:hidden">
-        {modules.map((module) => {
-          const Icon = module.icon;
-          const isActive = currentModule === module.id;
-          return (
-            <button
-              key={module.id}
-              onClick={() => onSelectModule(module.id)}
-              className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${
-                isActive
-                  ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
-                  : 'bg-slate-900/50 border-slate-800 text-slate-400'
-              }`}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm font-medium truncate">{module.shortName ?? module.name}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Desktop: vertical grid cards */}
-      <div className="hidden lg:grid grid-cols-2 gap-3">
-        {modules.map((module, index) => {
-          const Icon = module.icon;
-          const isActive = currentModule === module.id;
-          return (
-            <motion.button
-              key={module.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              onClick={() => onSelectModule(module.id)}
-              className={`flex flex-col items-center justify-center text-center p-4 rounded-xl border h-28 ${
-                isActive
-                  ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
-                  : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700'
-              }`}
-            >
-              <div className={`p-2 rounded-lg mb-2 ${isActive ? 'bg-emerald-500/20' : 'bg-slate-800'}`}>
-                <Icon className="w-6 h-6" />
-              </div>
-              <p className={`font-semibold text-sm ${isActive ? 'text-emerald-300' : 'text-slate-200'}`}>
-                {module.shortName ?? module.name}
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">{module.description}</p>
-            </motion.button>
-          );
-        })}
-      </div>
-    </>
-  );
+/** Historical export name retained; this selects exercises, not appearance. */
+export default function ThemeSelector({currentModule,onSelectModule,isAuthenticated,onDismiss}:ThemeSelectorProps) {
+ const id=useId();
+ const desktop=useDesktopNavigation();
+ const previousDesktop=useRef(desktop);
+ const [mobileOpen,setMobileOpen]=useState(false);
+ const activeTopic=getModuleTopic(currentModule);
+ const [browsing,setBrowsing]=useState<{module:string|null;group:string|null}>({module:currentModule,group:activeTopic?.id??null});
+ // Remember every module transition, so revisiting a module cannot revive
+ // a browsing group left over from an earlier visit. Only navigation state changes.
+ if(browsing.module!==currentModule) setBrowsing({module:currentModule,group:activeTopic?.id??null});
+ const openGroup=browsing.module===currentModule?browsing.group:activeTopic?.id??null;
+ const root=useRef<HTMLElement>(null);
+ const toggle=useRef<HTMLButtonElement>(null);
+ const panel=useRef<HTMLDivElement>(null);
+ const lastFocus=useLastFocusWithin(root);
+ useLayoutEffect(()=>{
+  if(previousDesktop.current!==desktop) {
+   const active=document.activeElement;
+   const focused=active===document.body||active===document.documentElement?lastFocus.current:active;
+   if(!desktop&&panel.current?.contains(focused)) toggle.current?.focus();
+   if(desktop&&focused===toggle.current) {
+    const current=panel.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    const group=activeTopic?panel.current?.querySelector<HTMLElement>(`[aria-controls="${id}-${activeTopic.id}"]`):null;
+    const target=current&&!current.closest('[hidden]')?current:group??panel.current?.querySelector<HTMLElement>('button');
+    target?.focus();target?.scrollIntoView?.({block:'nearest'});
+   }
+   previousDesktop.current=desktop;
+  }
+ },[desktop,activeTopic,id,lastFocus]);
+ function dismiss() {setMobileOpen(false);onDismiss?.();toggle.current?.focus();}
+ function select(module:ModuleId) {onSelectModule(module);setMobileOpen(false);}
+ const currentName=ALL_MODULES.find(module=>module.id===currentModule)?.name;
+ return <nav ref={root} aria-label="Lernmodule" onKeyDown={event=>{
+  if(event.key==='Escape'&&!desktop&&mobileOpen) {event.preventDefault();event.stopPropagation();dismiss();}
+ }}>
+  <button ref={toggle} type="button" aria-expanded={mobileOpen} aria-controls={`${id}-topics`} onClick={()=>mobileOpen?dismiss():setMobileOpen(true)} className="lg:hidden w-full rounded-xl border border-line bg-surface p-4 text-left min-h-11">
+   <span className="flex items-center justify-between gap-2 font-semibold">Aufgabe wechseln <ChevronDown aria-hidden="true" className={`size-4 shrink-0 transition-transform ${mobileOpen?'rotate-180':''}`}/></span>
+   <span className="mt-1 block text-sm text-muted">{currentName?`${activeTopic?`${activeTopic.label} · `:''}${currentName}`:'Thema und Aufgabe wählen'}</span>
+  </button>
+  <div ref={panel} id={`${id}-topics`} hidden={!desktop&&!mobileOpen} className="navigation-panel mt-2 lg:mt-0">
+   <button type="button" onClick={()=>select('ap2TrainingRun')} aria-current={currentModule==='ap2TrainingRun'?'page':undefined} className={`mb-4 flex min-h-11 w-full items-center gap-3 rounded-xl border p-3 text-left font-semibold ${currentModule==='ap2TrainingRun'?'bg-accent-soft border-accent text-accent':'bg-surface border-line text-ink hover:bg-subtle-hover'}`}>
+    <Layers aria-hidden="true" className="size-5 shrink-0"/><span>AP2-Trainingslauf<span className="block text-xs font-normal text-muted">Drei Szenarien verbinden</span></span>
+   </button>
+   <ul className="space-y-2">
+    {MODULE_TOPICS.map(topic=><li key={topic.id}>
+     <button type="button" aria-expanded={openGroup===topic.id} aria-controls={`${id}-${topic.id}`} onClick={()=>setBrowsing({module:currentModule,group:openGroup===topic.id?null:topic.id})} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-ink hover:bg-subtle-hover">
+      <span className="min-w-0 flex-1">{topic.label}</span>{activeTopic?.id===topic.id&&<span className="text-xs font-normal text-accent">Aktiv</span>}<ChevronDown aria-hidden="true" className={`size-4 shrink-0 ${openGroup===topic.id?'rotate-180':''}`}/>
+     </button>
+     <ul id={`${id}-${topic.id}`} hidden={openGroup!==topic.id} className="mt-1 space-y-1 border-l border-line pl-2 ml-3">
+      {topic.modules.filter(module=>module!=='sql'||isAuthenticated).map(module=>{
+       const descriptor=ALL_MODULES.find(item=>item.id===module)!;
+       const Icon=descriptor.icon;
+       return <li key={module}><button type="button" aria-current={currentModule===module?'page':undefined} onClick={()=>select(module)} className={`flex min-h-11 w-full items-start gap-2 rounded-lg px-3 py-2.5 text-left text-sm ${currentModule===module?'bg-accent-soft text-accent font-semibold':'text-muted hover:bg-subtle-hover hover:text-ink'}`}>
+        <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0"/><span className="min-w-0 flex-1">{MODULE_NAMES[module]}</span>{module.startsWith('ap2')&&<span aria-hidden="true" className="rounded bg-accent-soft px-1 text-[10px] text-accent">AP2</span>}
+       </button></li>;
+      })}
+     </ul>
+    </li>)}
+   </ul>
+  </div>
+ </nav>;
 }

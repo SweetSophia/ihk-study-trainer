@@ -5,8 +5,8 @@ import type { TrainingRunContext } from '../lib/trainingRun';
 import { COST_FIELDS, validateCostAnswers, type CostAnswers, type CostSection } from '../lib/costComparison';
 
 type Props = { isAuthenticated: boolean; onAttempt: (correct: boolean) => void; trainingRun?: TrainingRunContext };
-const inputClass = 'w-full min-w-0 rounded-lg border border-slate-600 bg-slate-950 p-2 text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
-const buttonClass = 'rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
+const inputClass = 'w-full min-w-0 rounded-lg border border-control bg-canvas p-2 text-ink focus-visible:outline-2 focus-visible:outline-accent';
+const buttonClass = 'rounded-lg border border-control px-4 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent';
 const euro = (cents: number) => (cents / 100).toLocaleString('de-DE', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function ObjectiveSection({ section, isAuthenticated, onAttempt, trainingRun }: Props & { section: CostSection }) {
@@ -30,10 +30,10 @@ function ObjectiveSection({ section, isAuthenticated, onAttempt, trainingRun }: 
       <label htmlFor={id} className="block text-sm">{label}</label>
       <input id={id} inputMode={whole ? 'numeric' : 'decimal'} className={inputClass} value={answers[key] ?? ''}
         onChange={e => edit(key, e.target.value)} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />
-      {error && <p id={`${id}-error`} className="text-sm text-rose-200">{error}</p>}
+      {error && <p id={`${id}-error`} className="text-sm text-danger">{error}</p>}
     </div>;
   }
-  return <section aria-labelledby={`${prefix}-title`} className="space-y-4 rounded-lg border border-slate-700 p-4">
+  return <section aria-labelledby={`${prefix}-title`} className="space-y-4 rounded-lg border border-line p-4">
     <h3 id={`${prefix}-title`} className="font-semibold">{title}</h3>
     <p>{section === 'comparison'
       ? 'Berechne die Gesamtkosten beider Optionen und den absoluten Unterschied nach 36 vollständig abgerechneten Monaten. Wähle die rein rechnerisch günstigere Option.'
@@ -56,9 +56,9 @@ function ObjectiveSection({ section, isAuthenticated, onAttempt, trainingRun }: 
           aria-invalid={!!result?.errors.cheaper} aria-describedby={result?.errors.cheaper ? `${prefix}-cheaper-error` : undefined}>
           <option value="">Bitte wählen</option><option value="own">Eigener Server</option><option value="managed">Managed Service</option>
         </select>
-        {result?.errors.cheaper && <p id={`${prefix}-cheaper-error`} className="text-sm text-rose-200">{result.errors.cheaper}</p>}
+        {result?.errors.cheaper && <p id={`${prefix}-cheaper-error`} className="text-sm text-danger">{result.errors.cheaper}</p>}
       </div>}
-      <p role="status" className={result ? (result.valid ? 'text-emerald-200' : 'text-rose-200') : 'text-slate-400'}>
+      <p role="status" className={result ? (result.valid ? 'text-accent' : 'text-danger') : 'text-muted'}>
         {`${action}: ${result ? (result.valid ? 'Korrekt für die vorgegebenen Kostenannahmen.' : 'Bitte die markierten Eingaben prüfen.') : 'Noch keine aktuelle Prüfung.'}`}
       </p>
       <div className="flex flex-wrap gap-3">
@@ -66,7 +66,7 @@ function ObjectiveSection({ section, isAuthenticated, onAttempt, trainingRun }: 
         <button type="button" className={buttonClass} aria-expanded={example} aria-controls={`${prefix}-solution`}
           onClick={() => { revealed.current = true; trainingRun?.onEvent({ type: 'reveal', section }); setExample(!example); }}>{action}: Lösung {example ? 'verbergen' : 'anzeigen'}</button>
       </div>
-      {example && <div id={`${prefix}-solution`} className="space-y-2 text-sm text-slate-300">
+      {example && <div id={`${prefix}-solution`} className="space-y-2 text-sm text-ink">
         <p>{section === 'comparison'
           ? 'K(m) = Anfangskosten + m × Monatskosten. Eigener Server: 4.800 + 36 × 120 = 9.120 €. Managed Service: 400 + 36 × 260 = 9.760 €. Unterschied: 640 € zugunsten des eigenen Servers.'
           : '4.800 + 120m < 400 + 260m ergibt 4.400 < 140m, also m > 31,428571… . Der erste ganze Monat ist 32. Bei Monat 31 ist der Managed Service noch 60 € günstiger; bei Monat 32 der eigene Server 80 € günstiger.'}</p>
@@ -88,7 +88,7 @@ export default function CostComparisonTrainer(props: Props) {
   const [reasoning, setReasoning] = useState('');
   const [ticks, setTicks] = useState<boolean[]>(RUBRIC.map(() => false));
   const [example, setExample] = useState(false);
-  return <section aria-labelledby="cost-title" className="space-y-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-slate-200 sm:p-6">
+  return <section aria-labelledby="cost-title" className="space-y-6 rounded-xl border border-line bg-surface p-4 text-ink sm:p-6">
     <h2 id="cost-title" className="text-xl font-bold">AP2 Wirtschaftlichkeit</h2>
     <p>IT-Kosten vergleichen · eigene Übungsaufgabe · Schwerpunkt Baden-Württemberg · keine Original-Prüfungsaufgabe</p>
     <p>Eine fiktive Werkstatt vergleicht zwei Dateidienst-Angebote. Gleicher funktionaler Leistungsumfang wird für dieses Rechenmodell vorausgesetzt; dies ist keine Aussage über reale Angebote.</p>
@@ -96,7 +96,7 @@ export default function CostComparisonTrainer(props: Props) {
     <p>Anfangskosten zum Zeitpunkt 0; Monatskosten jeweils am Ende jedes vollständig abgerechneten Monats. Alle Beträge sind netto und konstant. Steuern, Finanzierung, Abzinsung, Restwerte und nicht genannte Kosten bleiben ausdrücklich unberücksichtigt. Dies ist ein vereinfachter Kostenvergleich, keine vollständige Erfassung aller realen Betriebskosten.</p>
     <p className="text-sm">Eurobeträge ohne Tausendertrennzeichen eingeben, mit Komma oder Punkt und höchstens zwei Nachkommastellen (z. B. 1200,50). Monatszahlen müssen ganze Zahlen sein. Gleichwertige Rechenwege sind möglich; geprüft werden die Ergebnisse.</p>
     <p className="text-sm">Nur die erste abgeschlossene Prüfung je Abschnitt zählt pro Durchlauf (maximal zwei), auch eine leere oder fehlerhafte Abgabe. Weitere Prüfungen geben Rückmeldung ohne zusätzliche Punkte. Eine vor der ersten Prüfung angezeigte Lösung macht nur den betreffenden Abschnitt ungewertet, auch nach dem Verbergen. Begründung und Selbstbewertung vergeben nie Punkte.</p>
-    <p className="text-sm text-amber-200">Beim Anmelden oder Wechseln des Kontos wird dieser Durchlauf zurückgesetzt. {props.trainingRun ? 'Beim Aufgabenwechsel innerhalb des Trainingslaufs bleiben Eingaben, Häkchen und Lösungen erhalten; beim Verlassen des Trainingslaufs gehen sie verloren.' : 'Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung; auch beim Verlassen gehen sie verloren.'} {props.isAuthenticated ? 'Nur objektive Versuche werden als Fortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
+    <p className="text-sm text-warning">Beim Anmelden oder Wechseln des Kontos wird dieser Durchlauf zurückgesetzt. {props.trainingRun ? 'Beim Aufgabenwechsel innerhalb des Trainingslaufs bleiben Eingaben, Häkchen und Lösungen erhalten; beim Verlassen des Trainingslaufs gehen sie verloren.' : 'Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung; auch beim Verlassen gehen sie verloren.'} {props.isAuthenticated ? 'Nur objektive Versuche werden als Fortschritt gespeichert.' : 'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
     <ObjectiveSection key={`comparison-${run}`} section="comparison" {...props} />
     <ObjectiveSection key={`crossover-${run}`} section="crossover" {...props} />
     <section aria-labelledby="cost-reasoning-title" className="space-y-3">

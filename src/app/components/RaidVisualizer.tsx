@@ -120,26 +120,26 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
       transition={{ duration: 0.25, ease: 'easeOut' }}
       aria-label="Visualisierung der RAID-Konfiguration"
       data-testid="raid-visualizer"
-      className="rounded-xl border border-slate-800 bg-slate-950/50 overflow-hidden"
+      className="rounded-xl border border-line bg-canvas overflow-hidden"
     >
       {/* Header */}
-      <header className="flex flex-wrap items-baseline gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900/40">
+      <header className="flex flex-wrap items-baseline gap-3 px-5 py-3 border-b border-line bg-surface">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-emerald-500/10 text-emerald-400">
+          <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-accent-soft text-accent">
             <DiskGlyph role="data" className="w-4 h-4" />
           </span>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-accent">
             RAID-Array Visualisierung
           </h3>
         </div>
         <div className="ml-auto flex flex-wrap items-baseline gap-2 text-sm">
           <span
-            className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 font-mono text-xs"
+            className="px-2 py-0.5 rounded-full bg-accent-soft text-accent font-mono text-xs"
             data-testid="viz-level"
           >
             {raid.level}
           </span>
-          <span className="text-slate-500 text-xs" data-testid="viz-disks-total">
+          <span className="text-muted text-xs" data-testid="viz-disks-total">
             {raid.disks} Festplatten à {raid.diskSizeGb} GB
           </span>
         </div>
@@ -147,24 +147,24 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
 
       {/* Disk grid */}
       <div
-        className="px-5 pt-4 pb-4 border-b border-slate-800/60"
+        className="px-5 pt-4 pb-4 border-b border-line"
         role="group"
         aria-describedby={isParityAccounting ? explanationId : undefined}
         aria-label={isParityAccounting
           ? `${raid.disks} Plattenkapazitäten zur Kapazitätsberechnung`
           : `${raid.disks} Festplatten im Array`}
       >
-        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-3">
+        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted mb-3">
           {isParityAccounting ? 'Kapazitätsaufteilung (rechnerisch)' : 'Festplatten'}
         </p>
         {isParityAccounting && (
-          <p id={explanationId} className="text-xs text-slate-400 mb-3">
+          <p id={explanationId} className="text-xs text-muted mb-3">
             Jeder Anteil entspricht einer Plattenkapazität. Parität wird über alle Festplatten verteilt;
             der Paritätsanteil entspricht der Kapazität {totalParityDisks === 1 ? 'einer Platte' : 'zweier Platten'}. Es gibt keine festen Paritätsplatten.
           </p>
         )}
         {(raid.level === 'RAID 1' || raid.level === 'RAID 10') && (
-          <p className="text-xs text-slate-400 mb-3">
+          <p className="text-xs text-muted mb-3">
             Die Kacheln zeigen physische Datenträger; gespiegelte Daten erhöhen die nutzbare Kapazität nicht.
           </p>
         )}
@@ -191,8 +191,8 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
               data-disk-role={disk.role}
               className={`flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 transition-colors ${
                 disk.role === 'parity'
-                  ? 'border-amber-500/30 bg-amber-500/5'
-                  : 'border-emerald-500/30 bg-emerald-500/5'
+                  ? 'border-warning bg-warning-soft'
+                  : 'border-accent bg-accent-soft'
               }`}
             >
               <DiskGlyph
@@ -202,19 +202,19 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
               />
               <span
                 className={`text-xs font-mono font-semibold ${
-                  disk.role === 'parity' ? 'text-amber-300' : 'text-emerald-300'
+                  disk.role === 'parity' ? 'text-warning' : 'text-accent'
                 }`}
               >
                 {isParityAccounting ? 'Anteil' : 'Platte'} {disk.index + 1}
               </span>
               <span
                 className={`text-[10px] uppercase tracking-wider ${
-                  disk.role === 'parity' ? 'text-amber-400/80' : 'text-emerald-400/80'
+                  disk.role === 'parity' ? 'text-warning' : 'text-accent'
                 }`}
               >
                 {roleLabels[disk.role]}
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">
+              <span className="text-[10px] text-muted font-mono">
                 {disk.diskSizeGb} GB
               </span>
             </motion.div>
@@ -223,7 +223,7 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
 
         {/* Compact legend so the colour code is also conveyed in text form
             (don't rely on colour alone — accessibility requirement). */}
-        <div role="group" aria-label="Legende zur RAID-Darstellung" className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+        <div role="group" aria-label="Legende zur RAID-Darstellung" className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
           <LegendSwatch tone="emerald" label={roleLabels.data} />
           {totalParityDisks > 0 && (
             <LegendSwatch tone="amber" label={roleLabels.parity} />
@@ -236,7 +236,7 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
 
       {/* Stat grid */}
       <dl
-        className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 px-5 py-4 text-sm border-b border-slate-800/60"
+        className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 px-5 py-4 text-sm border-b border-line"
         aria-label="RAID-Konfigurationswerte"
       >
         <StatRow label="RAID-Level" value={raid.level} tone="emerald" testId="viz-stat-level" />
@@ -285,17 +285,17 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
 type Tone = 'emerald' | 'rose' | 'amber' | 'slate';
 
 const TONE_TEXT: Record<Tone, string> = {
-  emerald: 'text-emerald-400',
-  rose: 'text-rose-400',
-  amber: 'text-amber-300',
-  slate: 'text-slate-400',
+  emerald: 'text-accent',
+  rose: 'text-danger',
+  amber: 'text-warning',
+  slate: 'text-muted',
 };
 
 const TONE_VALUE: Record<Tone, string> = {
-  emerald: 'text-emerald-200',
-  rose: 'text-rose-200',
-  amber: 'text-amber-200',
-  slate: 'text-slate-200',
+  emerald: 'text-accent',
+  rose: 'text-danger',
+  amber: 'text-warning',
+  slate: 'text-ink',
 };
 
 function StatRow({
@@ -342,16 +342,16 @@ function FaultToleranceBadge({ faultTolerance }: { faultTolerance: number }) {
       aria-live="polite"
       className={`flex items-center gap-2.5 px-5 py-3 text-sm font-medium ${
         safe
-          ? 'bg-emerald-500/5 text-emerald-300'
-          : 'bg-rose-500/10 text-rose-300'
+          ? 'bg-accent-soft text-accent'
+          : 'bg-danger-soft text-danger'
       }`}
       data-testid="viz-fault-tolerance-badge"
       data-fault-tolerance={faultTolerance}
     >
       {safe ? (
-        <CheckBadge className="w-4 h-4 text-emerald-400" />
+        <CheckBadge className="w-4 h-4 text-accent" />
       ) : (
-        <WarningBadge className="w-4 h-4 text-rose-400" />
+        <WarningBadge className="w-4 h-4 text-danger" />
       )}
       <span>
         Ausfallsicherheit: <span className="font-mono">{label}</span>
@@ -363,10 +363,10 @@ function FaultToleranceBadge({ faultTolerance }: { faultTolerance: number }) {
 function LegendSwatch({ tone, label }: { tone: Tone; label: string }) {
   const dotClass =
     tone === 'emerald'
-      ? 'bg-emerald-400'
+      ? 'bg-action'
       : tone === 'amber'
-        ? 'bg-amber-400'
-        : 'bg-rose-400';
+        ? 'bg-warning'
+        : 'bg-danger';
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className={`inline-block w-2 h-2 rounded-full ${dotClass}`} aria-hidden="true" />
@@ -387,8 +387,8 @@ function DiskGlyph({
   role: DiskRole;
   className?: string;
 }) {
-  const fill = role === 'parity' ? '#fbbf24' : '#10b981';
-  const stroke = role === 'parity' ? '#b45309' : '#047857';
+  const fill = role === 'parity' ? 'var(--ui-warning)' : 'var(--ui-accent)';
+  const stroke = role === 'parity' ? 'var(--ui-warning)' : 'var(--ui-accent)';
   return (
     <svg
       viewBox="0 0 24 24"
