@@ -1,4 +1,10 @@
 // Local production acceptance. Fixture indices select questions, never derive expected grades.
+// Run `npm run build`, then `npm start -- --port 3144` in another terminal.
+// Run this guard with `node scripts/check-linux-feedback.mjs`.
+// Optional: IHK_TEST_URL (localhost only; default http://127.0.0.1:3144),
+// IHK_QA_OUTPUT (screenshot directory), CHROMIUM_PATH (explicit browser binary).
+// Without CHROMIUM_PATH, Playwright uses its managed Chromium; install that browser
+// separately with `npx playwright install chromium` if it is not already available.
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { readFile, mkdir } from 'node:fs/promises';
@@ -7,7 +13,7 @@ assert.ok(['localhost','127.0.0.1','[::1]'].includes(new URL(url).hostname),'Loc
 const catalogue=await readFile(new URL('../src/app/lib/generators/linux.ts',import.meta.url),'utf8');
 const commands=[...catalogue.matchAll(/^    command: '([^']+)'/gm)].map(match=>match[1]);
 const out=process.env.IHK_QA_OUTPUT||'/tmp/linux-answer-qa';await mkdir(out,{recursive:true});
-const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium'});
+const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||undefined});
 try{
  for(const width of [320,390,1440]){
   const context=await browser.newContext({viewport:{width,height:900},locale:'de-DE',reducedMotion:'reduce'});
@@ -19,17 +25,24 @@ try{
   await page.goto(url);await page.getByRole('button',{name:'Schließen',exact:true}).click();
   const nav=page.getByRole('navigation',{name:'Lernmodule',exact:true}),appearance=page.getByRole('combobox',{name:'Darstellung'});
   async function openNav(){if(!await nav.locator('.navigation-panel').isVisible())await nav.getByRole('button',{name:/^Aufgabe wechseln/}).click();}
-  async function prepare(command,direction=0){
+  const markers={ls:'Listet Dateien und Verzeichnisse in einem Verzeichnis auf',who:'Zeigt die aktuell angemeldeten Benutzer an','systemctl enable':'Aktiviert einen Dienst für den automatischen Start beim Booten',nslookup:'Führt DNS-Abfragen durch',htop:'Was macht der Befehl htop?'};
+  async function trigger(command,button,direction=0){
    const index=commands.indexOf(command);assert.ok(index>=0);
-   await page.evaluate(([index,count,direction])=>{let call=0;Math.random=()=>call++===0?index/count:call===2?direction:0.25},[index,commands.length,direction]);
+   await button.waitFor({state:'visible'});assert.equal(await button.isEnabled(),true);
+   // Seed and activate atomically: unrelated animation draws cannot consume the fixture.
+   await button.evaluate((element,[index,count,direction])=>{
+    let call=0;Math.random=()=>call++===0?index/count:call===2?direction:0.25;
+    element.click();
+   },[index,commands.length,direction]);
+   await page.getByText(markers[command],{exact:false}).waitFor();
   }
-  async function next(command,direction=0){await prepare(command,direction);await page.getByRole('button',{name:/Nächste Frage/}).click();}
+  async function next(command,direction=0){await trigger(command,page.getByRole('button',{name:/Nächste Frage/}),direction);}
   const input=()=>page.getByRole('textbox',{name:'Linux-Befehl eingeben'});
   const result=()=>page.getByRole('status',{name:'Linux-Antwort'});
   async function submit(value){await input().fill(value);await input().press('Enter');}
   async function noOverflow(){assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow at ${width}`);}
   await appearance.selectOption('light');await openNav();await nav.getByRole('button',{name:/^Systeme & Sicherheit/}).click();
-  await prepare('ls');await nav.getByRole('button',{name:'Linux',exact:true}).click();
+  await trigger('ls',nav.getByRole('button',{name:'Linux',exact:true}));
   await page.getByText('Listet Dateien und Verzeichnisse in einem Verzeichnis auf',{exact:false}).waitFor();
   await input().fill('dir');await appearance.selectOption('dark');assert.equal(await input().inputValue(),'dir');
   await openNav();if(width<1024)await nav.getByRole('button',{name:/^Aufgabe wechseln/}).click();

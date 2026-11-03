@@ -3,10 +3,12 @@ import { validateStructuredAnswer } from '../../answerValidation';
 import { COMMAND_DATABASE, generateLinuxQuestion } from '../linux';
 
 afterEach(()=>vi.restoreAllMocks());
-function questionFor(command:string,direction:'descriptionToCommand'|'commandToDescription'='descriptionToCommand'){
+function questionFor(command:string,direction:'descriptionToCommand'|'commandToDescription'='descriptionToCommand',seed=1){
  const index=COMMAND_DATABASE.findIndex(entry=>entry.command===command);
  if(index<0)throw new Error(`Missing fixture command ${command}`);
- vi.spyOn(Math,'random').mockReturnValue(0.25).mockReturnValueOnce(index/COMMAND_DATABASE.length).mockReturnValueOnce(direction==='descriptionToCommand'?0:1);
+ let state=Math.imul(seed,0x9e3779b9)>>>0;
+ const random=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/2**32};
+ vi.spyOn(Math,'random').mockImplementation(random).mockReturnValueOnce(index/COMMAND_DATABASE.length).mockReturnValueOnce(direction==='descriptionToCommand'?0:1);
  return generateLinuxQuestion();
 }
 const additions=[
@@ -61,10 +63,16 @@ describe('unambiguous command-to-description choices',()=>{
   ['htop','top'],['htop','ps'],['top','ps'],['dig','nslookup'],['tmux','screen'],
   ['curl','wget'],['w','who'],['netstat','ss'],['awk','cut'],
  ] as const)('%s does not offer the also-valid %s description as a wrong choice',(command,broad)=>{
-  const question=questionFor(command,'commandToDescription');
   const description=COMMAND_DATABASE.find(entry=>entry.command===broad)!.description;
-  expect(question.answerInputs?.[0].valueOptions).not.toContain(description);
-  expect(validateStructuredAnswer(question.answerInputs??[],question.expectedAnswers,{answer:description})).toBe(true);
+  const offeredSets=new Set<string>();
+  for(let seed=1;seed<=64;seed++){
+   const question=questionFor(command,'commandToDescription',seed);
+   const options=question.answerInputs![0].valueOptions!;
+   offeredSets.add([...options].sort().join('\n'));
+   expect(options,`${command}/${broad}, seed ${seed}`).not.toContain(description);
+   expect(validateStructuredAnswer(question.answerInputs??[],question.expectedAnswers,{answer:description})).toBe(true);
+  }
+  expect(offeredSets.size).toBeGreaterThan(1);
  });
  it('keeps five unique choices and rejects every offered wrong option for all entries',()=>{
   for(const entry of COMMAND_DATABASE){

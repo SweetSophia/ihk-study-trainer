@@ -40,9 +40,6 @@ export default function LinuxTerminal({
   const instructionId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const accepted = acceptedAnswers?.length ? acceptedAnswers : correctAnswer ? [correctAnswer] : [];
-  const normalizedValue = value.trim().replace(/\s+/g, ' ').toLowerCase();
-  // A format reminder, not a claim that a command prefix is semantically valid.
-  const hasExtraText = accepted.some(form => normalizedValue.startsWith(`${form.toLowerCase().replace(/\s+/g, ' ')} `));
   const terminalRef = useRef<HTMLDivElement>(null);
 
   // Auto-focus the hidden input when terminal is clicked
@@ -147,7 +144,7 @@ export default function LinuxTerminal({
                 <p className={isCorrect ? 'text-success' : 'text-danger'}>
                   {isCorrect ? '✓ Richtig! Deine Antwort wird in dieser Aufgabe akzeptiert.' : '✗ Diese Antwort wurde in dieser Aufgabe nicht akzeptiert.'}
                 </p>
-                {!isCorrect && hasExtraText && <p>Hier werden Befehlsformen verglichen, keine vollständigen Kommandozeilen. Zusätzliche Optionen und Ziele werden nicht geprüft.</p>}
+                {!isCorrect && <p>Diese Übung vergleicht Befehlsformen, keine vollständigen Kommandozeilen. Deine Antwort muss einer der unten aufgeführten Formen entsprechen; Groß-/Kleinschreibung und Leerraum werden dabei normalisiert.</p>}
                 {accepted.length > 0 && <div>
                   <p>Hier akzeptierte Antworten:</p>
                   <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1">

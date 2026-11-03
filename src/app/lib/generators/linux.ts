@@ -1120,8 +1120,8 @@ export function generateLinuxQuestion(): LinuxQuestion {
  *  - User picks the correct description from a dropdown
  */
 function buildCommandToDescription(entry: CommandEntry): LinuxQuestion {
-  // A generic description may also fit this tool. Never present a known-valid
-  // capability as a wrong distractor (e.g. htop also fits top's broad prompt).
+  // A description whose own prompt accepts this command also fits here.
+  // Exclude that description from wrong choices; the relation is directional.
   const acceptedDescriptions = COMMAND_DATABASE
     .filter(candidate => supportedForms(candidate).includes(entry.command))
     .map(candidate => candidate.description);

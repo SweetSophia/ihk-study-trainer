@@ -9,9 +9,9 @@ import type { Question } from '../../types';
 vi.mock('canvas-confetti',()=>({default:vi.fn()}));
 beforeEach(()=>{localStorage.clear();sessionStorage.clear()});
 afterEach(()=>vi.restoreAllMocks());
-function fixture(command:string,id=command):Question{
+function fixture(command:string,id=command,direction:'descriptionToCommand'|'commandToDescription'='descriptionToCommand'):Question{
  const index=COMMAND_DATABASE.findIndex(entry=>entry.command===command);
- vi.spyOn(Math,'random').mockReturnValue(0.25).mockReturnValueOnce(index/COMMAND_DATABASE.length).mockReturnValueOnce(0);
+ vi.spyOn(Math,'random').mockReturnValue(0.25).mockReturnValueOnce(index/COMMAND_DATABASE.length).mockReturnValueOnce(direction==='descriptionToCommand'?0:1);
  return {...GENERATORS.linux(),id};
 }
 function checkWith(question:Question){return vi.fn((answers:Record<string,string>)=>validateQuestionAnswers(question,answers))}
@@ -22,13 +22,14 @@ describe('real Linux teaching feedback',()=>{
   const question=fixture('nslookup'),check=checkWith(question);
   render(<StudyCard question={question} onCheckAnswer={check} onNextQuestion={()=>{}}/>);
   const status=screen.getByRole('status',{name:'Linux-Antwort'});expect(status).toBeEmptyDOMElement();
-  const input=submit('host');
+  submit('host');
   expect(check).toHaveBeenCalledExactlyOnceWith({answer:'host'});
   expect(status).toHaveTextContent('Richtig');expect(status).toHaveTextContent('nslookup');expect(status).toHaveTextContent('dig');expect(status).toHaveTextContent('host');
   expect(within(status).getByText(/Erklärung zum Beispiel/)).toHaveTextContent('nslookup');
   expect(status).toHaveTextContent('Vorwärts- und Rückwärtsauflösung');
   expect(screen.getAllByRole('status')).toHaveLength(1);
-  fireEvent.keyDown(input,{key:'Enter'});expect(check).toHaveBeenCalledTimes(1);
+  fireEvent.keyDown(window,{key:'Enter'});expect(check).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('button',{name:/Nächste Frage/})).toBeInTheDocument();
  });
  it('shows curated alternatives and capability explanation without claiming a single uniquely correct command',()=>{
   const question=fixture('who'),check=checkWith(question);
@@ -36,6 +37,7 @@ describe('real Linux teaching feedback',()=>{
   submit('whoami');const status=screen.getByRole('status',{name:'Linux-Antwort'});
   expect(check).toHaveReturnedWith(false);expect(status).toHaveTextContent('nicht akzeptiert');
   for(const name of ['who','users','w'])expect(within(status).getByText(name,{selector:'code'})).toBeInTheDocument();
+  expect(status).toHaveTextContent(/einer der unten aufgeführten Formen/);expect(status).toHaveTextContent(/normalisiert/);
   expect(status).toHaveTextContent('angemeldeten Benutzer');expect(status).not.toHaveTextContent('Der richtige Befehl lautet');
  });
  it('rejects extra arguments, explains the recognition boundary and resets feedback for a replacement question',()=>{
@@ -69,4 +71,26 @@ it('never paints a previous verdict with the replacement question explanation',(
  }
  const {rerender}=render(<Observe question={first}/>);submit('wrong');rerender(<Observe question={second}/>);
  expect(painted.length).toBeGreaterThan(0);expect(painted.every(text=>text==='')).toBe(true);
+});
+
+it('renders a single-correct dropdown, excluding known valid generic descriptions from wrong choices',()=>{
+ const question=fixture('htop','dropdown-htop','commandToDescription'),check=checkWith(question);
+ render(<StudyCard question={question} onCheckAnswer={check} onNextQuestion={()=>{}}/>);
+ const select=screen.getByRole('combobox',{name:'Beschreibung'});
+ const options=within(select).getAllByRole('option').filter(option=>(option as HTMLOptionElement).value!=='');
+ expect(options).toHaveLength(5);
+ expect(within(select).queryByRole('option',{name:'Zeigt aktive Prozesse und Systemressourcen in Echtzeit an'})).not.toBeInTheDocument();
+ expect(within(select).queryByRole('option',{name:'Zeigt Informationen über laufende Prozesse an'})).not.toBeInTheDocument();
+ const correct=within(select).getByRole('option',{name:/F6-Sortiermenü/}) as HTMLOptionElement;
+ fireEvent.change(select,{target:{value:correct.value}});fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/}));
+ expect(check).toHaveBeenCalledExactlyOnceWith({answer:correct.value});expect(check).toHaveReturnedWith(true);
+ expect(screen.getAllByRole('status')).toHaveLength(1);expect(screen.getByRole('status')).toHaveTextContent('Richtig!');
+});
+
+it('explains form matching for extra subcommands without mislabelling them as ignored options',()=>{
+ const question=fixture('systemctl'),check=checkWith(question);
+ render(<StudyCard question={question} onCheckAnswer={check} onNextQuestion={()=>{}}/>);
+ submit('systemctl enable');const status=screen.getByRole('status',{name:'Linux-Antwort'});
+ expect(check).toHaveReturnedWith(false);expect(status).toHaveTextContent(/einer der unten aufgeführten Formen/);
+ expect(status).not.toHaveTextContent('Optionen und Ziele werden nicht geprüft');
 });
