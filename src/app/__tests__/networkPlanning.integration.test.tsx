@@ -1,3 +1,4 @@
+import { chooseModule } from '../../test/navigation';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -37,8 +38,7 @@ beforeEach(() => {
 });
 
 async function selectPlanning() {
-  const buttons = await screen.findAllByRole('button', { name: /AP2 Netzwerk/ });
-  fireEvent.click(buttons[0]);
+  await chooseModule('ap2NetworkPlanning');
 }
 
 function fillAlternative() {
@@ -59,7 +59,7 @@ describe('AP2 module integration', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Netzplan prüfen' }));
     await waitFor(() => expect(updateProgress).toHaveBeenCalledExactlyOnceWith('test-user-hash', 'ap2NetworkPlanning', true));
     expect(getAllProgress).toHaveBeenCalledTimes(2);
-    fireEvent.click(screen.getAllByRole('button', { name: /Subnetting/ })[0]);
+    await chooseModule('subnetting');
     expect(screen.queryByRole('heading', { name: 'AP2 Netzwerkplanung' })).not.toBeInTheDocument();
     expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
   });
@@ -74,7 +74,7 @@ describe('AP2 module integration', () => {
     await waitFor(() => expect(updateProgress).toHaveBeenCalledExactlyOnceWith('test-user-hash', 'ap2NetworkPlanning', false));
     fireEvent.click(screen.getByRole('button', { name: /Beispiel anzeigen/ }));
     expect(updateProgress).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getAllByRole('button', { name: /Subnetting/ })[0]);
+    await chooseModule('subnetting');
     await selectPlanning();
     expect(screen.getByRole('textbox', { name: 'Begründung der Verkehrsregeln' })).toHaveValue('');
     expect(screen.getAllByRole('checkbox')[0]).not.toBeChecked();

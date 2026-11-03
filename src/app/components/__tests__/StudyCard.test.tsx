@@ -371,22 +371,22 @@ describe('StudyCard – welcome screen (no question)', () => {
     await userEvent.click(screen.getByText('Was ist neu?'));
     // Full descriptions remain readable, and only the newest release is current.
     // Deliberate release marker for this content refresh; update it with the next release.
-    expect(CHANGELOG_ENTRIES[0].date).toBe('29/10/2026');
-    expect(CHANGELOG_ENTRIES[0].summary).toContain('AP2 Berechtigungen');
+    expect(CHANGELOG_ENTRIES[0].date).toBe('03/11/2026');
+    expect(CHANGELOG_ENTRIES[0].summary).toContain('Neue Themen-Navigation');
     for (const entry of CHANGELOG_ENTRIES) {
       const summary = screen.getByText(entry.summary, { exact: true });
       expect(summary).toBeInTheDocument();
       const row = summary.closest('div.rounded-lg');
       if (entry === CHANGELOG_ENTRIES[0]) {
-        expect(row).toHaveClass('bg-emerald-500/10', 'border-emerald-500/20');
+        expect(row).toHaveClass('bg-accent-soft', 'border-accent');
       } else {
-        expect(row).not.toHaveClass('bg-emerald-500/10');
+        expect(row).not.toHaveClass('bg-accent-soft');
       }
     }
     expect(screen.getAllByText('Aktuell', { exact: true })).toHaveLength(1);
     expect(CHANGELOG_ENTRIES.filter(entry => entry.highlight)).toEqual([CHANGELOG_ENTRIES[0]]);
     expect(CHANGELOG_ENTRIES.filter(entry => entry.tag === 'Aktuell')).toEqual([CHANGELOG_ENTRIES[0]]);
-    expect(screen.getByText('Aktuell').parentElement).toHaveTextContent('29/10/2026');
+    expect(screen.getByText('Aktuell').parentElement).toHaveTextContent('03/11/2026');
   });
 });
 

@@ -19,10 +19,12 @@ function subscribe(callback:()=>void) {
 }
 function desktopSnapshot() { return window.matchMedia?.(query).matches??true; }
 
+export function useDesktopNavigation() {return useSyncExternalStore(subscribe,desktopSnapshot,()=>false)}
+
 /** Historical export name retained; this selects exercises, not appearance. */
 export default function ThemeSelector({currentModule,onSelectModule,isAuthenticated,onDismiss}:ThemeSelectorProps) {
  const id=useId();
- const desktop=useSyncExternalStore(subscribe,desktopSnapshot,()=>false);
+ const desktop=useDesktopNavigation();
  const previousDesktop=useRef(desktop);
  const [mobileOpen,setMobileOpen]=useState(false);
  const activeTopic=getModuleTopic(currentModule);
@@ -36,11 +38,15 @@ export default function ThemeSelector({currentModule,onSelectModule,isAuthentica
   if(previousDesktop.current!==desktop) {
    const focused=document.activeElement;
    if(!desktop&&panel.current?.contains(focused)) toggle.current?.focus();
-   if(desktop&&focused===toggle.current) (panel.current?.querySelector('[aria-current="page"]')??panel.current?.querySelector('button'))?.scrollIntoView?.({block:'nearest'});
-   if(desktop&&focused===toggle.current) (panel.current?.querySelector<HTMLElement>('[aria-current="page"]')??panel.current?.querySelector<HTMLElement>('button'))?.focus();
+   if(desktop&&focused===toggle.current) {
+    const current=panel.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    const group=activeTopic?panel.current?.querySelector<HTMLElement>(`[aria-controls="${id}-${activeTopic.id}"]`):null;
+    const target=current&&!current.closest('[hidden]')?current:group??panel.current?.querySelector<HTMLElement>('button');
+    target?.focus();target?.scrollIntoView?.({block:'nearest'});
+   }
    previousDesktop.current=desktop;
   }
- },[desktop]);
+ },[desktop,activeTopic,id]);
  function dismiss() {setMobileOpen(false);onDismiss?.();toggle.current?.focus();}
  function select(module:ModuleId) {onSelectModule(module);setMobileOpen(false);}
  const currentName=ALL_MODULES.find(module=>module.id===currentModule)?.name;

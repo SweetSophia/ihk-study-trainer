@@ -1,6 +1,6 @@
 # Trainer Navigation and Theme Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the module wall with the approved exercise-first topic navigation and complete accessible light/dark presentation, retaining learning state and scoring.
 
@@ -31,29 +31,29 @@
 ### Task 1: Canonical topic navigation
 **Files:** Create `src/app/lib/moduleTopics.ts`; replace `src/app/components/ThemeSelector.tsx`; replace its obsolete grid-specific test with behavioral disclosure tests; create `src/app/lib/__tests__/moduleTopics.test.ts`.
 **Interfaces:** `MODULE_TOPICS` has stable topic IDs, German labels and canonical `ModuleId[]`; `getModuleTopic(module: string | null)` returns topic or undefined. Keep `ThemeSelector({currentModule,onSelectModule,isAuthenticated})`, add optional `onDismiss` for pending departure cancellation.
-- [ ] Write tests asserting unique 29 grouped IDs plus separate run, SQL visibility, exact five groups, independent group browsing, active marking, mobile open/close/Escape focus and selection callbacks without selecting on disclosure.
-- [ ] Run `npx vitest run src/app/lib/__tests__/moduleTopics.test.ts src/app/components/__tests__/ThemeSelector.test.tsx`; expected RED because registry/disclosures are absent.
-- [ ] Implement registry and one responsive accessible navigation tree. CSS media queries expose the desktop list or mobile disclosure, not duplicate module trees. Use full canonical names, an AP2 badge, real buttons/list semantics and active-group marker. Keep pure navigation state local; coordinate responsive focus through matchMedia with graceful test fallback.
-- [ ] Run those tests; expected PASS. Update page integration tests to open the appropriate real group before choosing a module; keep their existing grading assertions.
-- [ ] Commit topic navigation and its tests.
+- [x] Write tests asserting unique 29 grouped IDs plus separate run, SQL visibility, exact five groups, independent group browsing, active marking, mobile open/close/Escape focus and selection callbacks without selecting on disclosure.
+- [x] Run `npx vitest run src/app/lib/__tests__/moduleTopics.test.ts src/app/components/__tests__/ThemeSelector.test.tsx`; expected RED because registry/disclosures are absent.
+- [x] Implement registry and one responsive accessible navigation tree. CSS media queries expose the desktop list or mobile disclosure, not duplicate module trees. Use full canonical names, an AP2 badge, real buttons/list semantics and active-group marker. Keep pure navigation state local; coordinate responsive focus through matchMedia with graceful test fallback.
+- [x] Run those tests; expected PASS. Update page integration tests to open the appropriate real group before choosing a module; keep their existing grading assertions.
+- [x] Commit topic navigation and its tests.
 
 ### Task 2: Complete semantic appearance
 **Files:** Create `src/app/lib/appearance.ts`, `src/app/components/AppearanceSelector.tsx` and tests; modify `layout.tsx`, `globals.css`, every existing component and page color class, and SVG fills/strokes in both visualizers.
 **Interfaces:** `AppearancePreference = 'system' | 'light' | 'dark'`; `APPEARANCE_KEY`, safe `readAppearance()`, `applyAppearance(preference)` and early `APPEARANCE_BOOTSTRAP` set root `data-theme`/`color-scheme`. Preference selection never controls a trainer key or execution state.
-- [ ] Write behavioral tests for stored/absent/invalid/throwing storage, explicit-vs-system change handling, persistence and selector focus. Run the new file, expected RED.
-- [ ] Implement appearance selection with system matchMedia listener/cleanup and a small early inline bootstrap compatible with current CSP. Set html language de and suppress only intentional root hydration attribute difference. Use Geist body/mono variables.
-- [ ] Define semantic canvas/surface/subtle/ink/muted/control/line/action/onaction/accent/success/warning/danger/info tokens for both palettes, default system CSS fallback, global visible focus and reduced-motion handling. Map all existing hardcoded component color utilities to these tokens, including disabled/hover/ring and diagram paints; preserve layout and behavior outside the approved shell.
-- [ ] Run appearance and existing component tests; expected PASS. Browser contrast checks in Task 4 cover actual resolved styles rather than source string matching.
-- [ ] Commit appearance migration and tests.
+- [x] Write behavioral tests for stored/absent/invalid/throwing storage, explicit-vs-system change handling, persistence and selector focus. Run the new file, expected RED.
+- [x] Implement appearance selection with system matchMedia listener/cleanup and a small early inline bootstrap compatible with current CSP. Set html language de and suppress only intentional root hydration attribute difference. Use Geist body/mono variables.
+- [x] Define semantic canvas/surface/subtle/ink/muted/control/line/action/onaction/accent/success/warning/danger/info tokens for both palettes, default system CSS fallback, global visible focus and reduced-motion handling. Map all existing hardcoded component color utilities to these tokens, including disabled/hover/ring and diagram paints; preserve layout and behavior outside the approved shell.
+- [x] Run appearance and existing component tests; expected PASS. Browser contrast checks in Task 4 cover actual resolved styles rather than source string matching.
+- [x] Commit appearance migration and tests.
 
 ### Task 3: Stable workspace and run departure guard
 **Files:** Modify `src/app/page.tsx`, minimally extend `StudyCard` autofocus contract, add `src/app/__tests__/navigationState.integration.test.tsx`; update existing integration selections to the new grouped interface.
 **Interfaces:** Central `requestModule(module)` validates/gates/canonicalizes, ignores active selection, requests confirmation for run departures, otherwise commits selection. Pending target is a canonical module or null. Navigation `onDismiss` clears pending target. Workspace ref coordinates visible heading focus without remounting children. `StudyCard` optional navigation-focus override applies only to module selection, not next-question.
-- [ ] Write RED tests: active ordinary module preserves question/draft; group/theme changes preserve answers; active AP2/run preserves rubric/reveal/check state; run departure cancel retains answers, confirm switches, mistake action also guarded, guest paths never write progress. Account transitions keep prior reset contract.
-- [ ] Run new integration file against current page; expected failure on active reselect/unguarded departure.
-- [ ] Implement 1440px shell/260px desktop sidebar, compact mobile progress disclosure, labelled appearance selector, active path, central guard and inline confirmation with initially focused Continue, focus restoration and heading focus. Do not change existing generators/progress handlers/auth or worker contracts.
-- [ ] Run navigation and existing integration tests; expected PASS with unchanged scoring assertions. Add blocked auth target and dismissal edge cases.
-- [ ] Commit workspace integration and tests.
+- [x] Write RED tests: active ordinary module preserves question/draft; group/theme changes preserve answers; active AP2/run preserves rubric/reveal/check state; run departure cancel retains answers, confirm switches, mistake action also guarded, guest paths never write progress. Account transitions keep prior reset contract.
+- [x] Run new integration file against current page; expected failure on active reselect/unguarded departure.
+- [x] Implement 1440px shell/260px desktop sidebar, compact mobile progress disclosure, labelled appearance selector, active path, central guard and inline confirmation with initially focused Continue, focus restoration and heading focus. Do not change existing generators/progress handlers/auth or worker contracts.
+- [x] Run navigation and existing integration tests; expected PASS with unchanged scoring assertions. Add blocked auth target and dismissal edge cases.
+- [x] Commit workspace integration and tests.
 
 ### Task 4: Integrated acceptance and publication
 **Files:** Create `scripts/check-navigation-theme.mjs`; narrowly update README usage and existing changelog for the delivered navigation/appearance behavior, if warranted; preserve #58.

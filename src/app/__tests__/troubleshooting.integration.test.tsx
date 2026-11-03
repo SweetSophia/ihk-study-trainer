@@ -1,3 +1,4 @@
+import { chooseModule } from '../../test/navigation';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -40,7 +41,7 @@ beforeEach(() => {
 
 it('wires troubleshooting progress once, resets guest input on login and preserves drills',async()=>{
  localStorage.clear();render(<Home/>);
- fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Fehlersuche/}))[0]);
+ await chooseModule('ap2Troubleshooting');
  fireEvent.change(screen.getByLabelText('Begründete Korrektur'),{target:{value:'restore-profile'}});
  fireEvent.click(screen.getByRole('button',{name:'Maßnahme prüfen'}));expect(updateProgress).not.toHaveBeenCalled();
  expect(screen.getByLabelText('Begründete Korrektur')).toHaveValue('restore-profile');
@@ -49,5 +50,5 @@ it('wires troubleshooting progress once, resets guest input on login and preserv
  const trainer=within(screen.getByRole('region',{name:'AP2 Fehlersuche: Namensauflösung oder Verbindung?'}));
  fireEvent.click(trainer.getByRole('button',{name:'Maßnahme prüfen'}));await waitFor(()=>expect(updateProgress).toHaveBeenCalledExactlyOnceWith('other-user-hash','ap2Troubleshooting',true));
  fireEvent.click(trainer.getByRole('button',{name:'Maßnahme prüfen'}));expect(updateProgress).toHaveBeenCalledTimes(1);
- fireEvent.click(screen.getAllByRole('button',{name:/Subnetting/})[0]);expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
+ await chooseModule('subnetting');expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
 },15000);

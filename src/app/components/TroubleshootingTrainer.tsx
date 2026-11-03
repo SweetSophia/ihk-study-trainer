@@ -6,8 +6,8 @@ import { CLAIMS, DIAGNOSES, CORRECTIONS, VERIFICATIONS, validateDiagnosis, valid
 
 type Section = 'diagnosis'|'action';
 type Props = { isAuthenticated:boolean; onAttempt:(correct:boolean)=>void; trainingRun?:TrainingRunContext };
-const inputClass='w-full min-w-0 rounded-lg border border-slate-600 bg-slate-950 p-2 text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
-const buttonClass='rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-400';
+const inputClass='w-full min-w-0 rounded-lg border border-control bg-canvas p-2 text-ink focus-visible:outline-2 focus-visible:outline-accent';
+const buttonClass='rounded-lg border border-control px-4 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent';
 const blank=()=>({diagnosis:'', classifications:{} as Record<string,string>, correction:'', verification:''});
 const RUBRIC=[
  'Ich trenne Beobachtung und Vermutung: Ein DNS-Timeout erklärt seine Ursache nicht, fehlende ICMP-Antworten beweisen keine allgemeine Unerreichbarkeit.',
@@ -27,19 +27,19 @@ export default function TroubleshootingTrainer({isAuthenticated,onAttempt,traini
  }
  function field(section:Section,key:string,label:string,value:string,change:(v:string)=>void,options:readonly {value:string;label:string}[]){
   const id=`troubleshooting-${section}-${key}`;const error=results[section]?.errors[key];const selected=options.find(option=>option.value===value);
-  return <div key={key}><label htmlFor={id} className="block text-sm text-slate-300">{label}</label><select id={id} value={value} className={inputClass} aria-invalid={!!error} aria-describedby={error?`${id}-error`:undefined} onChange={e=>{change(e.target.value);clear(section);}}><option value="">Bitte wählen</option>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select>{selected&&<p aria-hidden="true" id={`${id}-selected`} className="mt-1 break-words text-sm text-slate-300">Auswahl: {selected.label}</p>}{error&&<p id={`${id}-error`} className="text-sm text-rose-200">{error}</p>}</div>;
+  return <div key={key}><label htmlFor={id} className="block text-sm text-ink">{label}</label><select id={id} value={value} className={inputClass} aria-invalid={!!error} aria-describedby={error?`${id}-error`:undefined} onChange={e=>{change(e.target.value);clear(section);}}><option value="">Bitte wählen</option>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select>{selected&&<p aria-hidden="true" id={`${id}-selected`} className="mt-1 break-words text-sm text-ink">Auswahl: {selected.label}</p>}{error&&<p id={`${id}-error`} className="text-sm text-danger">{error}</p>}</div>;
  }
  function objective(section:Section,title:string,children:ReactNode,solution:ReactNode){
   const name=section==='diagnosis'?'Diagnose':'Maßnahme';const result=results[section];
-  return <section aria-labelledby={`troubleshooting-${section}-title`} className="space-y-3 rounded-lg border border-slate-700 p-4"><h3 id={`troubleshooting-${section}-title`} className="font-semibold">{title}</h3>
+  return <section aria-labelledby={`troubleshooting-${section}-title`} className="space-y-3 rounded-lg border border-line p-4"><h3 id={`troubleshooting-${section}-title`} className="font-semibold">{title}</h3>
    <form noValidate className="space-y-4" onSubmit={e=>{e.preventDefault();check(section);}}>{children}
-    <p role="status" className={result?(result.valid?'text-emerald-200':'text-rose-200'):'text-slate-400'}>{result?`${name}: ${result.valid?'Korrekt.':'Bitte die markierten Eingaben prüfen.'}`:'Noch keine aktuelle Prüfung.'}</p>
+    <p role="status" className={result?(result.valid?'text-accent':'text-danger'):'text-muted'}>{result?`${name}: ${result.valid?'Korrekt.':'Bitte die markierten Eingaben prüfen.'}`:'Noch keine aktuelle Prüfung.'}</p>
     <div className="flex flex-wrap gap-3"><button type="submit" className={buttonClass}>{name} prüfen</button><button type="button" className={buttonClass} aria-expanded={shown[section]} aria-controls={`troubleshooting-${section}-solution`} onClick={()=>{revealed.current[section]=true;trainingRun?.onEvent({type:'reveal',section});setShown(old=>({...old,[section]:!old[section]}));}}>{name}: Lösung {shown[section]?'verbergen':'anzeigen'}</button></div>
-    {shown[section]&&<div id={`troubleshooting-${section}-solution`} className="space-y-2 text-sm text-slate-300">{solution}</div>}
+    {shown[section]&&<div id={`troubleshooting-${section}-solution`} className="space-y-2 text-sm text-ink">{solution}</div>}
    </form>
   </section>;
  }
- return <section aria-labelledby="troubleshooting-title" className="space-y-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-slate-200 sm:p-6">
+ return <section aria-labelledby="troubleshooting-title" className="space-y-6 rounded-xl border border-line bg-surface p-4 text-ink sm:p-6">
   <h2 id="troubleshooting-title" className="text-xl font-bold">AP2 Fehlersuche: Namensauflösung oder Verbindung?</h2>
   <p>Eigene Übungsaufgabe · Schwerpunkt Baden-Württemberg · keine Original-Prüfungsaufgabe</p>
   <p>Ein Client eines fiktiven Handwerksbetriebs kann nach einer lokalen Netzwerkprofil-Änderung das interne Portal portal.werkstatt.test nicht öffnen. Ordne die vorliegenden Beobachtungen ein und plane eine begrenzte Korrektur.</p>
@@ -57,7 +57,7 @@ export default function TroubleshootingTrainer({isAuthenticated,onAttempt,traini
    <p>Es werden keine Befehle ausgeführt und keine Netzwerk- oder Sicherheitseinstellungen verändert. Nach einer Korrektur liegen noch keine Messergebnisse vor.</p>
   </section>
   <p className="text-sm">Nur die erste abgeschlossene Prüfung je Abschnitt zählt pro Durchlauf (maximal zwei), auch eine leere oder falsche Abgabe. Weitere Prüfungen geben Rückmeldung ohne Punkte. Eine vorher angezeigte Lösung macht nur den betreffenden Abschnitt ungewertet. Begründung und Häkchen vergeben nie Punkte.</p>
-  <p className="text-sm text-amber-200">Beim Anmelden oder Kontowechsel wird dieser Durchlauf zurückgesetzt. {trainingRun?'Beim Aufgabenwechsel innerhalb des Trainingslaufs bleiben Eingaben, Häkchen und Lösungen erhalten; beim Verlassen des Trainingslaufs gehen sie verloren.':'Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung und gehen auch beim Verlassen verloren.'} {isAuthenticated?'Nur objektive Versuche werden als Fortschritt gespeichert.':'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
+  <p className="text-sm text-warning">Beim Anmelden oder Kontowechsel wird dieser Durchlauf zurückgesetzt. {trainingRun?'Beim Aufgabenwechsel innerhalb des Trainingslaufs bleiben Eingaben, Häkchen und Lösungen erhalten; beim Verlassen des Trainingslaufs gehen sie verloren.':'Eingaben, Häkchen und Lösungen bleiben nur in dieser Sitzung und gehen auch beim Verlassen verloren.'} {isAuthenticated?'Nur objektive Versuche werden als Fortschritt gespeichert.':'Als Gast wird kein Fortschritt gespeichert. Melde dich vor dem Bearbeiten an, wenn du Fortschritt speichern möchtest.'}</p>
   {objective('diagnosis','1. Evidenz und Diagnose',<>
    {field('diagnosis','diagnosis','Am besten gestützte Diagnose',answers.diagnosis,value=>setAnswers(old=>({...old,diagnosis:value})),DIAGNOSES)}
    <p>Ordne jede Aussage ein: „Gestützt“ bedeutet durch die vorliegenden Beobachtungen belegt. „Nicht belegt“ bedeutet nicht bewiesen, nicht zwingend falsch. Die Reihenfolge deiner Eingaben ist unerheblich.</p>

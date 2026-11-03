@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Shield, User, LogOut, GraduationCap } from 'lucide-react';
 import StudyCard from './components/StudyCard';
 import AuthModal from './components/AuthModal';
-import ThemeSelector from './components/ThemeSelector';
+import ThemeSelector, { useDesktopNavigation } from './components/ThemeSelector';
+import AppearanceSelector from './components/AppearanceSelector';
 import ProgressDashboard from './components/ProgressDashboard';
 import SqlTrainer from './components/SqlTrainer';
 import TroubleshootingTrainer from './components/TroubleshootingTrainer';
@@ -26,7 +27,8 @@ import {
 } from './lib/auth';
 import { validateQuestionAnswers } from './lib/answerValidation';
 import { toCanonicalModuleId } from './lib/moduleIds';
-import { isModuleId } from './lib/modules';
+import { getModuleTopic } from './lib/moduleTopics';
+import { isModuleId, MODULE_NAMES } from './lib/modules';
 import { GENERATORS } from './lib/generators/registry';
 
 export default function Home() {
@@ -39,6 +41,40 @@ export default function Home() {
   const [progressError, setProgressError] = useState<{ kind: 'load' | 'write'; message: string } | null>(null);
   const [streakDays, setStreakDays] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingModule, setPendingModule] = useState<string | null>(null);
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [autoFocusAnswers, setAutoFocusAnswers] = useState(true);
+  const desktop = useDesktopNavigation();
+  const workspace = useRef<HTMLDivElement>(null);
+  const continueButton = useRef<HTMLButtonElement>(null);
+  const selectionTrigger = useRef<HTMLElement | null>(null);
+  const progressPanel = useRef<HTMLDivElement>(null);
+  const progressToggle = useRef<HTMLButtonElement>(null);
+  const previousDesktop = useRef(desktop);
+  const focusSelection = useRef(false);
+  const focusWorkspaceHeading = useCallback(() => {
+    const heading = workspace.current?.querySelector<HTMLElement>('h2');
+    if (heading) { heading.tabIndex = -1; heading.focus(); }
+  }, []);
+
+  useEffect(() => {
+    if (!focusSelection.current) return;
+    focusSelection.current = false;
+    // Children schedule their normal question autofocus first. Module navigation
+    // ends at the heading; next-question autofocus remains unchanged.
+    const frame = requestAnimationFrame(focusWorkspaceHeading);
+    return () => cancelAnimationFrame(frame);
+  }, [currentModule, focusWorkspaceHeading]);
+  useEffect(() => { if (pendingModule) continueButton.current?.focus(); }, [pendingModule]);
+  useEffect(() => {
+    if (previousDesktop.current !== desktop) {
+      const focused = document.activeElement;
+      if (!desktop && progressPanel.current?.contains(focused)) progressToggle.current?.focus();
+      if (desktop && focused === progressToggle.current) progressPanel.current?.querySelector<HTMLElement>('button:not(:disabled)')?.focus();
+      previousDesktop.current = desktop;
+    }
+  }, [desktop]);
+
 
   const progressIdentity = useRef<string | null>(null);
   const progressRequest = useRef(0);
@@ -84,6 +120,7 @@ export default function Home() {
         progressIdentity.current = hash;
         ++progressRequest.current;
         setProgressError(null);
+        setPendingModule(null);
         setProgress([]);
         setStreakDays(0);
         setUser(userData);
@@ -161,6 +198,7 @@ export default function Home() {
     setProgressError(null);
     setUser(null);
     setAccessHash(null);
+    setPendingModule(null);
     setCurrentModule(null);
     setCurrentQuestion(null);
     setProgress([]);
@@ -169,10 +207,33 @@ export default function Home() {
     setShowAuthModal(true);
   };
 
+  const commitModule = (module: string) => {
+    setPendingModule(null);
+    focusSelection.current = true;
+    setAutoFocusAnswers(false);
+    setCurrentModule(module);
+    generateNewQuestion(module);
+  };
   const handleSelectModule = (module: string) => {
     const canonicalModule = toCanonicalModuleId(module);
-    setCurrentModule(canonicalModule);
-    generateNewQuestion(canonicalModule);
+    if (!isModuleId(canonicalModule) || (canonicalModule === 'sql' && !accessHash)) return;
+    if (canonicalModule === currentModule) {
+      setPendingModule(null);
+      focusWorkspaceHeading();
+      return;
+    }
+    if (currentModule === 'ap2TrainingRun') {
+      selectionTrigger.current = document.activeElement as HTMLElement | null;
+      setPendingModule(canonicalModule);
+      return;
+    }
+    commitModule(canonicalModule);
+  };
+  const cancelDeparture = () => {
+    setPendingModule(null);
+    const previous = selectionTrigger.current;
+    const fallback = document.querySelector<HTMLElement>(desktop ? 'nav[aria-label="Lernmodule"] .navigation-panel button' : 'nav[aria-label="Lernmodule"] > button');
+    (previous?.isConnected && previous.getClientRects().length ? previous : fallback)?.focus();
   };
 
   const generateNewQuestion = (module: string) => {
@@ -195,6 +256,7 @@ export default function Home() {
   }, [currentQuestion, accessHash, recordProgress]);
 
   const handleNextQuestion = () => {
+    setAutoFocusAnswers(true);
     if (currentModule) {
       generateNewQuestion(currentModule);
     }
@@ -216,49 +278,50 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full"
+          className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full"
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-canvas">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <header data-study-chrome className="sticky top-0 z-40 border-b border-line bg-canvas backdrop-blur-md">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 py-3">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/10 rounded-lg">
-                <Shield className="w-6 h-6 text-emerald-400" />
+              <div className="p-2 bg-accent-soft rounded-lg">
+                <Shield className="w-6 h-6 text-accent" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-100">
+                <h1 className="text-lg sm:text-xl font-bold text-ink">
                   IHK Study Trainer
                 </h1>
-                <p className="text-xs text-slate-500 hidden sm:block">
+                <p className="text-xs text-muted hidden sm:block">
                   Fachinformatiker Systemintegration
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="ml-auto flex items-center gap-2">
+              <AppearanceSelector />
               {user ? (
                 <>
-                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-900 rounded-lg border border-slate-800">
-                    <User className="w-4 h-4 text-slate-400" />
-                    <code className="text-sm font-mono text-emerald-400">
+                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-surface rounded-lg border border-line">
+                    <User className="w-4 h-4 text-muted" />
+                    <code className="text-sm font-mono text-accent">
                       {accessHash?.slice(0, 6)}...
                     </code>
                   </div>
                   <button
                     aria-label="Abmelden"
                     onClick={handleLogout}
-                    className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                    className="p-2 text-muted hover:text-danger hover:bg-danger-soft rounded-lg transition-colors"
                   >
                     <LogOut className="w-5 h-5" />
                   </button>
@@ -266,7 +329,7 @@ export default function Home() {
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-medium rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action-hover text-onaction font-medium rounded-lg transition-colors"
                 >
                   <GraduationCap className="w-4 h-4" />
                   Anmelden
@@ -278,42 +341,34 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {progressError && <p role="alert" className="mb-4 rounded-lg border border-amber-700 bg-amber-950/30 p-3 text-amber-200">{progressError.message}</p>}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Sidebar - Progress */}
-          <div className="lg:col-span-4 xl:col-span-3 2xl:col-span-3 space-y-6 min-w-[280px]">
-            <AnimatePresence mode="wait">
-              {user && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="bg-slate-900/50 border border-slate-800 rounded-xl p-5"
-                >
-                  <ProgressDashboard
-                    progress={progress}
-                    streakDays={streakDays}
-                    onPracticeMistakes={handlePracticeMistakes}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
-              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
-                Lernmodule
-              </h2>
-              <ThemeSelector
-                currentModule={currentModule}
-                onSelectModule={handleSelectModule}
-                isAuthenticated={!!accessHash}
-              />
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {progressError && <p role="alert" className="mb-4 rounded-lg border border-warning bg-warning-soft p-3 text-warning">{progressError.message}</p>}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          <aside data-study-chrome className="trainer-sidebar flex min-w-0 flex-col gap-4 lg:w-[260px] lg:shrink-0" aria-label="Lernbereich auswählen">
+            <div className="order-1 lg:order-2 rounded-xl border border-line bg-surface p-3">
+              <ThemeSelector currentModule={currentModule} onSelectModule={handleSelectModule}
+                isAuthenticated={!!accessHash} onDismiss={cancelDeparture} />
             </div>
-          </div>
+            {user && <section className="order-2 lg:order-1 rounded-xl border border-line bg-surface p-3" aria-label="Lernfortschritt">
+              <button ref={progressToggle} type="button" className="min-h-11 w-full text-left font-semibold lg:hidden" aria-expanded={progressOpen} aria-controls="progress-panel" onClick={() => setProgressOpen(old => !old)}>Fortschritt</button>
+              <div ref={progressPanel} id="progress-panel" hidden={!desktop && !progressOpen}>
+                <ProgressDashboard progress={progress} streakDays={streakDays} onPracticeMistakes={handlePracticeMistakes} />
+              </div>
+            </section>}
+          </aside>
 
-          {/* Main Study Area */}
-          <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 min-w-0 flex-1">
+          <div ref={workspace} className="workspace min-w-0 flex-1">
+            {currentModule && isModuleId(currentModule) && <p className="mb-3 text-sm text-muted" aria-label="Aktuelle Aufgabe">{getModuleTopic(currentModule)?.label}{getModuleTopic(currentModule) ? ' / ' : ''}{MODULE_NAMES[currentModule]}</p>}
+            {pendingModule && isModuleId(pendingModule) && <section role="group" aria-label="Trainingslauf verlassen" className="mb-5 space-y-3 rounded-xl border border-warning bg-warning-soft p-4" onKeyDown={event => {
+              if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelDeparture(); }
+            }}>
+              <p className="font-semibold">Trainingslauf verlassen? Sitzungseingaben und Auswertung gehen verloren. Gespeicherter Themenfortschritt bleibt erhalten.</p>
+              <p>Ziel: {MODULE_NAMES[pendingModule]}</p>
+              <div className="flex flex-wrap gap-2">
+                <button ref={continueButton} type="button" className="min-h-11 rounded-lg border border-control bg-surface px-4" onClick={cancelDeparture}>Weiterarbeiten</button>
+                <button type="button" className="min-h-11 rounded-lg bg-action px-4 font-semibold text-onaction" onClick={() => commitModule(pendingModule)}>Trainingslauf verlassen</button>
+              </div>
+            </section>}
             {currentModule === 'ap2AccessControl' ? (
               <AccessControlTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
                 onAttempt={correct => {
@@ -379,6 +434,7 @@ export default function Home() {
               />
             ) : (
               <StudyCard
+                autoFocusAnswers={autoFocusAnswers}
                 question={currentQuestion}
                 onCheckAnswer={handleCheckAnswer}
                 onNextQuestion={handleNextQuestion}
@@ -389,13 +445,13 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 mt-12">
+      <footer className="border-t border-line mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted">
               IHK Study Trainer © {new Date().getFullYear()}
             </p>
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-muted">
               Für die IHK-Prüfung zum Fachinformatiker Systemintegration
             </p>
           </div>

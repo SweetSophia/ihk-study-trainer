@@ -131,14 +131,14 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
     <div className="space-y-6">
       {/* Generate Button */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
-          <Database className="w-5 h-5 text-emerald-400" />
+        <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
+          <Database className="w-5 h-5 text-accent" />
           SQL-Übungen (PostgreSQL)
         </h2>
         <button
           onClick={fetchNewExercise}
           disabled={isPending}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-action hover:bg-action disabled:bg-subtle disabled:text-muted disabled:border-line text-onaction rounded-lg font-medium transition-colors"
         >
           {isPending ? (
             <>
@@ -159,10 +159,10 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
           <div
             className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
               feedback.type === 'success'
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                ? 'bg-accent-soft text-accent border border-accent'
                 : feedback.type === 'error'
-                ? 'bg-red-500/10 text-red-400 border border-red-500/30'
-                : 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                ? 'bg-danger-soft text-danger border border-danger'
+                : 'bg-info-soft text-info border border-info'
             }`}
           >
             {feedback.type === 'success' && <CheckCircle2 className="w-4 h-4" />}
@@ -178,32 +178,32 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-5"
+          className="bg-surface border border-line rounded-xl p-6 space-y-5"
         >
           {/* Theme */}
           <div>
-            <h3 className="text-sm font-medium text-slate-400 mb-1">Szenario</h3>
-            <p className="text-emerald-300 font-semibold">{exercise.theme}</p>
-            <p className="text-slate-300 text-sm mt-1">{exercise.themeDescription}</p>
+            <h3 className="text-sm font-medium text-muted mb-1">Szenario</h3>
+            <p className="text-accent font-semibold">{exercise.theme}</p>
+            <p className="text-ink text-sm mt-1">{exercise.themeDescription}</p>
           </div>
 
           {/* Database Schema */}
           <div>
-            <h3 className="text-sm font-medium text-slate-400 mb-2">Datenbank-Struktur</h3>
-            <pre className="bg-slate-950 border border-slate-700 rounded-lg p-4 text-xs text-slate-300 font-mono whitespace-pre-wrap break-word overflow-x-auto max-h-64 overflow-y-auto">
+            <h3 className="text-sm font-medium text-muted mb-2">Datenbank-Struktur</h3>
+            <pre className="bg-canvas border border-line rounded-lg p-4 text-xs text-ink font-mono whitespace-pre-wrap break-word overflow-x-auto max-h-64 overflow-y-auto">
               <code>{exercise.setup_sql}</code>
             </pre>
           </div>
 
           {/* Question */}
-          <div className="bg-slate-800/50 rounded-lg p-4 border-l-4 border-emerald-500">
-            <h3 className="text-sm font-medium text-slate-400 mb-2">Aufgabe</h3>
-            <p className="text-slate-100 font-medium">{exercise.question}</p>
+          <div className="bg-subtle rounded-lg p-4 border-l-4 border-accent">
+            <h3 className="text-sm font-medium text-muted mb-2">Aufgabe</h3>
+            <p className="text-ink font-medium">{exercise.question}</p>
           </div>
 
           {/* Query Input */}
           <div>
-            <label htmlFor="user-query" className="text-sm font-medium text-slate-400 mb-2 block">
+            <label htmlFor="user-query" className="text-sm font-medium text-muted mb-2 block">
               Deine Query
             </label>
             <textarea
@@ -211,7 +211,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
               value={userQuery}
               disabled={isPending}
               onChange={(e) => setUserQuery(e.target.value)}
-              className="w-full h-36 p-4 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 font-mono text-sm placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-y"
+              className="w-full h-36 p-4 bg-canvas border border-control rounded-lg text-ink font-mono text-sm placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent resize-y"
               placeholder="SELECT ... FROM ... WHERE ...;"
               spellCheck={false}
             />
@@ -222,7 +222,7 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
             <button
               onClick={validateAnswer}
               disabled={!userQuery.trim() || isPending || isValidating || completed.current}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-action-hover hover:bg-action-hover disabled:bg-subtle disabled:text-muted disabled:border-line disabled:cursor-not-allowed text-onaction font-semibold rounded-lg transition-colors"
             >
               <Play className="w-4 h-4" />
               Query ausführen & prüfen
@@ -232,11 +232,11 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
 
           {/* Solution Hint */}
           <details className="mt-4">
-            <summary className="cursor-pointer text-sm text-slate-400 hover:text-slate-300">
+            <summary className="cursor-pointer text-sm text-muted hover:text-ink">
               💡 Musterlösung anzeigen
             </summary>
             <div className="mt-3">
-              <pre className="bg-slate-950 border border-slate-700 rounded-lg p-4 text-xs text-emerald-400 font-mono whitespace-pre-wrap break-word overflow-x-auto">
+              <pre className="bg-canvas border border-line rounded-lg p-4 text-xs text-accent font-mono whitespace-pre-wrap break-word overflow-x-auto">
                 <code>{exercise.solution_query}</code>
               </pre>
             </div>
@@ -246,15 +246,15 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
 
       {/* Locked State - User not authenticated */}
       {!accessHash && (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center">
-          <Lock className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-300 font-medium mb-2">
+        <div className="bg-surface border border-line rounded-xl p-12 text-center">
+          <Lock className="w-12 h-12 text-muted mx-auto mb-4" />
+          <p className="text-ink font-medium mb-2">
             Anmeldung erforderlich
           </p>
-          <p className="text-slate-500 text-sm mb-4">
+          <p className="text-muted text-sm mb-4">
             Melde dich an, um SQL-Übungen zu nutzen.
           </p>
-          <p className="text-xs text-slate-600">
+          <p className="text-xs text-muted">
             Die SQL-Übungen verwenden AI-generierte Aufgaben und erfordern eine Anmeldung.
           </p>
         </div>
@@ -262,12 +262,12 @@ export default function SqlTrainer({ accessHash, onCorrect, onIncorrect }: SqlTr
 
       {/* Initial State - Authenticated but no exercise loaded */}
       {accessHash && !exercise && !isPending && (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center">
-          <Database className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400 mb-2">
+        <div className="bg-surface border border-line rounded-xl p-12 text-center">
+          <Database className="w-12 h-12 text-muted mx-auto mb-4" />
+          <p className="text-muted mb-2">
             Klicke auf &quot;Neue Übung&quot;, um eine SQL-Aufgabe zu generieren.
           </p>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             Jede Aufgabe wird dynamisch mit echten PostgreSQL-Abfragen erstellt.
           </p>
         </div>

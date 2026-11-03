@@ -212,12 +212,12 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
   // For the login view: derived validation state for inline feedback.
   const loginValidation = validateHashShape(inputHash);
   const loginHintClass = !loginValidation.length
-    ? 'text-slate-500'
+    ? 'text-muted'
     : loginValidation.isValid
-      ? 'text-emerald-400'
+      ? 'text-accent'
       : loginValidation.formatOk
-        ? 'text-amber-400'
-        : 'text-rose-400';
+        ? 'text-warning'
+        : 'text-danger';
 
   return (
     <AnimatePresence>
@@ -228,7 +228,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+          className="absolute inset-0 bg-canvas backdrop-blur-sm"
         />
 
         {/* Modal */}
@@ -236,18 +236,18 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-md bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl shadow-slate-950/50 overflow-hidden"
+          className="relative w-full max-w-md bg-surface rounded-2xl border border-line shadow-2xl shadow-ink/10 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-            <h2 className="text-xl font-semibold text-slate-100">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-line">
+            <h2 className="text-xl font-semibold text-ink">
               {mode === 'select' && 'Anmelden'}
               {mode === 'register' && 'Dein Zugangscode'}
               {mode === 'login' && 'Mit Code anmelden'}
             </h2>
             <button
               onClick={onClose}
-              className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2 text-muted hover:text-ink hover:bg-subtle rounded-lg transition-colors"
               aria-label="Schließen"
             >
               <X className="w-5 h-5" />
@@ -256,52 +256,52 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
 
           {/* Content */}
           <div className="px-6 py-6">
-            <div id="auth-error" role="alert" aria-atomic="true" className={error ? 'mb-4 p-3 bg-rose-950/30 border border-rose-500/30 rounded-lg' : 'sr-only'}>
-              {error && <p className="text-sm text-rose-400">{error}</p>}
+            <div id="auth-error" role="alert" aria-atomic="true" className={error ? 'mb-4 p-3 bg-danger-soft border border-danger rounded-lg' : 'sr-only'}>
+              {error && <p className="text-sm text-danger">{error}</p>}
             </div>
-            <p role="status" className={loading || (hash && mode !== 'register') ? 'mb-4 text-sm text-slate-300' : 'sr-only'}>
+            <p role="status" className={loading || (hash && mode !== 'register') ? 'mb-4 text-sm text-ink' : 'sr-only'}>
               {loading ? 'Eine Anfrage läuft noch. Schließen bricht die Anfrage nicht ab.' : hash && mode !== 'register' ? 'Ein Zugangscode wurde erstellt und ist in dieser Sitzung noch verfügbar.' : ''}
             </p>
             {hash && mode !== 'register' && (
-              <div className="mb-4 space-y-3 rounded-lg border border-amber-500/30 bg-amber-950/30 p-3">
-                <p className="text-sm text-amber-200">Sichere ihn, bevor du dich mit einem anderen Code anmeldest. Nach erfolgreicher Anmeldung wird diese Codeanzeige zurückgesetzt. Beim Neuladen oder Verlassen der Seite geht ein noch nicht gesicherter Code verloren.</p>
-                <button type="button" onClick={() => changeView('register')} disabled={loading} className="w-full rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-100 disabled:opacity-50">Erstellten Zugangscode anzeigen</button>
+              <div className="mb-4 space-y-3 rounded-lg border border-warning bg-warning-soft p-3">
+                <p className="text-sm text-warning">Sichere ihn, bevor du dich mit einem anderen Code anmeldest. Nach erfolgreicher Anmeldung wird diese Codeanzeige zurückgesetzt. Beim Neuladen oder Verlassen der Seite geht ein noch nicht gesicherter Code verloren.</p>
+                <button type="button" onClick={() => changeView('register')} disabled={loading} className="w-full rounded-lg border border-control px-3 py-2 text-sm text-ink disabled:bg-subtle disabled:text-muted disabled:border-line">Erstellten Zugangscode anzeigen</button>
               </div>
             )}
             {mode === 'select' && (
               <div className="space-y-4">
-                <p className="text-slate-400 text-center">
+                <p className="text-muted text-center">
                   Wähle eine Option, um fortzufahren
                 </p>
 
-                <p className="text-slate-500 text-sm text-center">
+                <p className="text-muted text-sm text-center">
                   Anmeldung nur erforderlich für SQL Aufgaben und Übungsstand sichern. Sonst X drücken.
                 </p>
                 
                 <button
                   onClick={handleRegister}
                   disabled={loading || !!hash}
-                  className="w-full flex items-center gap-3 p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/30 rounded-xl transition-all group"
+                  className="w-full flex items-center gap-3 p-4 bg-subtle hover:bg-subtle border border-line hover:border-accent rounded-xl transition-all group"
                 >
-                  <div className="p-3 bg-emerald-500/10 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
-                    <Key className="w-6 h-6 text-emerald-400" />
+                  <div className="p-3 bg-accent-soft rounded-lg group-hover:bg-accent-soft transition-colors">
+                    <Key className="w-6 h-6 text-accent" />
                   </div>
                   <div className="text-left">
-                    <p className="font-semibold text-slate-200">Zugangscode erstellen</p>
-                    <p className="text-sm text-slate-500">Neuen Account anlegen</p>
+                    <p className="font-semibold text-ink">Zugangscode erstellen</p>
+                    <p className="text-sm text-muted">Neuen Account anlegen</p>
                   </div>
                 </button>
 
                 <button
                   onClick={() => changeView('login')}
-                  className="w-full flex items-center gap-3 p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/30 rounded-xl transition-all group"
+                  className="w-full flex items-center gap-3 p-4 bg-subtle hover:bg-subtle border border-line hover:border-accent rounded-xl transition-all group"
                 >
-                  <div className="p-3 bg-slate-700/50 rounded-lg group-hover:bg-slate-700 transition-colors">
-                    <LogIn className="w-6 h-6 text-slate-400" />
+                  <div className="p-3 bg-subtle rounded-lg group-hover:bg-subtle transition-colors">
+                    <LogIn className="w-6 h-6 text-muted" />
                   </div>
                   <div className="text-left">
-                    <p className="font-semibold text-slate-200">Ich habe einen Code</p>
-                    <p className="text-sm text-slate-500">Mit bestehendem Code anmelden</p>
+                    <p className="font-semibold text-ink">Ich habe einen Code</p>
+                    <p className="text-sm text-muted">Mit bestehendem Code anmelden</p>
                   </div>
                 </button>
               </div>
@@ -309,12 +309,12 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
 
             {mode === 'register' && (
               <div className="space-y-6">
-                <div className="p-4 bg-amber-950/30 border border-amber-500/30 rounded-lg">
+                <div className="p-4 bg-warning-soft border border-warning rounded-lg">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-amber-300">Wichtig!</p>
-                      <p className="text-sm text-amber-400/80 mt-1">
+                      <p className="font-medium text-warning">Wichtig!</p>
+                      <p className="text-sm text-warning mt-1">
                         Speichere diesen Code an einem sicheren Ort. Er kann nicht wiederhergestellt werden!
                       </p>
                     </div>
@@ -322,28 +322,28 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">
+                  <label className="block text-sm font-medium text-muted mb-2">
                     Dein Zugangscode
                   </label>
                   <div className="flex gap-2">
-                    <div className="flex-1 px-4 py-3 bg-slate-950 border border-slate-800 rounded-lg">
-                      <code className="text-2xl font-mono text-emerald-400 tracking-wider">
+                    <div className="flex-1 px-4 py-3 bg-canvas border border-line rounded-lg">
+                      <code className="text-2xl font-mono text-accent tracking-wider">
                         {hash}
                       </code>
                     </div>
                     <button
                       onClick={copyToClipboard}
-                      className="px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors"
+                      className="px-4 py-3 bg-subtle hover:bg-subtle border border-line rounded-lg transition-colors"
                       aria-label="Code in die Zwischenablage kopieren"
                     >
                       {copied ? (
-                        <Check className="w-5 h-5 text-emerald-400" />
+                        <Check className="w-5 h-5 text-accent" />
                       ) : (
-                        <Copy className="w-5 h-5 text-slate-400" />
+                        <Copy className="w-5 h-5 text-muted" />
                       )}
                     </button>
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-muted">
                     Tipp: Mit dem Button oben kopieren und sicher notieren.
                   </p>
                 </div>
@@ -351,7 +351,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                 <button
                   onClick={handleLoginWithHash}
                   disabled={loading}
-                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-800 disabled:text-emerald-200 text-slate-950 font-semibold rounded-lg transition-colors"
+                  className="w-full py-3 bg-action hover:bg-action-hover disabled:bg-accent-soft disabled:text-accent text-onaction font-semibold rounded-lg transition-colors"
                 >
                   {loading ? 'Anmeldung läuft...' : 'Weiter zum Lernen'}
                 </button>
@@ -363,7 +363,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                 <div>
                   <label
                     htmlFor="access-hash-input"
-                    className="flex items-center justify-between text-sm font-medium text-slate-400 mb-2"
+                    className="flex items-center justify-between text-sm font-medium text-muted mb-2"
                   >
                     <span>Zugangscode</span>
                     <span className={`text-xs font-mono ${loginHintClass}`}>
@@ -394,12 +394,12 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                       spellCheck={false}
                       aria-invalid={error ? 'true' : undefined}
                       aria-describedby={error ? 'access-hash-hint auth-error' : 'access-hash-hint'}
-                      className={`w-full px-4 py-3 pr-11 bg-slate-950 border rounded-lg text-slate-100 font-mono text-lg tracking-wider placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all disabled:opacity-50 ${
+                      className={`w-full px-4 py-3 pr-11 bg-canvas border rounded-lg text-ink font-mono text-lg tracking-wider placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent transition-all disabled:bg-subtle disabled:text-muted disabled:border-line ${
                         error
-                          ? 'border-rose-500/50 focus:border-rose-500/50 focus:ring-rose-500/40'
+                          ? 'border-danger focus:border-danger focus:ring-danger'
                           : loginValidation.isValid
-                            ? 'border-emerald-500/50 focus:border-emerald-500/50'
-                            : 'border-slate-800 focus:border-emerald-500/50'
+                            ? 'border-accent focus:border-accent'
+                            : 'border-control focus:border-accent'
                       }`}
                     />
                     {/* Inline status icon — only renders once something's
@@ -407,9 +407,9 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                     {loginValidation.length > 0 && (
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                         {loginValidation.isValid ? (
-                          <CircleCheck className="w-5 h-5 text-emerald-400" />
+                          <CircleCheck className="w-5 h-5 text-accent" />
                         ) : !loginValidation.formatOk ? (
-                          <CircleAlert className="w-5 h-5 text-rose-400" />
+                          <CircleAlert className="w-5 h-5 text-danger" />
                         ) : null}
                       </div>
                     )}
@@ -448,7 +448,7 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
                       transition={{ duration: 0.18 }}
-                      className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-sm text-emerald-300"
+                      className="flex items-center gap-2 px-3 py-2 bg-accent-soft border border-accent rounded-lg text-sm text-accent"
                     >
                       <ClipboardPaste className="w-4 h-4" />
                       Code aus Zwischenablage übernommen.
@@ -459,14 +459,14 @@ export default function AuthModal({ isOpen, onClose, onLogin, onRegister }: Auth
                 <button
                   onClick={handleLogin}
                   disabled={loading || !loginValidation.isValid}
-                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-lg transition-colors"
+                  className="w-full py-3 bg-action hover:bg-action-hover disabled:bg-subtle disabled:text-muted text-onaction font-semibold rounded-lg transition-colors"
                 >
                   {loading ? 'Anmeldung läuft...' : 'Anmelden'}
                 </button>
 
                 <button
                   onClick={() => changeView('select')}
-                  className="w-full py-3 border border-slate-700 hover:border-slate-600 text-slate-400 hover:text-slate-300 rounded-lg transition-colors"
+                  className="w-full py-3 border border-line hover:border-control text-muted hover:text-ink rounded-lg transition-colors"
                 >
                   Zurück
                 </button>

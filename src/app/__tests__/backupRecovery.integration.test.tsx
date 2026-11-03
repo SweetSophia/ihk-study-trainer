@@ -1,3 +1,4 @@
+import { chooseModule } from '../../test/navigation';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -40,7 +41,7 @@ beforeEach(() => {
 
 it('wires recovery checks, preserves other progress and resets completed guest work on login', async()=>{
  localStorage.clear();render(<Home/>);
- fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Backup/}))[0]);
+ await chooseModule('ap2BackupRecovery');
  const fill=()=>{
   for(const [label,value] of [['Mögliches Datenverlustfenster (Minuten)','20'],['Ausfalldauer (Minuten)','70']]) fireEvent.change(screen.getByLabelText(label),{target:{value}});
   for(const label of ['RPO-Ziel','RTO-Ziel']) fireEvent.change(screen.getByLabelText(label,{exact:true}),{target:{value:'met'}});
@@ -52,12 +53,12 @@ it('wires recovery checks, preserves other progress and resets completed guest w
  await waitFor(()=>expect(updateProgress).toHaveBeenCalledExactlyOnceWith('other-user-hash','ap2BackupRecovery',true));
  fireEvent.click(screen.getByRole('button',{name:'Zeitziele prüfen'}));expect(updateProgress).toHaveBeenCalledTimes(1);
  expect(screen.getByTestId('progress')).toHaveTextContent('subnetting');
- fireEvent.click(screen.getAllByRole('button',{name:/Subnetting/})[0]);expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
+ await chooseModule('subnetting');expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
 }, 15000);
 
 it('shows the shared persistence failure warning for a recovery attempt without retrying it',async()=>{
  vi.mocked(updateProgress).mockRejectedValueOnce(new Error('Lokaler Fortschritt konnte nicht gespeichert werden.'));
- render(<Home/>);fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Backup/}))[0]);
+ render(<Home/>);await chooseModule('ap2BackupRecovery');
  fireEvent.click(screen.getByRole('button',{name:'Zeitziele prüfen'}));
  expect(await screen.findByRole('alert')).toHaveTextContent('Fortschritt konnte nicht gespeichert werden');
  expect(screen.getByTestId('progress')).toHaveTextContent('subnetting');

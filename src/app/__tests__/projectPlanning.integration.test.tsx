@@ -1,3 +1,4 @@
+import { chooseModule } from '../../test/navigation';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -40,7 +41,7 @@ beforeEach(() => {
 
 it('wires project progress, protects repeats and resets guest work on login', async()=>{
  localStorage.clear();render(<Home/>);
- fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Projekt/}))[0]);
+ await chooseModule('ap2ProjectPlanning');
  fireEvent.change(screen.getByLabelText('Änderung: Projektdauer'),{target:{value:'12'}});
  fireEvent.click(within(screen.getByRole('region',{name:'AP2 Projektplanung'})).getByRole('button',{name:'Änderung prüfen'}));expect(updateProgress).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button',{name:'Test login'}));
@@ -50,5 +51,5 @@ it('wires project progress, protects repeats and resets guest work on login', as
  fireEvent.click(within(screen.getByRole('region',{name:'AP2 Projektplanung'})).getByRole('button',{name:'Änderung prüfen'}));
  await waitFor(()=>expect(updateProgress).toHaveBeenCalledExactlyOnceWith('other-user-hash','ap2ProjectPlanning',true));
  fireEvent.click(within(screen.getByRole('region',{name:'AP2 Projektplanung'})).getByRole('button',{name:'Änderung prüfen'}));expect(updateProgress).toHaveBeenCalledTimes(1);
- fireEvent.click(screen.getAllByRole('button',{name:/Subnetting/})[0]);expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
+ await chooseModule('subnetting');expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
 }, 15000);

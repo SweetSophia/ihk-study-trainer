@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import ThemeSelector from '../ThemeSelector';
 
 beforeEach(()=>vi.restoreAllMocks());
@@ -49,5 +49,15 @@ it('uses one mobile tree, preserves selection while browsing, and restores focus
  expect(select).toHaveBeenCalledTimes(1);
  expect(toggle).toHaveAttribute('aria-expanded','false');
  expect(within(screen.getByRole('navigation')).getAllByRole('button',{name:/Aufgabe wechseln/})).toHaveLength(1);
+ vi.unstubAllGlobals();
+});
+it('restores breakpoint focus to the visible active group when its current exercise is collapsed',()=>{
+ let desktop=false;let notify=()=>{};
+ vi.stubGlobal('matchMedia',vi.fn(()=>({get matches(){return desktop},addEventListener:(_event:string,callback:()=>void)=>{notify=callback},removeEventListener:vi.fn()})));
+ setup(false,'subnetting');
+ const toggle=screen.getByRole('button',{name:/^Aufgabe wechseln/});fireEvent.click(toggle);
+ const group=screen.getByRole('button',{name:/^Netzwerke/});fireEvent.click(group);fireEvent.click(toggle);toggle.focus();
+ act(()=>{desktop=true;notify()});
+ expect(group).toHaveFocus();
  vi.unstubAllGlobals();
 });

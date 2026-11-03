@@ -1,3 +1,4 @@
+import { chooseModule } from '../../test/navigation';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -40,7 +41,7 @@ beforeEach(() => {
 
 it('wires cost checks, preserves other progress and resets completed guest work on login', async()=>{
  localStorage.clear();render(<Home/>);
- fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Kosten/}))[0]);
+ await chooseModule('ap2CostComparison');
  const fill=()=>{
   for(const [label,value] of [['Eigener Server nach 36 Monaten (€)','9120'],['Managed Service nach 36 Monaten (€)','9760'],['Absoluter Kostenunterschied nach 36 Monaten (€)','640']]) fireEvent.change(screen.getByLabelText(label),{target:{value}});
   fireEvent.change(screen.getByLabelText('Günstigere Option nach 36 Monaten'),{target:{value:'own'}});
@@ -52,12 +53,12 @@ it('wires cost checks, preserves other progress and resets completed guest work 
  await waitFor(()=>expect(updateProgress).toHaveBeenCalledExactlyOnceWith('other-user-hash','ap2CostComparison',true));
  fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));expect(updateProgress).toHaveBeenCalledTimes(1);
  expect(screen.getByTestId('progress')).toHaveTextContent('subnetting');
- fireEvent.click(screen.getAllByRole('button',{name:/Subnetting/})[0]);expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
+ await chooseModule('subnetting');expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
 }, 15000);
 
 it('shows the shared persistence failure warning for a cost attempt without retrying it',async()=>{
  vi.mocked(updateProgress).mockRejectedValueOnce(new Error('Lokaler Fortschritt konnte nicht gespeichert werden.'));
- render(<Home/>);fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Kosten/}))[0]);
+ render(<Home/>);await chooseModule('ap2CostComparison');
  fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));
  expect(await screen.findByRole('alert')).toHaveTextContent('Fortschritt konnte nicht gespeichert werden');
  expect(screen.getByTestId('progress')).toHaveTextContent('subnetting');

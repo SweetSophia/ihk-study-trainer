@@ -134,34 +134,34 @@ export default function SubnettingVisualizer({ question }: SubnettingVisualizerP
       transition={{ duration: 0.25, ease: 'easeOut' }}
       aria-label="Subnetting Visualisierung"
       data-testid="subnetting-visualizer"
-      className="rounded-xl border border-slate-800 bg-slate-950/50 overflow-hidden"
+      className="rounded-xl border border-line bg-canvas overflow-hidden"
     >
       {/* ----------------------------------------------------------------- */}
       {/* Header                                                              */}
       {/* ----------------------------------------------------------------- */}
-      <header className="flex flex-wrap items-baseline gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900/40">
+      <header className="flex flex-wrap items-baseline gap-3 px-5 py-3 border-b border-line bg-surface">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-emerald-500/10 text-emerald-400">
+          <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-accent-soft text-accent">
             <Network className="w-3.5 h-3.5" aria-hidden="true" />
           </span>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-accent">
             Visuelle Aufschlüsselung
           </h3>
         </div>
         <div className="ml-auto flex flex-wrap items-baseline gap-2 text-sm font-mono">
           {parsed.ip && (
-            <span className="text-slate-100" data-testid="viz-given-ip">
+            <span className="text-ink" data-testid="viz-given-ip">
               {parsed.ip}
             </span>
           )}
           {parsed.cidr !== null && (
-            <span className="text-emerald-400 font-semibold" data-testid="viz-cidr">
+            <span className="text-accent font-semibold" data-testid="viz-cidr">
               /{parsed.cidr}
             </span>
           )}
           {parsed.maskStr && (
-            <span className="text-slate-500 text-xs">
-              Maske: <span className="text-slate-300">{parsed.maskStr}</span>
+            <span className="text-muted text-xs">
+              Maske: <span className="text-ink">{parsed.maskStr}</span>
             </span>
           )}
         </div>
@@ -171,7 +171,7 @@ export default function SubnettingVisualizer({ question }: SubnettingVisualizerP
       {/* 32-bit split bar                                                   */}
       {/* ----------------------------------------------------------------- */}
       {parsed.cidr !== null && (
-        <div className="px-5 pt-4 pb-3 border-b border-slate-800/60">
+        <div className="px-5 pt-4 pb-3 border-b border-line">
           <SectionLabel icon={<Eye className="w-3 h-3" aria-hidden="true" />}>
             32-Bit-Aufteilung
           </SectionLabel>
@@ -182,7 +182,7 @@ export default function SubnettingVisualizer({ question }: SubnettingVisualizerP
       {/* ----------------------------------------------------------------- */}
       {/* Address range bar                                                  */}
       {/* ----------------------------------------------------------------- */}
-      <div className="px-5 pt-4 pb-4 border-b border-slate-800/60">
+      <div className="px-5 pt-4 pb-4 border-b border-line">
         <SectionLabel icon={<Eye className="w-3 h-3" aria-hidden="true" />}>
           Adressbereich im Subnetz
         </SectionLabel>
@@ -231,7 +231,7 @@ function SectionLabel({
   icon?: React.ReactNode;
 }) {
   return (
-    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">
+    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted mb-2">
       {icon}
       <span>{children}</span>
     </p>
@@ -241,17 +241,17 @@ function SectionLabel({
 type Tone = 'emerald' | 'rose' | 'amber' | 'slate';
 
 const TONE_TEXT: Record<Tone, string> = {
-  emerald: 'text-emerald-400',
-  rose: 'text-rose-400',
-  amber: 'text-amber-300',
-  slate: 'text-slate-400',
+  emerald: 'text-accent',
+  rose: 'text-danger',
+  amber: 'text-warning',
+  slate: 'text-muted',
 };
 
 const TONE_VALUE: Record<Tone, string> = {
-  emerald: 'text-emerald-200',
-  rose: 'text-rose-200',
-  amber: 'text-amber-200',
-  slate: 'text-slate-200',
+  emerald: 'text-accent',
+  rose: 'text-danger',
+  amber: 'text-warning',
+  slate: 'text-ink',
 };
 
 function DetailRow({
@@ -312,7 +312,7 @@ function BitBar({ cidr }: { cidr: number }) {
             textAnchor="middle"
             fontSize="9"
             fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-            fill="#64748b"
+            fill="var(--ui-muted)"
           >
             {label}
           </text>
@@ -327,7 +327,7 @@ function BitBar({ cidr }: { cidr: number }) {
           y1={20}
           x2={i * 80}
           y2={50}
-          stroke="#1e293b"
+          stroke="var(--ui-subtle)"
           strokeWidth={1}
         />
       ))}
@@ -343,9 +343,9 @@ function BitBar({ cidr }: { cidr: number }) {
             width={9}
             height={22}
             rx={1}
-            fill={isNetwork ? '#10b981' : '#475569'}
+            fill={isNetwork ? 'var(--ui-accent)' : 'var(--ui-control)'}
             fillOpacity={isNetwork ? 0.85 : 0.45}
-            stroke="#0f172a"
+            stroke="var(--ui-canvas)"
             strokeWidth={0.5}
           />
         );
@@ -358,7 +358,7 @@ function BitBar({ cidr }: { cidr: number }) {
           y1={18}
           x2={networkBits * 10}
           y2={52}
-          stroke="#fb7185"
+          stroke="var(--ui-danger)"
           strokeWidth={1.5}
           strokeDasharray="3 2"
         />
@@ -370,7 +370,7 @@ function BitBar({ cidr }: { cidr: number }) {
         y={58}
         fontSize="9"
         fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-        fill="#10b981"
+        fill="var(--ui-accent)"
       >
         Netzwerk
       </text>
@@ -380,7 +380,7 @@ function BitBar({ cidr }: { cidr: number }) {
         fontSize="9"
         textAnchor="end"
         fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-        fill="#94a3b8"
+        fill="var(--ui-muted)"
       >
         Host
       </text>
@@ -417,7 +417,7 @@ function RangeBar({
       className="w-full h-auto"
     >
       {/* Background bar */}
-      <rect x={0} y={28} width={320} height={10} rx={2} fill="#1e293b" />
+      <rect x={0} y={28} width={320} height={10} rx={2} fill="var(--ui-subtle)" />
 
       {/* Host-range highlight (everything except N and B endpoints) */}
       <rect
@@ -426,21 +426,21 @@ function RangeBar({
         width={308}
         height={6}
         rx={1}
-        fill="#10b981"
+        fill="var(--ui-accent)"
         fillOpacity={0.45}
       />
 
       {/* Network ID marker (left edge) */}
       <g>
-        <line x1={0} y1={18} x2={0} y2={48} stroke="#10b981" strokeWidth={2} />
-        <circle cx={0} cy={33} r={3} fill="#10b981" />
+        <line x1={0} y1={18} x2={0} y2={48} stroke="var(--ui-accent)" strokeWidth={2} />
+        <circle cx={0} cy={33} r={3} fill="var(--ui-accent)" />
         <text
           x={0}
           y={14}
           fontSize="10"
           textAnchor="middle"
           fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-          fill="#10b981"
+          fill="var(--ui-accent)"
           fontWeight={700}
         >
           N
@@ -449,15 +449,15 @@ function RangeBar({
 
       {/* Broadcast marker (right edge) */}
       <g>
-        <line x1={320} y1={18} x2={320} y2={48} stroke="#fb7185" strokeWidth={2} />
-        <circle cx={320} cy={33} r={3} fill="#fb7185" />
+        <line x1={320} y1={18} x2={320} y2={48} stroke="var(--ui-danger)" strokeWidth={2} />
+        <circle cx={320} cy={33} r={3} fill="var(--ui-danger)" />
         <text
           x={320}
           y={14}
           fontSize="10"
           textAnchor="middle"
           fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-          fill="#fb7185"
+          fill="var(--ui-danger)"
           fontWeight={700}
         >
           B
@@ -471,7 +471,7 @@ function RangeBar({
         fontSize="9"
         textAnchor="middle"
         fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-        fill="#cbd5e1"
+        fill="var(--ui-ink)"
       >
         {networkId}
       </text>
@@ -481,7 +481,7 @@ function RangeBar({
         fontSize="9"
         textAnchor="middle"
         fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-        fill="#cbd5e1"
+        fill="var(--ui-ink)"
       >
         {broadcast}
       </text>
@@ -491,7 +491,7 @@ function RangeBar({
         fontSize="9"
         textAnchor="middle"
         fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-        fill="#fbbf24"
+        fill="var(--ui-warning)"
       >
         {hostMin} … {hostMax}
       </text>
@@ -504,7 +504,7 @@ function RangeBar({
           fontSize="9"
           textAnchor="end"
           fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-          fill="#64748b"
+          fill="var(--ui-muted)"
         >
           {totalAddresses.toLocaleString('de-DE')} Adressen · {usableHosts.toLocaleString('de-DE')} nutzbar
         </text>

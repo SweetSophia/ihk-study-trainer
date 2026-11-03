@@ -17,6 +17,9 @@ assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(new URL(url).hostname), '
       page.on('pageerror', error => errors.push(error.message));
       await page.goto(url);
       await page.getByRole('button', { name: 'Schließen', exact: true }).click();
+      const nav = page.getByRole('navigation', {name:'Lernmodule', exact:true});
+      if (width < 1024) await nav.getByRole('button', {name:/^Aufgabe wechseln/}).click();
+      await nav.getByRole('button', {name:'Rechnen & Zahlensysteme', exact:true}).click();
       const cases = [
         ['0,75', true], ['0.75', true], ['7.5e-1', true], ['7,5e-1', true],
         ['0,75xyz', false], ['0.75xyz', false], ['0,75.0', false], ['0.75,0', false],
@@ -24,7 +27,9 @@ assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(new URL(url).hostname), '
       ];
       for (const [value, correct] of blockSubmission ? cases.slice(0, 6) : cases) {
         // Seed and dispatch together so asynchronous animation draws cannot consume the fixture first.
-        await page.getByText('Bildgröße', { exact: true }).filter({ visible: true }).evaluate(button => {
+        const next = page.getByRole('button', {name:/Nächste Frage/});
+        const questionAction = await next.count() ? next : nav.getByRole('button', {name:'Bildgröße', exact:true});
+        await questionAction.evaluate(button => {
           const draws = [0.7, 0.01, 0.5];
           Math.random = () => draws.shift() ?? 0.5;
           button.click();
@@ -36,7 +41,7 @@ assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(new URL(url).hostname), '
         await status.filter({ hasText: /Richtig!|nicht ganz richtig/ }).waitFor({ state: 'hidden' });
         await input.pressSequentially(value);
         assert.equal(await input.inputValue(), value, `Input must preserve ${value}`);
-        await page.locator('select:visible').selectOption('MiB');
+        await page.locator('.workspace select:visible').selectOption('MiB');
         assert.equal(await input.getAttribute('inputmode'), null);
         await input.focus();
         if (blockSubmission && value === '0.75xyz') {

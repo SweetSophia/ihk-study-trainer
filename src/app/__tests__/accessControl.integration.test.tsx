@@ -1,3 +1,4 @@
+import { chooseModule } from '../../test/navigation';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -40,7 +41,7 @@ beforeEach(() => {
 
 it('writes permissions attempts once under its own ID and resets completed guest work on login',async()=>{
  localStorage.clear();render(<Home/>);
- fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Rechte/}))[0]);
+ await chooseModule('ap2AccessControl');
  const fill=()=>{for(const[label,value]of [['Lea · Aufträge','edit'],['Lea · Personalakten','none'],['Tom · Aufträge','read'],['Tom · Personalakten','edit'],['Mira · Aufträge','none'],['Mira · Personalakten','edit']]) fireEvent.change(screen.getByLabelText(label),{target:{value}});};
  fill();fireEvent.click(screen.getByRole('button',{name:'Zugriffe prüfen'}));expect(screen.getAllByRole('status')[0]).toHaveTextContent('Korrekt');expect(updateProgress).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button',{name:'Zugriffe: Lösung anzeigen'}));
@@ -52,14 +53,14 @@ it('writes permissions attempts once under its own ID and resets completed guest
  await waitFor(()=>expect(updateProgress).toHaveBeenCalledExactlyOnceWith('other-user-hash','ap2AccessControl',true));
  fireEvent.click(screen.getByRole('button',{name:'Zugriffe prüfen'}));expect(updateProgress).toHaveBeenCalledTimes(1);
  expect(screen.getByTestId('progress')).toHaveTextContent('subnetting');
- fireEvent.click(screen.getAllByRole('button',{name:/Subnetting/})[0]);expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
+ await chooseModule('subnetting');expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
 },20000);
 it('keeps the shared write-failure warning without retry and leaves the curated run unchanged',async()=>{
  vi.mocked(updateProgress).mockRejectedValueOnce(new Error('synthetic storage failure'));
- render(<Home/>);fireEvent.click((await screen.findAllByRole('button',{name:/AP2 Rechte/}))[0]);
+ render(<Home/>);await chooseModule('ap2AccessControl');
  fireEvent.click(screen.getByRole('button',{name:'Korrektur prüfen'}));expect(await screen.findByRole('alert')).toHaveTextContent('Fortschritt konnte nicht gespeichert werden');
  fireEvent.click(screen.getByRole('button',{name:'Korrektur prüfen'}));expect(updateProgress).toHaveBeenCalledExactlyOnceWith('test-user-hash','ap2AccessControl',false);
- fireEvent.click(screen.getAllByRole('button',{name:/AP2-Lauf/})[0]);
+ await chooseModule('ap2TrainingRun');
  expect(screen.getByRole('navigation',{name:'Aufgaben im Trainingslauf'})).toHaveTextContent('1. Wirtschaftlichkeit');
  expect(screen.getByRole('navigation',{name:'Aufgaben im Trainingslauf'})).toHaveTextContent('2. Fehlersuche');
  expect(screen.getByRole('navigation',{name:'Aufgaben im Trainingslauf'})).toHaveTextContent('3. Datensicherung');

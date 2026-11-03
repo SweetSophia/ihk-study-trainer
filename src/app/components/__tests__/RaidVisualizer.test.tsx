@@ -295,8 +295,8 @@ describe('RaidVisualizer — capacity accounting colour coding', () => {
     // Three data tiles carry the emerald palette; one parity tile carries amber.
     const dataClasses = tiles[0].className;
     const parityClasses = tiles[3].className;
-    expect(dataClasses).toContain('emerald');
-    expect(parityClasses).toContain('amber');
+    expect(dataClasses).toContain('accent');
+    expect(parityClasses).toContain('warning');
   });
 
   it('shows the "Paritätsanteil" text label on every parity capacity tile', () => {
@@ -420,7 +420,7 @@ describe('RaidVisualizer — fault tolerance badge', () => {
     const badge = screen.getByTestId('viz-fault-tolerance-badge');
     expect(badge).toHaveAttribute('data-fault-tolerance', '0');
     expect(badge).toHaveTextContent('keine Ausfallsicherheit');
-    expect(badge.className).toContain('rose');
+    expect(badge.className).toContain('danger');
   });
 
   it('renders an emerald badge for RAID 1 with multi-disk tolerance', () => {
@@ -438,7 +438,7 @@ describe('RaidVisualizer — fault tolerance badge', () => {
 
     const badge = screen.getByTestId('viz-fault-tolerance-badge');
     expect(badge).toHaveTextContent('toleriert 2 Ausfälle');
-    expect(badge.className).toContain('emerald');
+    expect(badge.className).toContain('accent');
   });
 });
 

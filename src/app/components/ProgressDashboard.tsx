@@ -101,15 +101,15 @@ export default function ProgressDashboard({
     : 0;
 
   const getAccuracyColor = (accuracy: number) => {
-    if (accuracy >= 80) return 'text-emerald-400';
-    if (accuracy >= 60) return 'text-amber-400';
-    return 'text-rose-400';
+    if (accuracy >= 80) return 'text-accent';
+    if (accuracy >= 60) return 'text-warning';
+    return 'text-danger';
   };
 
   const getStreakColor = () => {
-    if (streakDays >= 7) return 'text-orange-400';
-    if (streakDays >= 3) return 'text-amber-400';
-    return 'text-slate-400';
+    if (streakDays >= 7) return 'text-warning';
+    if (streakDays >= 3) return 'text-warning';
+    return 'text-muted';
   };
 
   return (
@@ -119,62 +119,62 @@ export default function ProgressDashboard({
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-slate-900/50 border border-slate-800 rounded-xl p-4"
+          className="bg-surface border border-line rounded-xl p-4"
         >
           <div className="flex items-center gap-2 mb-2">
-            <Trophy className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-medium text-slate-500 uppercase">Gesamt</span>
+            <Trophy className="w-4 h-4 text-warning" />
+            <span className="text-xs font-medium text-muted uppercase">Gesamt</span>
           </div>
-          <p className="text-2xl font-bold text-slate-100">{totalAttempted}</p>
-          <p className="text-xs text-slate-500">Fragen beantwortet</p>
+          <p className="text-2xl font-bold text-ink">{totalAttempted}</p>
+          <p className="text-xs text-muted">Fragen beantwortet</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.05 }}
-          className="bg-slate-900/50 border border-slate-800 rounded-xl p-4"
+          className="bg-surface border border-line rounded-xl p-4"
         >
           <div className="flex items-center gap-2 mb-2">
-            <Target className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-medium text-slate-500 uppercase">Genauigkeit</span>
+            <Target className="w-4 h-4 text-accent" />
+            <span className="text-xs font-medium text-muted uppercase">Genauigkeit</span>
           </div>
           <p className={`text-2xl font-bold ${getAccuracyColor(overallAccuracy)}`}>
             {overallAccuracy}%
           </p>
-          <p className="text-xs text-slate-500">{totalCorrect} richtig</p>
+          <p className="text-xs text-muted">{totalCorrect} richtig</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-slate-900/50 border border-slate-800 rounded-xl p-4"
+          className="bg-surface border border-line rounded-xl p-4"
         >
           <div className="flex items-center gap-2 mb-2">
             <Flame className={`w-4 h-4 ${getStreakColor()}`} />
-            <span className="text-xs font-medium text-slate-500 uppercase">Streak</span>
+            <span className="text-xs font-medium text-muted uppercase">Streak</span>
           </div>
           <p className={`text-2xl font-bold ${getStreakColor()}`}>
             {streakDays}
           </p>
-          <p className="text-xs text-slate-500">Tage am Stück</p>
+          <p className="text-xs text-muted">Tage am Stück</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.15 }}
-          className="bg-slate-900/50 border border-slate-800 rounded-xl p-4"
+          className="bg-surface border border-line rounded-xl p-4"
         >
           <div className="flex items-center gap-2 mb-2">
-            <BarChart3 className="w-4 h-4 text-blue-400" />
-            <span className="text-xs font-medium text-slate-500 uppercase">Module</span>
+            <BarChart3 className="w-4 h-4 text-info" />
+            <span className="text-xs font-medium text-muted uppercase">Module</span>
           </div>
-          <p className="text-2xl font-bold text-slate-100">
+          <p className="text-2xl font-bold text-ink">
             {progress.filter(p => p.questions_attempted > 0).length}
           </p>
-          <p className="text-xs text-slate-500">gestartet</p>
+          <p className="text-xs text-muted">gestartet</p>
         </motion.div>
       </div>
 
@@ -183,7 +183,7 @@ export default function ProgressDashboard({
         <button
           onClick={onPracticeMistakes}
           disabled={!hasActiveMistakes}
-          className="flex items-center gap-2 px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2.5 bg-danger-soft hover:bg-danger-soft border border-danger text-danger rounded-lg transition-colors disabled:bg-subtle disabled:text-muted disabled:border-line disabled:cursor-not-allowed"
         >
           <RotateCcw className="w-4 h-4" />
           <span className="text-sm font-medium">Fehler üben</span>
@@ -191,7 +191,7 @@ export default function ProgressDashboard({
 
         <button
           onClick={toggleShowDetails}
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-subtle hover:bg-subtle border border-line text-ink rounded-lg transition-colors"
         >
           <TrendingUp className="w-4 h-4" />
           <span className="text-sm font-medium">
@@ -206,13 +206,13 @@ export default function ProgressDashboard({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="border-t border-slate-800 pt-4"
+          className="border-t border-line pt-4"
         >
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+          <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">
             Fortschritt pro Modul
           </h3>
           {hasMixedHistory && (
-            <p className="text-xs text-slate-500 mb-3">
+            <p className="text-xs text-muted mb-3">
               Gemischte Kalkulationsversuche bleiben im Altbestand und in der Gesamtsumme erhalten.
               Neue Differenzaufgaben werden separat gezählt; den Altbestand kannst du nicht erneut üben.
             </p>
@@ -227,24 +227,24 @@ export default function ProgressDashboard({
               return (
                 <div 
                   key={p.module} 
-                  className="flex items-center justify-between p-3 bg-slate-950/50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-canvas rounded-lg"
                 >
                   <div className="flex items-center gap-3">
                     {accuracy >= 80 ? (
-                      <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle className="w-4 h-4 text-accent" />
                     ) : accuracy >= 50 ? (
-                      <TrendingUp className="w-4 h-4 text-amber-400" />
+                      <TrendingUp className="w-4 h-4 text-warning" />
                     ) : (
-                      <XCircle className="w-4 h-4 text-rose-400" />
+                      <XCircle className="w-4 h-4 text-danger" />
                     )}
-                    <span className="text-sm text-slate-300">
+                    <span className="text-sm text-ink">
                       {canonicalModuleId === LEGACY_CALCULATION.id
                         ? LEGACY_CALCULATION.name
                         : isModuleId(canonicalModuleId) ? MODULE_NAMES[canonicalModuleId] : p.module}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="text-slate-500">
+                    <span className="text-muted">
                       {p.questions_correct}/{p.questions_attempted}
                     </span>
                     <span className={`font-medium w-10 text-right ${getAccuracyColor(accuracy)}`}>
@@ -256,7 +256,7 @@ export default function ProgressDashboard({
             })}
             
             {progress.length === 0 && (
-              <p className="text-sm text-slate-500 text-center py-4">
+              <p className="text-sm text-muted text-center py-4">
                 Noch keine Daten vorhanden. Starte mit dem Lernen!
               </p>
             )}

@@ -1,6 +1,6 @@
 # Trainer-Navigation und Darstellung — Entwurf A
 
-**Status:** Vorschlag zur Designfreigabe; keine Implementierung und kein Implementierungsplan. Basis: Main `c9e79907ececcbb2999e2910e85a624ff5d0686a`, am 03.11.2026 erneut geprüft. Alle nachfolgend konkretisierten Details sind begründete Gestaltungsvorschläge, keine zusätzlichen Nutzeranforderungen.
+**Status:** Design am 03.11.2026 um 08:30 UTC freigegeben; Umsetzung separat im zugehörigen Plan. Basis: Main `c9e79907ececcbb2999e2910e85a624ff5d0686a`, am 03.11.2026 erneut geprüft. Alle nachfolgend konkretisierten Details sind begründete Gestaltungsvorschläge, keine zusätzlichen Nutzeranforderungen.
 
 ## Ziel und Auswahl
 
@@ -80,10 +80,10 @@ Vor Abschluss einer späteren Umsetzung prüfen:
 
 Designfolge, kein ausführbarer Implementierungsplan: (1) Gruppenzuordnung und Farb-/Typografiegrundlagen, (2) gemeinsame responsive Navigation mit Fokus und Lauf-Verlassenschutz, (3) vollständige Umstellung aller Lern-/Dialog-/Diagrammflächen, (4) integrierte funktionale und visuelle Abnahme. Ein Hell-/Dunkelschalter gilt erst mit der vollständigen Flächenmigration als fertig.
 
-Konsequente Vorschläge zur Freigabe sind insbesondere: aktiven Eintrag nicht neu erzeugen; mobile Inline-Auswahl statt Overlay; konservative Bestätigung beim Verlassen eines Trainingslaufs. Innerhalb dieses Vorschlags besteht keine zusätzliche fachliche Entscheidungssperre. Erst nach Designfreigabe folgen formale Implementierungsplanung und Produktänderungen. Aktuell weder Commit noch Veröffentlichung, PR, Merge oder Deployment.
+Konsequente Vorschläge zur Freigabe sind insbesondere: aktiven Eintrag nicht neu erzeugen; mobile Inline-Auswahl statt Overlay; konservative Bestätigung beim Verlassen eines Trainingslaufs. Innerhalb dieses Vorschlags besteht keine zusätzliche fachliche Entscheidungssperre. Erst nach Designfreigabe folgen formale Implementierungsplanung und Produktänderungen. Bei Abschluss der Designvorbereitung bestanden weder Commit noch Veröffentlichung, PR, Merge oder Deployment.
 
 ### Quellen der Bestandsaufnahme
 
-`src/app/lib/modules.ts`, `src/app/components/ThemeSelector.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `src/app/layout.tsx`, `src/app/components/TrainingRun.tsx`, `src/app/components/ProgressDashboard.tsx`, `next.config.ts`. Aktuelle Codebasis verifiziert; keine Produktdateien verändert, keine Tests/Builds ausgeführt. Bildmaterialisierung scheiterte mit „download failed“, Zielbild nicht angelegt; kein anderer Zugriffsweg versucht.
+`src/app/lib/modules.ts`, `src/app/components/ThemeSelector.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `src/app/layout.tsx`, `src/app/components/TrainingRun.tsx`, `src/app/components/ProgressDashboard.tsx`, `next.config.ts`. Bei der Design-Bestandsaufnahme wurde die Codebasis verifiziert; damals wurden keine Produktdateien verändert und keine Tests/Builds ausgeführt. Bildmaterialisierung scheiterte mit „download failed“, Zielbild nicht angelegt; kein anderer Zugriffsweg versucht.
 
 Unabhängige Builder-Prüfung am 03.11.2026: vollständigen Entwurf auf planungsrelevante Unklarheiten geprüft; Ergebnis „nothing important left“. Anschließend mobile Platzierung des vorhandenen Fortschritts und rein sitzungsbezogene Aufklappzustände ausdrücklich präzisiert. Kein Produktcode und kein formaler Implementierungsplan erstellt.

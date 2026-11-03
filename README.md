@@ -18,7 +18,7 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 - **Fortschritts-Tracking pro Modul** inklusive Genauigkeit und Lern-Streaks
 - **"Fehler üben"-Modus**, um gezielt schwache Themen zu wiederholen
 - **Anmeldung per persönlicher Account-ID** ohne E-Mail/Passwort-Flow
-- **Mobile-first UI** mit Dark Mode und klarer Karten-Navigation
+- **Responsive Lernoberfläche** mit fünf Themengruppen und System-/Hell-/Dunkelmodus
 - **SQL im Browser** mit PGlite: feste AP2-Aufgaben sowie ein separates Modul mit KI-generierten Übungen
 
 ## Neuere Module & Erweiterungen
@@ -91,9 +91,10 @@ Alte gemischte Kalkulationsversuche bleiben als **„Kalkulation (gemischter Alt
 
 ## UI & Lernerlebnis
 
-- **Desktop**: kartenbasierte Modulübersicht mit schneller Themenauswahl
-- **Mobile**: kompakte Grid-Navigation für schnelles Üben unterwegs
-- **Visual Style**: dunkles Cyber-/Tech-Theme mit klarer Zustandsanzeige
+- **Desktop**: kompakte Seitenleiste mit fünf aufklappbaren Themengruppen und eigener Verknüpfung zum AP2-Trainingslauf
+- **Mobile**: volle Aufgabenbreite; „Aufgabe wechseln“ öffnet die Themenauswahl direkt auf der Seite
+- **Darstellung**: System, Hell oder Dunkel; die Auswahl wird lokal gespeichert und gilt für Aufgaben, Tabellen, Dialoge und Diagramme. Navigation öffnen und Farbwechsel erhalten die laufenden Eingaben. Ein erneuter Klick auf die aktive Übung erzeugt keine neue Aufgabe.
+- **Sitzungsschutz**: Beim Verlassen des AP2-Trainingslaufs über die Modulauswahl wird vor dem Verlust seiner Sitzungseingaben gewarnt. Neuladen und Kontowechsel behalten ihre bisherigen Reset-Regeln; keine neue Entwurfsspeicherung.
 - **Direkte Nutzung**: über die Live-URL sofort testbar
 
 Aktuell liegen im Repository keine gepflegten Produkt-Screenshots. Die **Live-Demo** ist daher die verlässlichste Vorschau auf den aktuellen UI-Stand.
