@@ -1,20 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GENERATORS } from '../registry';
-import { CABLE_TYPES, findBestCable, generateCableQuestion } from '../cables';
+import { CABLE_SCENARIOS, CABLE_TYPES, findBestCable, generateCableQuestion } from '../cables';
 import { generateRaidQuestion } from '../raid';
 import { generatePortQuestion } from '../ports';
 import { validateQuestionAnswers } from '../../answerValidation';
 
 afterEach(() => vi.restoreAllMocks());
-const scenario = (index: number) => vi.spyOn(Math, 'random').mockReturnValue((index + .1) / 8);
+const scenario = (index: number) => vi.spyOn(Math, 'random').mockReturnValue((index + .1) / CABLE_SCENARIOS.length);
 
 describe('fair cable alternatives', () => {
   it('accepts tested Cat6 for 40m/10G with its own advantage, not Cat6a advantages', () => {
     scenario(3);
     const q = GENERATORS.cables();
     const cat6 = CABLE_TYPES.find(c => c.type === 'Cat 6 (Twisted Pair)')!;
-    expect(validateQuestionAnswers(q, { cableType: cat6.type, reason1: cat6.pros[0] })).toBe(true);
-    expect(validateQuestionAnswers(q, { cableType: cat6.type, reason1: '10 Gbit/s bis 100m' })).toBe(false);
+    expect(validateQuestionAnswers(q, { cableType: cat6.type, reason1: cat6.pros[0], reason2: '10 Gbit/s bis 55 m im angegebenen Profil' })).toBe(true);
+    expect(validateQuestionAnswers(q, { cableType: cat6.type, reason1: '10 Gbit/s bis 100 m im angegebenen Profil', reason2: cat6.pros[0] })).toBe(false);
   });
   it('does not recommend an incapable last entry or unknown-speed fibre fallback', () => {
     expect(() => findBestCable(2000, 10000, 'WAN', [CABLE_TYPES[0]])).toThrow();
@@ -68,7 +68,7 @@ it.each([
 });
 
 it('accepts each alternative in all eight scenarios only with its own distinct advantages', () => {
-  for (let index = 0; index < 8; index++) {
+  for (let index = 0; index < CABLE_SCENARIOS.length; index++) {
     const random = scenario(index);
     const q = GENERATORS.cables();
     random.mockRestore();
@@ -105,4 +105,32 @@ it.each([4, 6, 8])('distinguishes guaranteed one failure from up to one per mirr
 it.each([0, -1, NaN, Infinity])('rejects invalid cable distance %s', async distance => {
   const { findSuitableCables } = await import('../cables');
   expect(findSuitableCables(distance, 1000, 'Büro')).toEqual([]);
+});
+
+it('uses two scenario-relevant advantages for every medium without requiring a shorter-link claim', () => {
+  scenario(1);
+  const q = GENERATORS.cables();
+  expect(q.answerInputs!.filter(cfg => cfg.valueKey.startsWith('reason'))).toHaveLength(2);
+  expect(validateQuestionAnswers(q, { cableType: 'Cat 6 (Twisted Pair)', reason1: 'Geschirmte Variante im Katalog', reason2: '1 Gbit/s bis 100 m im angegebenen Profil' })).toBe(true);
+  expect(validateQuestionAnswers(q, { cableType: 'Cat 6 (Twisted Pair)', reason1: 'Geschirmte Variante im Katalog', reason2: '10 Gbit/s bis 55 m im angegebenen Profil' })).toBe(false);
+});
+
+it('does not call shielded copper immune to EMI', () => {
+  scenario(2);
+  const q = GENERATORS.cables();
+  expect(validateQuestionAnswers(q, { cableType: 'Cat 6a (Twisted Pair)', reason1: 'Immun gegen EMI', reason2: '1 Gbit/s bis 100 m im angegebenen Profil' })).toBe(false);
+});
+
+it('rejects inconsistent cable metadata without structured inputs instead of grading a canonical fallback', () => {
+  const q = GENERATORS.cables();
+  expect(validateQuestionAnswers({ ...q, answerInputs: undefined }, q.expectedAnswers as Record<string,string>)).toBe(false);
+});
+
+it.each([4, 6, 8])('binds the generated RAID10 explanation to its actual %s-disk possible bound', disks => {
+  vi.spyOn(Math, 'random').mockReturnValueOnce(.9).mockReturnValueOnce((disks - 4 + .1) / 5).mockReturnValueOnce(0);
+  const q = generateRaidQuestion();
+  expect(q.raid.disks).toBe(disks);
+  expect(q.expectedAnswers.faultTolerance).toBe('1');
+  expect(q.solutionSteps.join('\n')).toContain(`Bis zu ${disks / 2} Ausfälle sind möglich`);
+  expect(q.solutionSteps).toContain('  Garantiert tolerierte beliebige Ausfälle: 1');
 });

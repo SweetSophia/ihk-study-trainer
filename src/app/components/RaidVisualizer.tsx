@@ -326,16 +326,16 @@ function StatRow({
 
 /**
  * Status pill at the bottom of the visualizer. Two branches:
- *   - faultTolerance > 0  → emerald check + "toleriert N Ausfälle"
- *   - faultTolerance === 0 → rose warning + "keine Ausfallsicherheit"
+ *   - faultTolerance > 0  → emerald check + guaranteed arbitrary failure count before rebuild
+ *   - faultTolerance === 0 → rose warning + zero guaranteed failures
  *
  * Carries `role="status"` so screen readers announce it when it mounts.
  */
 function FaultToleranceBadge({ faultTolerance }: { faultTolerance: number }) {
   const safe = faultTolerance > 0;
   const label = safe
-    ? `garantiert ${faultTolerance} ${faultTolerance === 1 ? 'Ausfall' : 'Ausfälle'}`
-    : 'keine Ausfallsicherheit';
+    ? `${faultTolerance} ${faultTolerance === 1 ? 'Ausfall' : 'Ausfälle'}`
+    : '0 Ausfälle';
   return (
     <div
       role="status"

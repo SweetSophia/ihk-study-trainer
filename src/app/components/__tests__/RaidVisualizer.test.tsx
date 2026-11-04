@@ -386,7 +386,7 @@ describe('RaidVisualizer — capacity display', () => {
 // ===========================================================================
 
 describe('RaidVisualizer — fault tolerance badge', () => {
-  it('renders an emerald "garantiert 1 Ausfall" badge for RAID 5 (tolerance 1)', () => {
+  it('renders an emerald "Garantiert vor Rebuild: 1 Ausfall" badge for RAID 5 (tolerance 1)', () => {
     render(
       <RaidVisualizer
         raid={makeRaid({ level: 'RAID 5', faultTolerance: 1 })}
@@ -395,10 +395,10 @@ describe('RaidVisualizer — fault tolerance badge', () => {
 
     const badge = screen.getByTestId('viz-fault-tolerance-badge');
     expect(badge).toHaveAttribute('data-fault-tolerance', '1');
-    expect(badge).toHaveTextContent('garantiert 1 Ausfall');
+    expect(badge).toHaveTextContent('Garantiert vor Rebuild: 1 Ausfall');
   });
 
-  it('renders an emerald "garantiert N Ausfälle" badge for tolerance > 1 (plural)', () => {
+  it('renders an emerald "Garantiert vor Rebuild: N Ausfälle" badge for tolerance > 1 (plural)', () => {
     render(
       <RaidVisualizer
         raid={makeRaid({ level: 'RAID 6', faultTolerance: 2 })}
@@ -407,10 +407,10 @@ describe('RaidVisualizer — fault tolerance badge', () => {
 
     const badge = screen.getByTestId('viz-fault-tolerance-badge');
     expect(badge).toHaveAttribute('data-fault-tolerance', '2');
-    expect(badge).toHaveTextContent('garantiert 2 Ausfälle');
+    expect(badge).toHaveTextContent('Garantiert vor Rebuild: 2 Ausfälle');
   });
 
-  it('renders a rose "keine Ausfallsicherheit" badge when tolerance is 0', () => {
+  it('renders a rose "Garantiert vor Rebuild: 0 Ausfälle" badge when tolerance is 0', () => {
     render(
       <RaidVisualizer
         raid={makeRaid({ level: 'RAID 0', faultTolerance: 0 })}
@@ -419,7 +419,7 @@ describe('RaidVisualizer — fault tolerance badge', () => {
 
     const badge = screen.getByTestId('viz-fault-tolerance-badge');
     expect(badge).toHaveAttribute('data-fault-tolerance', '0');
-    expect(badge).toHaveTextContent('keine Ausfallsicherheit');
+    expect(badge).toHaveTextContent('Garantiert vor Rebuild: 0 Ausfälle');
     expect(badge.className).toContain('danger');
   });
 
@@ -437,7 +437,7 @@ describe('RaidVisualizer — fault tolerance badge', () => {
     );
 
     const badge = screen.getByTestId('viz-fault-tolerance-badge');
-    expect(badge).toHaveTextContent('garantiert 2 Ausfälle');
+    expect(badge).toHaveTextContent('Garantiert vor Rebuild: 2 Ausfälle');
     expect(badge.className).toContain('accent');
   });
 });

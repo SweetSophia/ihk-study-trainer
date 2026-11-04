@@ -368,12 +368,12 @@ const CLOUD_QUESTIONS: CloudQuestion[] = [
     type: 'multipleChoice',
     topic: 'Availability',
     difficulty: 'medium',
-    question: 'Welchen Preisvorteil bieten AWS EC2 Reserved Instances gegenüber On-Demand bei vergleichbarer Nutzung?',
+    question: 'Was bieten AWS EC2 Reserved Instances gegenüber On-Demand Instances bei vergleichbarer Nutzung?',
     options: [
-      'Mehr Flexibilität',
-      'Jede regionale Reservierung garantiert Kapazität',
+      'Rabattierte Preise ohne Laufzeitbindung',
+      'Rabattierte Preise nur bei vollständiger Vorauszahlung',
       'Rabattierte Preise gegen Laufzeitbindung',
-      'Schnellere Bereitstellung'
+      'Immer identische Preise wie On-Demand'
     ],
     correctAnswer: 'Rabattierte Preise gegen Laufzeitbindung',
     explanation: 'AWS EC2 Reserved Instances gewähren Preisnachlässe gegen eine Laufzeitbindung von einem oder drei Jahren. Es gibt All Upfront, Partial Upfront und No Upfront; Vorauszahlung ist keine Voraussetzung. Regionale Reservierungen reservieren keine Kapazität; zonale Reservierungen können Kapazität in der gewählten Availability Zone reservieren.',

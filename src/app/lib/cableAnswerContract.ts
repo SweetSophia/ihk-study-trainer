@@ -1,6 +1,6 @@
 import type { AnswerInputConfig, Question } from '../types';
 
-/** Use the same selected-medium advantages for rendering and grading. */
+/** Resolve selected-medium accepted advantages while retaining catalogue distractors. */
 export function getCableAnswerInputs(question: Question, answers: Record<string, string>): AnswerInputConfig[] | undefined {
   if (question.module !== 'cables' || !question.cableChoices) return question.answerInputs;
   const normalize = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();

@@ -7,7 +7,7 @@ export interface CableQuestion {
   correctPros: string[];
   cableChoices: { type: string; pros: string[] }[];
   eligibleCableTypes: string[];
-  /** Number of reason dropdowns to show (bare minimum: pros.length − 1, at least 1) */
+  /** Same explicit number of distinct advantages for every valid alternative. */
   reasonCount: number;
   solutionSteps: string[];
 }
@@ -26,42 +26,42 @@ export const CABLE_TYPES: CableType[] = [
     type: 'Cat 5e (Twisted Pair)',
     links: [{ speed: 1000, distance: 100 }],
     emiSafe: false,
-    pros: ['Günstig', 'Einfach verlegbar', 'Gut für 1 Gbit/s'],
+    pros: ['Keine LWL-Optik erforderlich'],
     cons: ['Max. 100m', 'Störanfällig bei EMI']
   },
   {
     type: 'Cat 6 (Twisted Pair)',
     links: [{ speed: 1000, distance: 100 }, { speed: 10000, distance: 55 }],
     emiSafe: true,
-    pros: ['Geprüfte geschirmte Installation', '10 Gbit/s im geprüften 55-m-Profil'],
+    pros: ['Geschirmte Variante im Katalog', 'Keine LWL-Optik erforderlich'],
     cons: ['Teurer als Cat 5e', '10 Gbit/s im hier geprüften Profil nur bis 55 m']
   },
   {
     type: 'Cat 6a (Twisted Pair)',
     links: [{ speed: 1000, distance: 100 }, { speed: 10000, distance: 100 }],
     emiSafe: true,
-    pros: ['10 Gbit/s bis 100m', 'Geschirmte Variante im Katalog'],
+    pros: ['Geschirmte Variante im Katalog', 'Keine LWL-Optik erforderlich'],
     cons: ['Teuer', 'Dickeres Kabel']
   },
   {
     type: 'Cat 7 (Twisted Pair)',
     links: [{ speed: 1000, distance: 100 }, { speed: 10000, distance: 100 }],
     emiSafe: true,
-    pros: ['Geschirmtes Kabel (S/FTP)', '10 Gbit/s zuverlässig'],
+    pros: ['Geschirmte Variante im Katalog', 'Geschirmte Adernpaare (S/FTP)', 'Keine LWL-Optik erforderlich'],
     cons: ['Sehr teuer', 'Aufwendige Verlegung']
   },
   {
     type: 'Multimode Glasfaser (OM3/OM4)',
     links: [{ speed: 1000, distance: 550 }, { speed: 10000, distance: 300 }],
     emiSafe: true,
-    pros: ['10 Gbit/s bis 300 m mit SR-Optik', 'Immun gegen EMI', '1 Gbit/s bis 550 m mit SX-Optik'],
+    pros: ['Immun gegen EMI', 'Nichtleitende Übertragungsstrecke'],
     cons: ['Teuer', 'Spezielle Werkzeuge nötig']
   },
   {
     type: 'Singlemode Glasfaser (OS2)',
     links: [{ speed: 1000, distance: 10000 }, { speed: 10000, distance: 10000 }],
     emiSafe: true,
-    pros: ['1 und 10 Gbit/s bis 10 km mit passender Optik', 'Für längere Campus-Verbindungen', 'Immun gegen EMI'],
+    pros: ['Immun gegen EMI', 'Nichtleitende Übertragungsstrecke'],
     cons: ['Sehr teuer', 'Laser-Lichtquelle nötig', 'Aufwendige Installation']
   },
   {
@@ -73,12 +73,21 @@ export const CABLE_TYPES: CableType[] = [
   }
 ];
 
+function profileAdvantage(link: { speed: number; distance: number }): string {
+  return `${link.speed / 1000} Gbit/s bis ${link.distance} m im angegebenen Profil`;
+}
+
+function advantagesForRate(cable: CableType, speed: number): string[] {
+  const link = cable.links.find(link => link.speed === speed);
+  return link ? [profileAdvantage(link), ...cable.pros] : cable.pros;
+}
+
 /** All advantage strings including distractors across the cable catalogue (pre-computed). */
 export const ALL_CABLE_PROS: string[] = [
-  ...new Set(CABLE_TYPES.flatMap((c) => c.pros)),
+  ...new Set(CABLE_TYPES.flatMap(c => [...c.pros, ...c.links.map(profileAdvantage)])),
 ];
 
-const SCENARIOS = [
+export const CABLE_SCENARIOS = [
   { distance: 30, speed: 1000, environment: 'Bürogebäude (Indoor)' },
   { distance: 80, speed: 1000, environment: 'Bürogebäude (Indoor)' },
   { distance: 95, speed: 1000, environment: 'Lagerhalle mit Störquellen' },
@@ -90,17 +99,19 @@ const SCENARIOS = [
 ];
 
 export function generateCableQuestion(): CableQuestion {
-  const scenario = SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)];
+  const scenario = CABLE_SCENARIOS[Math.floor(Math.random() * CABLE_SCENARIOS.length)];
 
   const suitable = findSuitableCables(scenario.distance, scenario.speed, scenario.environment);
   // Recommendation is an example, not the only accepted medium.
   const bestCable = findBestCable(scenario.distance, scenario.speed, scenario.environment);
 
-  // Build expectedAnswers with one key per bare-minimum reason dropdown
-  const reasonCount = Math.max(1, bestCable.pros.length - 1);
+  // One explicit, equal requirement for every offered valid alternative.
+  const reasonCount = 2;
+  const cableChoices = CABLE_TYPES.map(c => ({ type: c.type, pros: advantagesForRate(c, scenario.speed) }));
+  const examplePros = advantagesForRate(bestCable, scenario.speed);
   const expectedAnswers: Record<string, string> = { cableType: bestCable.type };
   for (let i = 0; i < reasonCount; i++) {
-    expectedAnswers[`reason${i + 1}`] = bestCable.pros[i];
+    expectedAnswers[`reason${i + 1}`] = examplePros[i];
   }
 
   return {
@@ -111,8 +122,8 @@ ${generateCableComparison().join("\n")}
 Szenario:\nEntfernung: ${scenario.distance}m\nGeschwindigkeit: ${scenario.speed >= 1000 ? scenario.speed / 1000 + ' Gbit/s' : scenario.speed + ' Mbit/s'}\nUmgebung: ${scenario.environment}`,
     scenario: scenario,
     expectedAnswers,
-    correctPros: bestCable.pros,
-    cableChoices: CABLE_TYPES.map(({ type, pros }) => ({ type, pros })),
+    correctPros: examplePros,
+    cableChoices,
     eligibleCableTypes: suitable.map(c => c.type),
     reasonCount,
     solutionSteps: [
@@ -122,7 +133,7 @@ Szenario:\nEntfernung: ${scenario.distance}m\nGeschwindigkeit: ${scenario.speed 
       `  Umgebung: ${scenario.environment}`,
       ``,
       `Anforderungen:`,
-      `  • Mindestens ${scenario.speed >= 1000 ? scenario.speed / 1000 + ' Gbit/s' : scenario.speed + ' Mbit/s'}`,
+      `  • Datenrate im angegebenen Profil: ${scenario.speed >= 1000 ? scenario.speed / 1000 + ' Gbit/s' : scenario.speed + ' Mbit/s'}`,
       `  • Mindestens ${scenario.distance}m Reichweite`,
       `  • Geeignet für: ${scenario.environment}`,
       ``,
@@ -132,7 +143,7 @@ Szenario:\nEntfernung: ${scenario.distance}m\nGeschwindigkeit: ${scenario.speed 
       `Eine mögliche Empfehlung: ${bestCable.type}`,
       ``,
       `Begründung:`,
-      ...bestCable.pros.map(pro => `  ✓ ${pro}`),
+      ...examplePros.map(pro => `  ✓ ${pro}`),
       ...bestCable.cons.map(con => `  ⚠ ${con}`),
       ``,
       `Ergebnis:`,
@@ -163,7 +174,7 @@ function generateCableComparison(): string[] {
       return `  • ${cable.type}: Profile mit passender Optik: 1 Gbit/s bis 550 m (SX), 10 Gbit/s bis 300 m (SR, OM3/OM4); andere Raten abhängig von Optik und Faserklasse, z.B. 100GBASE-SR4-S: 100 Gbit/s bis 70m (OM3) oder 100m (OM4)`;
     }
     if (cable.type === 'Singlemode Glasfaser (OS2)') {
-      return `  • ${cable.type}: Profile mit passender Optik: 1 Gbit/s bis 10 km (LX), 10 Gbit/s bis 10 km (LR); andere Raten abhängig von Optik und Faser, z.B. 100GBASE-LR4-S: 100 Gbit/s bis 10km`;
+      return `  • ${cable.type}: Profile mit passender Optik: 1 Gbit/s bis 10 km (LX/LH), 10 Gbit/s bis 10 km (LR); andere Raten abhängig von Optik und Faser, z.B. 100GBASE-LR4-S: 100 Gbit/s bis 10km`;
     }
     return `  • ${cable.type}: ${cable.links.length ? cable.links.map(link => `${link.speed / 1000} Gbit/s bis ${link.distance} m`).join('; ') : 'kein direktes Ethernet-Profil ohne Medienkonverter'}`;
   });

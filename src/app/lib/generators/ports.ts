@@ -61,7 +61,7 @@ export function generatePortQuestion(): PortQuestion {
   if (direction === 'portToService') {
     return {
       theme: 'TCP/IP-Referenzmodell & Protokolle',
-      questionText: `Welcher Dienst und welches Protokoll gehören zu Port ${entry.port}?${httpsScope}`,
+      questionText: `Welcher Dienst und welches Transportprotokoll gehören zu Port ${entry.port}?${httpsScope}`,
       port: entry.port,
       direction: 'portToService',
       expectedAnswers: {
@@ -77,7 +77,7 @@ export function generatePortQuestion(): PortQuestion {
         },
         {
           valueKey: 'protocol',
-          label: 'Protokoll',
+          label: 'Transportprotokoll',
           valueOptions: PROTOCOL_OPTIONS,
           acceptedValues: [entry.protocol],
         },
@@ -104,7 +104,7 @@ export function generatePortQuestion(): PortQuestion {
   } else {
     return {
       theme: 'TCP/IP-Referenzmodell & Protokolle',
-      questionText: `Welcher Port wird vom Dienst "${entry.service}" verwendet und welches Protokoll kommt zum Einsatz?${httpsScope}`,
+      questionText: `Welcher Port wird vom Dienst "${entry.service}" verwendet und welches Transportprotokoll kommt zum Einsatz?${httpsScope}`,
       port: entry.port,
       direction: 'serviceToPort',
       expectedAnswers: {
@@ -120,7 +120,7 @@ export function generatePortQuestion(): PortQuestion {
         },
         {
           valueKey: 'protocol',
-          label: 'Protokoll',
+          label: 'Transportprotokoll',
           valueOptions: PROTOCOL_OPTIONS,
           acceptedValues: [entry.protocol],
         },

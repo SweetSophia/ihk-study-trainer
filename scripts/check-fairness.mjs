@@ -1,5 +1,7 @@
 // Local production guest acceptance: npm run build; npm start -- --port 3144;
 // node scripts/check-fairness.mjs. No account or backend writes.
+// Optional IHK_TEST_URL (localhost only), CHROMIUM_PATH; otherwise install
+// managed Chromium separately with npx playwright install chromium.
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 const url = process.env.IHK_TEST_URL || 'http://127.0.0.1:3144';
@@ -40,13 +42,16 @@ try {
     const reason = page.getByRole('combobox', { name: 'Vorteil 1' });
     assert.equal(await reason.isDisabled(), true);
     await cable.selectOption('Cat 6a (Twisted Pair)');
-    await reason.selectOption('10 Gbit/s bis 100m');
+    await reason.selectOption('10 Gbit/s bis 100 m im angegebenen Profil');
+    await page.getByLabel('Vorteil 2').selectOption('Geschirmte Variante im Katalog');
     await cable.selectOption('Cat 6 (Twisted Pair)');
     assert.equal(await reason.inputValue(), '');
+    assert.equal(await page.getByLabel('Vorteil 2').inputValue(), '');
     assert.equal(await page.getByRole('button', { name: /Antwort prüfen/ }).isDisabled(), true);
-    await reason.selectOption('Geprüfte geschirmte Installation');
+    await reason.selectOption('Geschirmte Variante im Katalog');
+    await page.getByLabel('Vorteil 2').selectOption('10 Gbit/s bis 55 m im angegebenen Profil');
     await appearance.selectOption('dark');
-    assert.equal(await reason.inputValue(), 'Geprüfte geschirmte Installation');
+    assert.equal(await reason.inputValue(), 'Geschirmte Variante im Katalog');
     await page.getByRole('button', { name: /Antwort prüfen/ }).focus();
     await page.keyboard.press('Enter');
     await page.getByText('Richtig! Sehr gut gemacht.', { exact: true }).waitFor();

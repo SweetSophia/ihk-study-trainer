@@ -829,10 +829,10 @@ describe('StudyCard – RAID visualizer gating', () => {
     expect(within(visualizer).getAllByTestId('raid-disk-tile')).toHaveLength(4);
     // Formatted capacity (3 TB) is shown in the stat grid.
     expect(within(visualizer).getByTestId('viz-stat-usable')).toHaveTextContent('3 TB');
-    // Fault tolerance > 0 → "garantiert 1 Ausfall" badge.
+    // Fault tolerance > 0 → "Garantiert vor Rebuild: 1 Ausfall" badge.
     expect(
       within(visualizer).getByTestId('viz-fault-tolerance-badge'),
-    ).toHaveTextContent('garantiert 1 Ausfall');
+    ).toHaveTextContent('Garantiert vor Rebuild: 1 Ausfall');
   });
 
   it('renders the RAID visualizer after submitting an answer', async () => {
@@ -1065,23 +1065,26 @@ it('keeps the general text keyboard contract for signed answers and checks Enter
 
 describe('cable reasons follow the selected medium', () => {
   it('clears old reasons on medium change and checks the alternative exactly once', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(3.1 / 8);
+    const random = vi.spyOn(Math, 'random').mockReturnValue(3.1 / 8);
     const q = GENERATORS.cables();
-    vi.restoreAllMocks();
+    random.mockRestore();
     const check = vi.fn((answers: Record<string, string>) => validateQuestionAnswers(q, answers));
     render(<StudyCard question={q} onCheckAnswer={check} onNextQuestion={noNextQuestion} />);
     const medium = screen.getByRole('combobox', { name: 'Kabeltyp' });
     const reason = screen.getByRole('combobox', { name: 'Vorteil 1' });
     expect(reason).toBeDisabled();
     fireEvent.change(medium, { target: { value: 'Cat 6a (Twisted Pair)' } });
-    fireEvent.change(reason, { target: { value: '10 Gbit/s bis 100m' } });
+    fireEvent.change(reason, { target: { value: '10 Gbit/s bis 100 m im angegebenen Profil' } });
+    fireEvent.change(screen.getByLabelText('Vorteil 2'), { target: { value: 'Geschirmte Variante im Katalog' } });
     expect(screen.getByRole('button', { name: /Antwort prüfen/ })).toBeEnabled();
     fireEvent.change(medium, { target: { value: 'Cat 6 (Twisted Pair)' } });
     expect(reason).toHaveValue('');
-    expect(within(reason).getByRole('option', { name: '10 Gbit/s bis 100m' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Vorteil 2')).toHaveValue('');
+    expect(within(reason).getByRole('option', { name: '10 Gbit/s bis 100 m im angegebenen Profil' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Antwort prüfen/ })).toBeDisabled();
     expect(check).not.toHaveBeenCalled();
-    fireEvent.change(reason, { target: { value: 'Geprüfte geschirmte Installation' } });
+    fireEvent.change(reason, { target: { value: 'Geschirmte Variante im Katalog' } });
+    fireEvent.change(screen.getByLabelText('Vorteil 2'), { target: { value: '10 Gbit/s bis 55 m im angegebenen Profil' } });
     const submit = screen.getByRole('button', { name: /Antwort prüfen/ });
     fireEvent.click(submit);
     fireEvent.click(submit);
@@ -1102,6 +1105,7 @@ it('lets a learner submit an unsuitable cable with its reasons and records a wro
   const reason = screen.getByLabelText('Vorteil 1');
   expect(reason).toBeEnabled();
   fireEvent.change(reason, { target: { value: 'Kostengünstig für TV' } });
+  fireEvent.change(screen.getByLabelText('Vorteil 2'), { target: { value: 'Gute Reichweite' } });
   fireEvent.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
   expect(check).toHaveBeenCalledTimes(1);
   expect(check).toHaveReturnedWith(false);

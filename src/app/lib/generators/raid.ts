@@ -286,7 +286,7 @@ function buildSolutionSteps(params: {
       case 'RAID 0':
         return `Keine Redundanz — ein Ausfall = Datenverlust.`;
       case 'RAID 1':
-        return `Bis zu ${disks - 1} beliebige Ausfälle toleriert. Erst wenn alle ${disks} Spiegelplatten ausfallen, gehen die Daten verloren.`;
+        return `${disks - 1 === 1 ? '1 beliebiger Ausfall wird' : `Bis zu ${disks - 1} beliebige Ausfälle werden`} garantiert toleriert. Erst wenn alle ${disks} Spiegelplatten ausfallen, gehen die Daten verloren.`;
       case 'RAID 5':
         return `1 Ausfall wird toleriert (Daten einer beliebigen ausgefallenen Platte können aus den übrigen Daten und der verteilten Parität rekonstruiert werden).`;
       case 'RAID 6':
@@ -308,11 +308,11 @@ function buildSolutionSteps(params: {
     ``,
     `Anzeige: ${displayValue} ${unit}`,
     ``,
-    `Ausfallsicherheit (${level}):`,
+    `Garantiert tolerierte beliebige Ausfälle (${level}):`,
     `  ${tolFormula}`,
     ``,
     `Ergebnis:`,
     `  Nutzbare Kapazität: ${displayValue} ${unit}`,
-    `  Ausfallsicherheit: ${faultTolerance}`,
+    `  Garantiert tolerierte beliebige Ausfälle: ${faultTolerance}`,
   ];
 }

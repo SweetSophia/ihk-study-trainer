@@ -263,6 +263,9 @@ export function validateQuestionAnswers(
   question: Question,
   answers: Record<string, string>
 ): boolean {
+  // Generated cable questions always carry structured inputs; never grade an
+  // inconsistent payload against the single example as a silent fallback.
+  if (question.module === 'cables' && question.cableChoices && !question.answerInputs?.length) return false;
   if (question.answerInputs) {
     return validateStructuredAnswer(getCableAnswerInputs(question, answers)!, question.expectedAnswers, answers);
   }
