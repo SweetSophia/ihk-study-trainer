@@ -39,7 +39,7 @@ export interface RaidConfig {
   diskSizeGb: number;
   /** Total usable capacity for the array in GB (precomputed by the generator) */
   usableCapacityGb: number;
-  /** Number of disk failures the array can tolerate */
+  /** Guaranteed arbitrary simultaneous disk failures before rebuild. */
   faultTolerance: number;
 }
 
@@ -88,6 +88,8 @@ export interface Question {
    * fault tolerance).
    */
   raid?: RaidConfig;
+  /** Session-local catalogue advantages for each offered cable; no persisted schema change. */
+  cableChoices?: { type: string; pros: string[] }[];
   calculationLearning?: { rows: CalculationLearningRow[] };
 }
 

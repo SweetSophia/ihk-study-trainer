@@ -184,6 +184,7 @@ export const GENERATORS: Record<RegistryModuleId, () => Question> = {
     }));
     return {
       id: createQuestionId('cables'),
+      cableChoices: q.cableChoices,
       theme: q.theme,
       module: 'cables',
       questionText: q.questionText,
@@ -195,7 +196,7 @@ export const GENERATORS: Record<RegistryModuleId, () => Question> = {
           valueKey: 'cableType',
           label: 'Kabeltyp',
           valueOptions: CABLE_TYPES.map((c) => c.type),
-          acceptedValues: [String(q.expectedAnswers.cableType)],
+          acceptedValues: q.eligibleCableTypes,
         },
         ...reasonInputs,
       ],

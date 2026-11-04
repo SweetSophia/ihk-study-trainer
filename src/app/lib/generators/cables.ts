@@ -3,80 +3,77 @@ export interface CableQuestion {
   questionText: string;
   scenario: { distance: number; speed: number; environment: string };
   expectedAnswers: Record<string, string>;
-  /** All pros of the correct cable (used to build acceptedValues) */
+  /** Advantages of the example recommendation. */
   correctPros: string[];
+  cableChoices: { type: string; pros: string[] }[];
+  eligibleCableTypes: string[];
   /** Number of reason dropdowns to show (bare minimum: pros.length − 1, at least 1) */
   reasonCount: number;
   solutionSteps: string[];
 }
 
-export const CABLE_TYPES: Array<{ 
-  type: string; 
-  maxSpeed: number; 
-  maxDistance: number; 
-  environments: string[]; 
+export interface CableType {
+  type: string;
+  /** Supported rate/reach combinations for the supplied teaching installation. */
+  links: { speed: number; distance: number }[];
+  emiSafe: boolean;
   pros: string[];
   cons: string[];
-}> = [
+}
+
+export const CABLE_TYPES: CableType[] = [
   {
     type: 'Cat 5e (Twisted Pair)',
-    maxSpeed: 1000,
-    maxDistance: 100,
-    environments: ['Büro', 'Indoor', 'LAN'],
+    links: [{ speed: 1000, distance: 100 }],
+    emiSafe: false,
     pros: ['Günstig', 'Einfach verlegbar', 'Gut für 1 Gbit/s'],
     cons: ['Max. 100m', 'Störanfällig bei EMI']
   },
   {
     type: 'Cat 6 (Twisted Pair)',
-    maxSpeed: 10000,
-    maxDistance: 55,
-    environments: ['Büro', 'Indoor', 'LAN', 'Rechenzentrum'],
-    pros: ['Bessere Schirmung', '10 Gbit/s möglich (kurz)'],
-    cons: ['Teurer als Cat 5e', '10 Gbit/s nur bis 55m']
+    links: [{ speed: 1000, distance: 100 }, { speed: 10000, distance: 55 }],
+    emiSafe: true,
+    pros: ['Geprüfte geschirmte Installation', '10 Gbit/s im geprüften 55-m-Profil'],
+    cons: ['Teurer als Cat 5e', '10 Gbit/s im hier geprüften Profil nur bis 55 m']
   },
   {
     type: 'Cat 6a (Twisted Pair)',
-    maxSpeed: 10000,
-    maxDistance: 100,
-    environments: ['Rechenzentrum', 'Indoor', 'LAN'],
-    pros: ['10 Gbit/s bis 100m', 'Bessere Schirmung'],
+    links: [{ speed: 1000, distance: 100 }, { speed: 10000, distance: 100 }],
+    emiSafe: true,
+    pros: ['10 Gbit/s bis 100m', 'Geschirmte Variante im Katalog'],
     cons: ['Teuer', 'Dickeres Kabel']
   },
   {
     type: 'Cat 7 (Twisted Pair)',
-    maxSpeed: 10000,
-    maxDistance: 100,
-    environments: ['Rechenzentrum', 'Hochleistungs-LAN'],
+    links: [{ speed: 1000, distance: 100 }, { speed: 10000, distance: 100 }],
+    emiSafe: true,
     pros: ['Geschirmtes Kabel (S/FTP)', '10 Gbit/s zuverlässig'],
     cons: ['Sehr teuer', 'Aufwendige Verlegung']
   },
   {
     type: 'Multimode Glasfaser (OM3/OM4)',
-    maxSpeed: 100000,
-    maxDistance: 550,
-    environments: ['Rechenzentrum', 'Indoor', 'Campus'],
-    pros: ['Hohe Bandbreite', 'Immun gegen EMI', 'Bis 550m'],
+    links: [{ speed: 1000, distance: 550 }, { speed: 10000, distance: 300 }],
+    emiSafe: true,
+    pros: ['10 Gbit/s bis 300 m mit SR-Optik', 'Immun gegen EMI', '1 Gbit/s bis 550 m mit SX-Optik'],
     cons: ['Teuer', 'Spezielle Werkzeuge nötig']
   },
   {
     type: 'Singlemode Glasfaser (OS2)',
-    maxSpeed: 1000000,
-    maxDistance: 10000,
-    environments: ['WAN', 'Campus', 'Outdoor', 'Rechenzentrum'],
-    pros: ['Sehr große Reichweite', 'Höchste Bandbreite', 'Immun gegen EMI'],
+    links: [{ speed: 1000, distance: 10000 }, { speed: 10000, distance: 10000 }],
+    emiSafe: true,
+    pros: ['1 und 10 Gbit/s bis 10 km mit passender Optik', 'Für längere Campus-Verbindungen', 'Immun gegen EMI'],
     cons: ['Sehr teuer', 'Laser-Lichtquelle nötig', 'Aufwendige Installation']
   },
   {
     type: 'Koaxialkabel (RG-6)',
-    maxSpeed: 1000,
-    maxDistance: 500,
-    environments: ['Outdoor', 'TV-Verteilung', 'Alte LANs'],
+    links: [],
+    emiSafe: false,
     pros: ['Gute Reichweite', 'Wetterfest (Outdoor)', 'Kostengünstig für TV'],
     cons: ['Geringe Bandbreite vs. Glasfaser', 'Veraltet für LAN']
   }
 ];
 
-/** All unique pro/advantage strings across every cable type (pre-computed). */
+/** All advantage strings including distractors across the cable catalogue (pre-computed). */
 export const ALL_CABLE_PROS: string[] = [
   ...new Set(CABLE_TYPES.flatMap((c) => c.pros)),
 ];
@@ -94,10 +91,11 @@ const SCENARIOS = [
 
 export function generateCableQuestion(): CableQuestion {
   const scenario = SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)];
-  
-  // Find best cable type
+
+  const suitable = findSuitableCables(scenario.distance, scenario.speed, scenario.environment);
+  // Recommendation is an example, not the only accepted medium.
   const bestCable = findBestCable(scenario.distance, scenario.speed, scenario.environment);
-  
+
   // Build expectedAnswers with one key per bare-minimum reason dropdown
   const reasonCount = Math.max(1, bestCable.pros.length - 1);
   const expectedAnswers: Record<string, string> = { cableType: bestCable.type };
@@ -107,10 +105,15 @@ export function generateCableQuestion(): CableQuestion {
 
   return {
     theme: 'Netzwerkarchitektur & Overhead',
-    questionText: `Wähle das passende Kabelmedium und nenne Vorteile für folgendes Szenario:\nEntfernung: ${scenario.distance}m\nGeschwindigkeit: ${scenario.speed >= 1000 ? scenario.speed / 1000 + ' Gbit/s' : scenario.speed + ' Mbit/s'}\nUmgebung: ${scenario.environment}`,
+    questionText: `Wähle ein geeignetes Kabelmedium und ${reasonCount} unterschiedliche Vorteile dieses Mediums. Mehrere Antworten können gültig sein.
+${CABLE_ASSUMPTIONS}
+${generateCableComparison().join("\n")}
+Szenario:\nEntfernung: ${scenario.distance}m\nGeschwindigkeit: ${scenario.speed >= 1000 ? scenario.speed / 1000 + ' Gbit/s' : scenario.speed + ' Mbit/s'}\nUmgebung: ${scenario.environment}`,
     scenario: scenario,
     expectedAnswers,
     correctPros: bestCable.pros,
+    cableChoices: CABLE_TYPES.map(({ type, pros }) => ({ type, pros })),
+    eligibleCableTypes: suitable.map(c => c.type),
     reasonCount,
     solutionSteps: [
       `Szenario:`,
@@ -126,79 +129,42 @@ export function generateCableQuestion(): CableQuestion {
       `Kabeltypen-Vergleich:`,
       ...generateCableComparison(),
       ``,
-      `Empfehlung: ${bestCable.type}`,
+      `Eine mögliche Empfehlung: ${bestCable.type}`,
       ``,
       `Begründung:`,
       ...bestCable.pros.map(pro => `  ✓ ${pro}`),
       ...bestCable.cons.map(con => `  ⚠ ${con}`),
       ``,
       `Ergebnis:`,
-      `  Kabeltyp: ${bestCable.type}`
+      `  Geeignete Kabeltypen: ${suitable.map(c => c.type).join("; ")}`
     ]
   };
 }
 
-export function findBestCable(
-  distance: number,
-  speed: number,
-  environment: string,
-  cableTypes = CABLE_TYPES
-) {
-  const isEmiEnvironment = /Störquellen|EMI/i.test(environment);
+export const CABLE_ASSUMPTIONS = 'Lernmodell: direkte Ethernet-Verbindung ohne Medienkonverter; kein PoE- oder Preisziel. Passende Anschlüsse, LWL-Optiken und fachgerechte Innen-/Außenverlegung sind vorhanden. Cat 5e ist ungeschirmt, Cat 6/6a/7 sind hier geschirmte Varianten. Cat 6 ist für 10 Gbit/s bis 55 m installationsgeprüft (einschließlich Alien Crosstalk); das ist keine allgemeine Garantie für jede Cat-6-Verkabelung. Die angegebenen Reichweiten gelten nur für die aufgeführten Profile.';
 
-  // Find cables that meet requirements
-  let suitable = cableTypes.filter(cable => 
-    cable.maxSpeed >= speed && 
-    cable.maxDistance >= distance
-  );
+export function findSuitableCables(distance: number, speed: number, environment: string, cableTypes = CABLE_TYPES): CableType[] {
+  if (!Number.isFinite(distance) || distance <= 0 || !Number.isFinite(speed) || speed <= 0) return [];
+  const emi = /Störquellen|EMI/i.test(environment);
+  return cableTypes.filter(c => (!emi || c.emiSafe) &&
+    c.links.some(link => link.speed === speed && link.distance >= distance));
+}
 
-  // In EMI-heavy environments, exclude cables that are susceptible to EMI
-  if (isEmiEnvironment) {
-    suitable = suitable.filter(c => !c.cons.some(con => /EMI/i.test(con)));
-  }
-  
-  if (suitable.length === 0) {
-    // If nothing meets all requirements, return singlemode fiber
-    return cableTypes.find(c => c.type.includes('Singlemode')) || cableTypes[cableTypes.length - 1];
-  }
-
-  // In EMI environments, prefer shielded copper (Cat 7) or fiber
-  if (isEmiEnvironment) {
-    const cat7 = suitable.find(c => c.type.includes('Cat 7'));
-    if (cat7) return cat7;
-    const mmf = suitable.find(c => c.type.includes('Multimode'));
-    if (mmf) return mmf;
-    return suitable[0];
-  }
-  
-  // Prefer copper for short distances, fiber for long distances
-  if (distance <= 100 && speed <= 1000) {
-    const cat5e = suitable.find(c => c.type.includes('Cat 5e'));
-    if (cat5e) return cat5e;
-  }
-  
-  if (distance <= 100 && speed <= 10000) {
-    const cat6a = suitable.find(c => c.type.includes('Cat 6a'));
-    if (cat6a) return cat6a;
-  }
-  
-  if (distance <= 550) {
-    const mmf = suitable.find(c => c.type.includes('Multimode'));
-    if (mmf) return mmf;
-  }
-  
-  // Return first suitable (typically singlemode for long distances)
-  return suitable[0];
+export function findBestCable(distance: number, speed: number, environment: string, cableTypes = CABLE_TYPES): CableType {
+  const suitable = findSuitableCables(distance, speed, environment, cableTypes);
+  if (suitable.length === 0) throw new Error('Kein Kabelprofil erfüllt diese Anforderungen.');
+  const preferred = /Störquellen|EMI/i.test(environment) ? 'Cat 7' : distance <= 100 ? speed === 1000 ? 'Cat 5e' : 'Cat 6a' : 'Multimode';
+  return suitable.find(c => c.type.includes(preferred)) ?? suitable[0];
 }
 
 function generateCableComparison(): string[] {
   return CABLE_TYPES.map(cable => {
     if (cable.type === 'Multimode Glasfaser (OM3/OM4)') {
-      return `  • ${cable.type}: abhängig von Optik und Faserklasse; z.B. 100GBASE-SR4-S: 100 Gbit/s bis 70m (OM3) oder 100m (OM4)`;
+      return `  • ${cable.type}: Profile mit passender Optik: 1 Gbit/s bis 550 m (SX), 10 Gbit/s bis 300 m (SR, OM3/OM4); andere Raten abhängig von Optik und Faserklasse, z.B. 100GBASE-SR4-S: 100 Gbit/s bis 70m (OM3) oder 100m (OM4)`;
     }
     if (cable.type === 'Singlemode Glasfaser (OS2)') {
-      return `  • ${cable.type}: abhängig von Optik und Faser; z.B. 100GBASE-LR4-S: 100 Gbit/s bis 10km`;
+      return `  • ${cable.type}: Profile mit passender Optik: 1 Gbit/s bis 10 km (LX), 10 Gbit/s bis 10 km (LR); andere Raten abhängig von Optik und Faser, z.B. 100GBASE-LR4-S: 100 Gbit/s bis 10km`;
     }
-    return `  • ${cable.type}: bis ${cable.maxSpeed >= 1000 ? cable.maxSpeed / 1000 + ' Gbit/s' : cable.maxSpeed + ' Mbit/s'}, max ${cable.maxDistance}m`;
+    return `  • ${cable.type}: ${cable.links.length ? cable.links.map(link => `${link.speed / 1000} Gbit/s bis ${link.distance} m`).join('; ') : 'kein direktes Ethernet-Profil ohne Medienkonverter'}`;
   });
 }

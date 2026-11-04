@@ -386,7 +386,7 @@ describe('RaidVisualizer — capacity display', () => {
 // ===========================================================================
 
 describe('RaidVisualizer — fault tolerance badge', () => {
-  it('renders an emerald "toleriert 1 Ausfall" badge for RAID 5 (tolerance 1)', () => {
+  it('renders an emerald "garantiert 1 Ausfall" badge for RAID 5 (tolerance 1)', () => {
     render(
       <RaidVisualizer
         raid={makeRaid({ level: 'RAID 5', faultTolerance: 1 })}
@@ -395,10 +395,10 @@ describe('RaidVisualizer — fault tolerance badge', () => {
 
     const badge = screen.getByTestId('viz-fault-tolerance-badge');
     expect(badge).toHaveAttribute('data-fault-tolerance', '1');
-    expect(badge).toHaveTextContent('toleriert 1 Ausfall');
+    expect(badge).toHaveTextContent('garantiert 1 Ausfall');
   });
 
-  it('renders an emerald "toleriert N Ausfälle" badge for tolerance > 1 (plural)', () => {
+  it('renders an emerald "garantiert N Ausfälle" badge for tolerance > 1 (plural)', () => {
     render(
       <RaidVisualizer
         raid={makeRaid({ level: 'RAID 6', faultTolerance: 2 })}
@@ -407,7 +407,7 @@ describe('RaidVisualizer — fault tolerance badge', () => {
 
     const badge = screen.getByTestId('viz-fault-tolerance-badge');
     expect(badge).toHaveAttribute('data-fault-tolerance', '2');
-    expect(badge).toHaveTextContent('toleriert 2 Ausfälle');
+    expect(badge).toHaveTextContent('garantiert 2 Ausfälle');
   });
 
   it('renders a rose "keine Ausfallsicherheit" badge when tolerance is 0', () => {
@@ -437,7 +437,7 @@ describe('RaidVisualizer — fault tolerance badge', () => {
     );
 
     const badge = screen.getByTestId('viz-fault-tolerance-badge');
-    expect(badge).toHaveTextContent('toleriert 2 Ausfälle');
+    expect(badge).toHaveTextContent('garantiert 2 Ausfälle');
     expect(badge.className).toContain('accent');
   });
 });
@@ -537,6 +537,6 @@ describe('RaidVisualizer — accessibility', () => {
     // Sanity-check that the German stat labels are inside the group.
     expect(within(dl).getByText('RAID-Level')).toBeInTheDocument();
     expect(within(dl).getByText('Nutzbare Kapazität')).toBeInTheDocument();
-    expect(within(dl).getByText('Ausfallsicherheit')).toBeInTheDocument();
+    expect(within(dl).getByText('Garantierte beliebige Ausfälle')).toBeInTheDocument();
   });
 });

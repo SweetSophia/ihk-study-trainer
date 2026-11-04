@@ -1,3 +1,4 @@
+import { getCableAnswerInputs } from './cableAnswerContract';
 import { AnswerInputConfig, Question } from '../types';
 
 const SIZE_TO_BYTES: Record<string, number> = {
@@ -263,7 +264,7 @@ export function validateQuestionAnswers(
   answers: Record<string, string>
 ): boolean {
   if (question.answerInputs) {
-    return validateStructuredAnswer(question.answerInputs, question.expectedAnswers, answers);
+    return validateStructuredAnswer(getCableAnswerInputs(question, answers)!, question.expectedAnswers, answers);
   }
 
   for (const [key, expected] of Object.entries(question.expectedAnswers)) {

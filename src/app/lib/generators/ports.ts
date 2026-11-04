@@ -55,10 +55,13 @@ export function generatePortQuestion(): PortQuestion {
   // Randomly choose between "identify service" or "identify port"
   const direction = Math.random() > 0.5 ? 'portToService' : 'serviceToPort';
   
+  const httpsScope = entry.service.startsWith('HTTPS') ? ' Hier ist HTTP/1.1 oder HTTP/2 über TLS gemeint; HTTP/3 ist nicht Teil dieser Frage.' : '';
+  const transportNote = entry.service.startsWith('HTTPS') ? ['Abgrenzung: HTTP/3 nutzt QUIC über UDP; die vorliegende Frage betrifft HTTP/1.1 oder HTTP/2 über TLS/TCP.'] : [];
+
   if (direction === 'portToService') {
     return {
       theme: 'TCP/IP-Referenzmodell & Protokolle',
-      questionText: `Welcher Dienst und welches Protokoll gehören zu Port ${entry.port}?`,
+      questionText: `Welcher Dienst und welches Protokoll gehören zu Port ${entry.port}?${httpsScope}`,
       port: entry.port,
       direction: 'portToService',
       expectedAnswers: {
@@ -80,6 +83,7 @@ export function generatePortQuestion(): PortQuestion {
         },
       ],
       solutionSteps: [
+        ...transportNote,
         `Gegeben: Port ${entry.port}`,
         ``,
         `Schritt 1: Portnummer identifizieren`,
@@ -100,7 +104,7 @@ export function generatePortQuestion(): PortQuestion {
   } else {
     return {
       theme: 'TCP/IP-Referenzmodell & Protokolle',
-      questionText: `Welcher Port wird vom Dienst "${entry.service}" verwendet und welches Protokoll kommt zum Einsatz?`,
+      questionText: `Welcher Port wird vom Dienst "${entry.service}" verwendet und welches Protokoll kommt zum Einsatz?${httpsScope}`,
       port: entry.port,
       direction: 'serviceToPort',
       expectedAnswers: {
@@ -122,6 +126,7 @@ export function generatePortQuestion(): PortQuestion {
         },
       ],
       solutionSteps: [
+        ...transportNote,
         `Gegeben: Dienst = ${entry.service}`,
         ``,
         `Schritt 1: Standardport ermitteln`,

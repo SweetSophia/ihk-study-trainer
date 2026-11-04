@@ -829,10 +829,10 @@ describe('StudyCard – RAID visualizer gating', () => {
     expect(within(visualizer).getAllByTestId('raid-disk-tile')).toHaveLength(4);
     // Formatted capacity (3 TB) is shown in the stat grid.
     expect(within(visualizer).getByTestId('viz-stat-usable')).toHaveTextContent('3 TB');
-    // Fault tolerance > 0 → "toleriert 1 Ausfall" badge.
+    // Fault tolerance > 0 → "garantiert 1 Ausfall" badge.
     expect(
       within(visualizer).getByTestId('viz-fault-tolerance-badge'),
-    ).toHaveTextContent('toleriert 1 Ausfall');
+    ).toHaveTextContent('garantiert 1 Ausfall');
   });
 
   it('renders the RAID visualizer after submitting an answer', async () => {
@@ -1061,4 +1061,48 @@ it('keeps the general text keyboard contract for signed answers and checks Enter
   expect(check).toHaveBeenCalledOnce();
   await user.keyboard('{Enter}');
   expect(check).toHaveBeenCalledOnce();
+});
+
+describe('cable reasons follow the selected medium', () => {
+  it('clears old reasons on medium change and checks the alternative exactly once', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(3.1 / 8);
+    const q = GENERATORS.cables();
+    vi.restoreAllMocks();
+    const check = vi.fn((answers: Record<string, string>) => validateQuestionAnswers(q, answers));
+    render(<StudyCard question={q} onCheckAnswer={check} onNextQuestion={noNextQuestion} />);
+    const medium = screen.getByRole('combobox', { name: 'Kabeltyp' });
+    const reason = screen.getByRole('combobox', { name: 'Vorteil 1' });
+    expect(reason).toBeDisabled();
+    fireEvent.change(medium, { target: { value: 'Cat 6a (Twisted Pair)' } });
+    fireEvent.change(reason, { target: { value: '10 Gbit/s bis 100m' } });
+    expect(screen.getByRole('button', { name: /Antwort prüfen/ })).toBeEnabled();
+    fireEvent.change(medium, { target: { value: 'Cat 6 (Twisted Pair)' } });
+    expect(reason).toHaveValue('');
+    expect(within(reason).getByRole('option', { name: '10 Gbit/s bis 100m' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Antwort prüfen/ })).toBeDisabled();
+    expect(check).not.toHaveBeenCalled();
+    fireEvent.change(reason, { target: { value: 'Geprüfte geschirmte Installation' } });
+    const submit = screen.getByRole('button', { name: /Antwort prüfen/ });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+    expect(check).toHaveBeenCalledTimes(1);
+    expect(check).toHaveReturnedWith(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Lösung anzeigen' }));
+    expect(screen.getByText('Beispiel einer gültigen Antwort:')).toBeVisible();
+  });
+});
+
+it('lets a learner submit an unsuitable cable with its reasons and records a wrong answer', () => {
+  const random = vi.spyOn(Math, 'random').mockReturnValue(3.1 / 8);
+  const q = GENERATORS.cables();
+  random.mockRestore();
+  const check = vi.fn((answers: Record<string, string>) => validateQuestionAnswers(q, answers));
+  render(<StudyCard question={q} onCheckAnswer={check} onNextQuestion={noNextQuestion} />);
+  fireEvent.change(screen.getByLabelText('Kabeltyp'), { target: { value: 'Koaxialkabel (RG-6)' } });
+  const reason = screen.getByLabelText('Vorteil 1');
+  expect(reason).toBeEnabled();
+  fireEvent.change(reason, { target: { value: 'Kostengünstig für TV' } });
+  fireEvent.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+  expect(check).toHaveBeenCalledTimes(1);
+  expect(check).toHaveReturnedWith(false);
 });

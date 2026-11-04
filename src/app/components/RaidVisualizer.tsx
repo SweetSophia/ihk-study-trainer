@@ -265,7 +265,7 @@ export default function RaidVisualizer({ raid }: RaidVisualizerProps) {
           testId="viz-stat-split"
         />
         <StatRow
-          label="Ausfallsicherheit"
+          label="Garantierte beliebige Ausfälle"
           value={String(raid.faultTolerance)}
           tone={raid.faultTolerance > 0 ? 'emerald' : 'rose'}
           testId="viz-stat-fault-tolerance"
@@ -334,7 +334,7 @@ function StatRow({
 function FaultToleranceBadge({ faultTolerance }: { faultTolerance: number }) {
   const safe = faultTolerance > 0;
   const label = safe
-    ? `toleriert ${faultTolerance} ${faultTolerance === 1 ? 'Ausfall' : 'Ausfälle'}`
+    ? `garantiert ${faultTolerance} ${faultTolerance === 1 ? 'Ausfall' : 'Ausfälle'}`
     : 'keine Ausfallsicherheit';
   return (
     <div
@@ -354,7 +354,7 @@ function FaultToleranceBadge({ faultTolerance }: { faultTolerance: number }) {
         <WarningBadge className="w-4 h-4 text-danger" />
       )}
       <span>
-        Ausfallsicherheit: <span className="font-mono">{label}</span>
+        Garantiert vor Rebuild: <span className="font-mono">{label}</span>
       </span>
     </div>
   );
