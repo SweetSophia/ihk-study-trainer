@@ -78,13 +78,12 @@ function profileAdvantage(link: { speed: number; distance: number }): string {
   return `${link.speed / 1000} Gbit/s bis ${reach} im angegebenen Profil`;
 }
 
-function matchingProfile(cable: CableType, distance: number, speed: number) {
-  return cable.links.find(link => link.speed === speed && link.distance >= distance);
+function matchingProfiles(cable: CableType, distance: number, speed: number) {
+  return cable.links.filter(link => link.speed === speed && link.distance >= distance);
 }
 
 function propertiesForScenario(cable: CableType, distance: number, speed: number): string[] {
-  const link = matchingProfile(cable, distance, speed);
-  return link ? [profileAdvantage(link), ...cable.pros] : cable.pros;
+  return [...new Set([...matchingProfiles(cable, distance, speed).map(profileAdvantage), ...cable.pros])];
 }
 
 /** All advantage strings including distractors across the cable catalogue (pre-computed). */
@@ -121,7 +120,7 @@ export function generateCableQuestion(): CableQuestion {
 
   return {
     theme: 'Netzwerkarchitektur & Overhead',
-    questionText: `Wähle ein geeignetes Kabelmedium und nenne ${reasonCount} unterschiedliche Eigenschaften dieses Mediums für die geforderte Datenrate und Entfernung. Reichweitenangaben müssen zur geforderten Datenrate gehören und die Entfernung abdecken. Mehrere Antworten können gültig sein.
+    questionText: `Wähle ein geeignetes Kabelmedium und nenne ${reasonCount} unterschiedliche Eigenschaften dieses Mediums. Du kannst passende Reichweitenprofile und allgemeine Medieneigenschaften wählen. Zwei allgemeine Eigenschaften sind ebenfalls erlaubt. Reichweitenangaben müssen zur geforderten Datenrate gehören und die Entfernung abdecken. Mehrere Antworten können gültig sein.
 ${CABLE_ASSUMPTIONS}
 ${generateCableComparison().join("\n")}
 Szenario:\nEntfernung: ${scenario.distance}m\nGeschwindigkeit: ${scenario.speed >= 1000 ? scenario.speed / 1000 + ' Gbit/s' : scenario.speed + ' Mbit/s'}\nUmgebung: ${scenario.environment}`,
@@ -163,7 +162,7 @@ export function findSuitableCables(distance: number, speed: number, environment:
   if (!Number.isFinite(distance) || distance <= 0 || !Number.isFinite(speed) || speed <= 0) return [];
   const emi = /Störquellen|EMI/i.test(environment);
   return cableTypes.filter(c => (!emi || c.emiSafe) &&
-    matchingProfile(c, distance, speed) !== undefined);
+    matchingProfiles(c, distance, speed).length > 0);
 }
 
 export function findBestCable(distance: number, speed: number, environment: string, cableTypes = CABLE_TYPES): CableType {

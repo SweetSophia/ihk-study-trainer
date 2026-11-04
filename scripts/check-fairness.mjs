@@ -38,7 +38,7 @@ try {
     await page.getByRole('heading', { name: 'Kabel', exact: true }).waitFor();
     await page.getByText(/Entfernung: 40m/).first().waitFor();
     assert.ok((await page.locator('.workspace').textContent()).includes('installationsgeprüft'));
-    assert.ok((await page.locator('.workspace').textContent()).includes('Eigenschaften dieses Mediums für die geforderte Datenrate und Entfernung'));
+    assert.ok((await page.locator('.workspace').textContent()).includes('Zwei allgemeine Eigenschaften sind ebenfalls erlaubt.'));
     const cable = page.getByRole('combobox', { name: 'Kabeltyp' });
     const reason = page.getByRole('combobox', { name: 'Eigenschaft 1' });
     assert.equal(await reason.isDisabled(), true);
@@ -65,6 +65,7 @@ try {
       Math.random = () => 7.1 / 8;
       try { element.click(); } finally { Math.random = original; }
     });
+    await page.getByText('Richtig! Sehr gut gemacht.', { exact: true }).waitFor({ state: 'detached' });
     await page.getByText(/Entfernung: 2000m/).first().waitFor();
     await cable.selectOption('Singlemode Glasfaser (OS2)');
     await reason.selectOption('10 Gbit/s bis 10 km im angegebenen Profil');

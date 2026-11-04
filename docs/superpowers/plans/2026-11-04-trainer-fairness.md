@@ -11,7 +11,7 @@
 Preserve IDs, stored progress, numerical tolerance, AP2 flows and attempt/reveal policy. No PR #58 changes. Money policy is deferred.
 
 ## Review Focus
-- Alternative cable with advantages from the recommended medium must fail.
+- Properties that do not apply to the selected medium must fail; shared true properties remain valid for every applicable medium.
 - Unsupported speed/range/EMI or RG-6 cannot become a fallback answer.
 - Medium changes clear dependent reasons without recording a check.
 - RAID10 guaranteed versus possible failures cannot be confused in prompt or visualizer.
@@ -50,3 +50,7 @@ Correction verification: 1,302 tests / 75 files pass, plus the final 31-test fai
 - [ ] Focused + full tests, lint/types/build, updated production guest browser flow; independent actual-code review before push. Fresh full15-minute window after push. PR83 merge remains explicitly held after prior denial; no retry without new authorization. Money policy and PR58 untouched.
 
 Late-correction local verification: 1,305 tests/75 files pass, lint0 errors/1pre-existing AuthModal warning, explicit types/build pass. Production Chromium guest checks at320/390/1440 pass, including OS2km-property submission, field reset and no writes. Fresh independent actual-code review:34focused tests and12,600 answer combinations pass; no blockers. Merge hold remains in force; no retry attempted.
+
+### Correction review15:43UTC
+Two general medium properties already grade correctly; clarify that explicitly without forcing one profile plus one generic property. Accept all covering same-rate profiles in future repeated-profile catalogues; extend the shorter-first regression with two covering profiles. Browser guard negative control on308a173 unexpectedly passed when OS2 checking was blocked: wait for the old verdict to detach before new submission and prove the negative control fails. RNG-constant consumption claim is incorrect; fibre table is currently accurate, future deduplication optional. No generic parser/renderer/recommendation refactor.
+Correction15:43 verification:1,305tests/75files pass; lint0errors/1pre-existingwarning,types/build pass. Browser positives320/390/1440 pass. Negative control deliberately removes OS2submission: old guard falsely passed, fixed guard reaches blocked marker then fails waiting for fresh success. Independent review12,600current cases plus20duplicate-rate boundary cases/34focused tests, no blocker. Public assessment posting remains denied; no retries. Merge remains held.

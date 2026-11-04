@@ -138,7 +138,8 @@ it.each([4, 6, 8])('binds the generated RAID10 explanation to its actual %s-disk
 it('states the scenario rate/reach contract and asks for properties before checking', () => {
   scenario(1);
   const q = GENERATORS.cables();
-  expect(q.questionText).toContain('Eigenschaften dieses Mediums für die geforderte Datenrate und Entfernung');
+  expect(q.questionText).toContain('Zwei allgemeine Eigenschaften sind ebenfalls erlaubt.');
+  expect(validateQuestionAnswers(q, { cableType: 'Cat 6 (Twisted Pair)', reason1: 'Geschirmte Variante im Katalog', reason2: 'Keine LWL-Optik erforderlich' })).toBe(true);
   expect(q.questionText).toContain('Reichweitenangaben müssen zur geforderten Datenrate gehören und die Entfernung abdecken.');
   expect(q.answerInputs!.filter(cfg => cfg.valueKey.startsWith('reason')).map(cfg => cfg.label)).toEqual(['Eigenschaft 1', 'Eigenschaft 2']);
   expect(validateQuestionAnswers(q, { cableType: 'Cat 6 (Twisted Pair)', reason1: '1 Gbit/s bis 100 m im angegebenen Profil', reason2: 'Geschirmte Variante im Katalog' })).toBe(true);
@@ -160,6 +161,11 @@ it('uses a covering profile for both eligibility and properties when rates repea
     expect(properties).not.toContain('10 Gbit/s bis 40 m im angegebenen Profil');
     expect(validateQuestionAnswers(q, { cableType: cable.type, reason1: '10 Gbit/s bis 55 m im angegebenen Profil', reason2: 'Geschirmte Variante im Katalog' })).toBe(true);
     expect(validateQuestionAnswers(q, { cableType: cable.type, reason1: '10 Gbit/s bis 40 m im angegebenen Profil', reason2: 'Geschirmte Variante im Katalog' })).toBe(false);
+    CABLE_SCENARIOS[3] = { ...previousScenario, distance: 30 };
+    const shorterScenario = GENERATORS.cables();
+    for (const reach of [40, 55]) {
+      expect(validateQuestionAnswers(shorterScenario, { cableType: cable.type, reason1: `10 Gbit/s bis ${reach} m im angegebenen Profil`, reason2: 'Geschirmte Variante im Katalog' })).toBe(true);
+    }
   } finally {
     cable.links = previousLinks;
     CABLE_SCENARIOS[3] = previousScenario;
