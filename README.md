@@ -89,6 +89,8 @@ Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist an
 
 Alte gemischte Kalkulationsversuche bleiben als **„Kalkulation (gemischter Altbestand)“** im Fortschritt und in den Gesamtsummen erhalten. Sie werden keinem der drei getrennten Angebote nachträglich zugerechnet und nicht über „Fehler üben“ neu gestartet. Vorwärts- und Rückwärtsfortschritt behalten ihre bisherigen IDs; Differenzaufgaben starten mit einer eigenen Fortschritts-ID.
 
+In den drei getrennten Kalkulationsmodulen werden alle abgefragten Geldbeträge **centgenau** bewertet. Jede Rechenzeile wird kaufmännisch auf zwei Nachkommastellen gerundet; mit diesem Centbetrag wird weitergerechnet. Dezimalkomma und -punkt sowie gleichwertige Schreibweisen sind erlaubt. Zusätzliche Bruchteile eines Cents werden bei der Prüfung nicht weggerundet. Die bisherige 5%-Toleranz anderer Aufgaben, etwa Messwerte oder RAID-Kapazitäten, wird dadurch nicht verändert; gespeicherte frühere Versuche werden nicht nachträglich neu bewertet.
+
 ## UI & Lernerlebnis
 
 - **Desktop**: kompakte Seitenleiste mit fünf aufklappbaren Themengruppen und eigener Verknüpfung zum AP2-Trainingslauf
@@ -180,7 +182,7 @@ npm run build
 npm run start
 ```
 
-Die lokalen manuellen Linux- und Fairness-Browserprüfungen starten gegen einen separaten Produktionsserver:
+Die lokalen manuellen Linux-, Fairness- und Geldpräzisionsprüfungen starten gegen einen separaten Produktionsserver:
 
 ```bash
 npm run build
@@ -189,9 +191,11 @@ npm start -- --port 3144
 node scripts/check-linux-feedback.mjs
 # Kabel-/RAID-Fairness und abhängige Auswahlfelder:
 node scripts/check-fairness.mjs
+# Mit IHK_TEST_URL=http://127.0.0.1:3144 auch auf demselben Server:
+IHK_TEST_URL=http://127.0.0.1:3144 node scripts/check-money-precision.mjs
 ```
 
-Sie verwenden Playwrights verwaltetes Chromium (bei Bedarf separat mit `npx playwright install chromium` installieren). Alternativ lässt sich ein vorhandener Browser mit `CHROMIUM_PATH=/pfad/zu/chromium` auswählen. `IHK_TEST_URL` überschreibt die lokale URL; für die Linux-Prüfung ändert `IHK_QA_OUTPUT` das Screenshot-Verzeichnis. Beide Guards akzeptieren nur lokale Ziele und blockieren Account-/Netzwerkschreibzugriffe.
+Sie verwenden Playwrights verwaltetes Chromium (bei Bedarf separat mit `npx playwright install chromium` installieren). Alternativ lässt sich ein vorhandener Browser mit `CHROMIUM_PATH=/pfad/zu/chromium` auswählen. `IHK_TEST_URL` überschreibt die lokale URL; für die Linux-Prüfung ändert `IHK_QA_OUTPUT` das Screenshot-Verzeichnis. Alle Guards akzeptieren nur lokale Ziele und blockieren Account-/Netzwerkschreibzugriffe.
 
 Die AP2-Erweiterungen wurden mit Unit-/Komponententests, Seitenintegration sowie Desktop-/Mobile-Prüfungen eines lokalen Produktions-Builds geprüft. Das bestätigt keine durchgängige Prüfung der Live-Account-Persistenz; diese bleibt separat zu verifizieren. Browser-Fallback und Supabase-Speicherung sind unterschiedliche Betriebsarten.
 

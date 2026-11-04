@@ -389,9 +389,10 @@ function buildQuestion(
     backwardSteps?: Record<string, number>;
     moduleId?: string;
     variantLabel?: string;
+    moneyPrecision?: 'cents';
   } = {}
 ): Question {
-  const { forwardSteps, backwardSteps, moduleId, variantLabel } = options;
+  const { forwardSteps, backwardSteps, moduleId, variantLabel, moneyPrecision } = options;
   if (type === 'differenz' && (!forwardSteps || !backwardSteps)) {
     throw new Error('buildQuestion: forwardSteps and backwardSteps are required for differenz type');
   }
@@ -404,6 +405,7 @@ function buildQuestion(
   let frage = `Berechne die ${typeLabel}!\n\n`;
   if (variantLabel) frage += `Variante: ${variantLabel}\n\n`;
   frage += 'Lehrmodell: Alle Einkaufs- und Kostenwerte sind netto, ohne Umsatzsteuer. Umsatzsteuer wird nur beim Übergang Netto-VK ↔ Brutto-VK berücksichtigt. Runde jede Rechenzeile kaufmännisch auf zwei Nachkommastellen und rechne mit diesen Centbeträgen weiter. Alle abgefragten Geldbeträge sind in Euro.\n\n';
+  if (moneyPrecision === 'cents') frage += 'Bewertung: Jeder abgefragte Geldbetrag wird centgenau geprüft. Komma oder Punkt als Dezimaltrennzeichen sind erlaubt. Bruchteile eines Cents werden bei der Eingabe nicht nachträglich weggerundet.\n\n';
   frage += 'Gegebene Werte:\n';
 
   if (type === 'differenz') {
@@ -463,6 +465,7 @@ function buildQuestion(
     expectedAnswers = Object.fromEntries(Object.entries(calculated).filter(([key]) => !Object.prototype.hasOwnProperty.call(given, key)));
     answerInputs = buildAnswerInputs(schema, given);
   }
+  if (moneyPrecision === 'cents') answerInputs = answerInputs.map(input => ({ ...input, numericRule: 'moneyCents' as const }));
   const learning = buildCalculationLearning(type, given, calculated, forwardSteps, backwardSteps);
   const solutionSteps = learning.solutionSteps;
   const calculationLearning = { rows: answerInputs.map(input => {
@@ -493,14 +496,14 @@ function buildQuestion(
 /** Generates a dedicated Vorwärtskalkulation question with medium difficulty. */
 export function generateVorwaertsKalkulationQuestion(variant: ForwardCalculationVariant = Math.random() < 0.25 ? 'no-customer-skonto' : 'standard'): Question {
   const { given, calculated, schema } = generateVorwaertsCalculation(variant);
-  return buildQuestion('vorwaerts', given, calculated, schema, { moduleId: 'handelskalkulationVorwaerts',
+  return buildQuestion('vorwaerts', given, calculated, schema, { moduleId: 'handelskalkulationVorwaerts', moneyPrecision: 'cents',
     variantLabel: variant === 'no-customer-skonto' ? 'Ohne Kundenskonto (0%)' : undefined });
 }
 
 /** Generates a dedicated Rückwärtskalkulation question with hard difficulty. */
 export function generateRueckwaertsKalkulationQuestion(variant: BackwardCalculationVariant = Math.random() < 0.25 ? 'no-supplier-rebate' : 'standard'): Question {
   const { given, calculated, schema } = generateRueckwaertsCalculation(variant);
-  return buildQuestion('rueckwaerts', given, calculated, schema, { moduleId: 'handelskalkulationRueckwaerts',
+  return buildQuestion('rueckwaerts', given, calculated, schema, { moduleId: 'handelskalkulationRueckwaerts', moneyPrecision: 'cents',
     variantLabel: variant === 'no-supplier-rebate' ? 'Ohne Lieferantenrabatt (0%)' : undefined });
 }
 
@@ -508,7 +511,7 @@ export function generateRueckwaertsKalkulationQuestion(variant: BackwardCalculat
 export function generateDifferenzKalkulationQuestion(variant: DifferentialCalculationVariant = Math.random() < 0.25 ? 'matching-market' : 'standard'): Question {
   const { given, calculated, forwardSteps, backwardSteps, schema } = generateDifferenzCalculation(variant);
   return buildQuestion('differenz', given, calculated, schema, {
-    moduleId: 'handelskalkulationDifferenz', forwardSteps, backwardSteps,
+    moduleId: 'handelskalkulationDifferenz', moneyPrecision: 'cents', forwardSteps, backwardSteps,
     variantLabel: variant === 'matching-market' ? 'Marktpreis auf Kalkulationsniveau (0 € Preisabstand)' : undefined,
   });
 }

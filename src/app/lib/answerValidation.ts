@@ -1,3 +1,4 @@
+import { parseMoneyCents } from './moneyPrecision';
 import { getCableAnswerInputs } from './cableAnswerContract';
 import { AnswerInputConfig, Question } from '../types';
 
@@ -175,6 +176,17 @@ export function validateStructuredAnswer(
 
     const userAnswer = (answers[cfg.valueKey] ?? '').trim().toLowerCase();
     const expectedStr = String(expected[cfg.valueKey]).toLowerCase();
+
+    if (cfg.numericRule === 'moneyCents') {
+      const actualCents = parseMoneyCents(userAnswer);
+      const expectedCents = parseMoneyCents(expectedStr);
+      if (actualCents === null || expectedCents === null || actualCents !== expectedCents) return false;
+      if (cfg.unitKey) {
+        const expectedUnit = String(expected[cfg.unitKey] ?? '').trim().toLowerCase();
+        if (!expectedUnit || (answers[cfg.unitKey] ?? '').trim().toLowerCase() !== expectedUnit) return false;
+      }
+      continue;
+    }
 
     const exactResult = validateExactKey(cfg.valueKey, userAnswer, expectedStr);
     if (exactResult !== undefined) {
