@@ -3,11 +3,11 @@ export interface CableQuestion {
   questionText: string;
   scenario: { distance: number; speed: number; environment: string };
   expectedAnswers: Record<string, string>;
-  /** Advantages of the example recommendation. */
+  /** Scenario properties of the example recommendation. */
   correctPros: string[];
   cableChoices: { type: string; pros: string[] }[];
   eligibleCableTypes: string[];
-  /** Same explicit number of distinct advantages for every valid alternative. */
+  /** Same explicit number of distinct properties for every valid alternative. */
   reasonCount: number;
   solutionSteps: string[];
 }
@@ -74,11 +74,16 @@ export const CABLE_TYPES: CableType[] = [
 ];
 
 function profileAdvantage(link: { speed: number; distance: number }): string {
-  return `${link.speed / 1000} Gbit/s bis ${link.distance} m im angegebenen Profil`;
+  const reach = link.distance >= 1000 ? `${link.distance / 1000} km` : `${link.distance} m`;
+  return `${link.speed / 1000} Gbit/s bis ${reach} im angegebenen Profil`;
 }
 
-function advantagesForRate(cable: CableType, speed: number): string[] {
-  const link = cable.links.find(link => link.speed === speed);
+function matchingProfile(cable: CableType, distance: number, speed: number) {
+  return cable.links.find(link => link.speed === speed && link.distance >= distance);
+}
+
+function propertiesForScenario(cable: CableType, distance: number, speed: number): string[] {
+  const link = matchingProfile(cable, distance, speed);
   return link ? [profileAdvantage(link), ...cable.pros] : cable.pros;
 }
 
@@ -107,8 +112,8 @@ export function generateCableQuestion(): CableQuestion {
 
   // One explicit, equal requirement for every offered valid alternative.
   const reasonCount = 2;
-  const cableChoices = CABLE_TYPES.map(c => ({ type: c.type, pros: advantagesForRate(c, scenario.speed) }));
-  const examplePros = advantagesForRate(bestCable, scenario.speed);
+  const cableChoices = CABLE_TYPES.map(c => ({ type: c.type, pros: propertiesForScenario(c, scenario.distance, scenario.speed) }));
+  const examplePros = propertiesForScenario(bestCable, scenario.distance, scenario.speed);
   const expectedAnswers: Record<string, string> = { cableType: bestCable.type };
   for (let i = 0; i < reasonCount; i++) {
     expectedAnswers[`reason${i + 1}`] = examplePros[i];
@@ -116,7 +121,7 @@ export function generateCableQuestion(): CableQuestion {
 
   return {
     theme: 'Netzwerkarchitektur & Overhead',
-    questionText: `Wähle ein geeignetes Kabelmedium und ${reasonCount} unterschiedliche Vorteile dieses Mediums. Mehrere Antworten können gültig sein.
+    questionText: `Wähle ein geeignetes Kabelmedium und nenne ${reasonCount} unterschiedliche Eigenschaften dieses Mediums für die geforderte Datenrate und Entfernung. Reichweitenangaben müssen zur geforderten Datenrate gehören und die Entfernung abdecken. Mehrere Antworten können gültig sein.
 ${CABLE_ASSUMPTIONS}
 ${generateCableComparison().join("\n")}
 Szenario:\nEntfernung: ${scenario.distance}m\nGeschwindigkeit: ${scenario.speed >= 1000 ? scenario.speed / 1000 + ' Gbit/s' : scenario.speed + ' Mbit/s'}\nUmgebung: ${scenario.environment}`,
@@ -142,7 +147,7 @@ Szenario:\nEntfernung: ${scenario.distance}m\nGeschwindigkeit: ${scenario.speed 
       ``,
       `Eine mögliche Empfehlung: ${bestCable.type}`,
       ``,
-      `Begründung:`,
+      `Passende Eigenschaften im Szenario:`,
       ...examplePros.map(pro => `  ✓ ${pro}`),
       ...bestCable.cons.map(con => `  ⚠ ${con}`),
       ``,
@@ -158,7 +163,7 @@ export function findSuitableCables(distance: number, speed: number, environment:
   if (!Number.isFinite(distance) || distance <= 0 || !Number.isFinite(speed) || speed <= 0) return [];
   const emi = /Störquellen|EMI/i.test(environment);
   return cableTypes.filter(c => (!emi || c.emiSafe) &&
-    c.links.some(link => link.speed === speed && link.distance >= distance));
+    matchingProfile(c, distance, speed) !== undefined);
 }
 
 export function findBestCable(distance: number, speed: number, environment: string, cableTypes = CABLE_TYPES): CableType {

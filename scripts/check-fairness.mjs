@@ -38,18 +38,19 @@ try {
     await page.getByRole('heading', { name: 'Kabel', exact: true }).waitFor();
     await page.getByText(/Entfernung: 40m/).first().waitFor();
     assert.ok((await page.locator('.workspace').textContent()).includes('installationsgeprüft'));
+    assert.ok((await page.locator('.workspace').textContent()).includes('Eigenschaften dieses Mediums für die geforderte Datenrate und Entfernung'));
     const cable = page.getByRole('combobox', { name: 'Kabeltyp' });
-    const reason = page.getByRole('combobox', { name: 'Vorteil 1' });
+    const reason = page.getByRole('combobox', { name: 'Eigenschaft 1' });
     assert.equal(await reason.isDisabled(), true);
     await cable.selectOption('Cat 6a (Twisted Pair)');
     await reason.selectOption('10 Gbit/s bis 100 m im angegebenen Profil');
-    await page.getByLabel('Vorteil 2').selectOption('Geschirmte Variante im Katalog');
+    await page.getByLabel('Eigenschaft 2').selectOption('Geschirmte Variante im Katalog');
     await cable.selectOption('Cat 6 (Twisted Pair)');
     assert.equal(await reason.inputValue(), '');
-    assert.equal(await page.getByLabel('Vorteil 2').inputValue(), '');
+    assert.equal(await page.getByLabel('Eigenschaft 2').inputValue(), '');
     assert.equal(await page.getByRole('button', { name: /Antwort prüfen/ }).isDisabled(), true);
     await reason.selectOption('Geschirmte Variante im Katalog');
-    await page.getByLabel('Vorteil 2').selectOption('10 Gbit/s bis 55 m im angegebenen Profil');
+    await page.getByLabel('Eigenschaft 2').selectOption('10 Gbit/s bis 55 m im angegebenen Profil');
     await appearance.selectOption('dark');
     assert.equal(await reason.inputValue(), 'Geschirmte Variante im Katalog');
     await page.getByRole('button', { name: /Antwort prüfen/ }).focus();
@@ -58,6 +59,18 @@ try {
     await page.getByRole('button', { name: 'Lösung anzeigen' }).click();
     await page.getByText('Beispiel einer gültigen Antwort:', { exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: /Antwort prüfen/ }).count(), 0);
+    await overflow();
+    await page.getByRole('button', { name: /Nächste Frage/ }).evaluate(element => {
+      const original = Math.random;
+      Math.random = () => 7.1 / 8;
+      try { element.click(); } finally { Math.random = original; }
+    });
+    await page.getByText(/Entfernung: 2000m/).first().waitFor();
+    await cable.selectOption('Singlemode Glasfaser (OS2)');
+    await reason.selectOption('10 Gbit/s bis 10 km im angegebenen Profil');
+    await page.getByLabel('Eigenschaft 2').selectOption('Immun gegen EMI');
+    await page.getByRole('button', { name: /Antwort prüfen/ }).click();
+    await page.getByText('Richtig! Sehr gut gemacht.', { exact: true }).waitFor();
     await overflow();
     await choose('Systeme & Sicherheit', 'RAID-Rechner', .9);
     await page.getByRole('heading', { name: 'RAID-Rechner', exact: true }).waitFor();

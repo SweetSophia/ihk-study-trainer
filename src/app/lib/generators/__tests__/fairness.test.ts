@@ -134,3 +134,44 @@ it.each([4, 6, 8])('binds the generated RAID10 explanation to its actual %s-disk
   expect(q.solutionSteps.join('\n')).toContain(`Bis zu ${disks / 2} Ausfälle sind möglich`);
   expect(q.solutionSteps).toContain('  Garantiert tolerierte beliebige Ausfälle: 1');
 });
+
+it('states the scenario rate/reach contract and asks for properties before checking', () => {
+  scenario(1);
+  const q = GENERATORS.cables();
+  expect(q.questionText).toContain('Eigenschaften dieses Mediums für die geforderte Datenrate und Entfernung');
+  expect(q.questionText).toContain('Reichweitenangaben müssen zur geforderten Datenrate gehören und die Entfernung abdecken.');
+  expect(q.answerInputs!.filter(cfg => cfg.valueKey.startsWith('reason')).map(cfg => cfg.label)).toEqual(['Eigenschaft 1', 'Eigenschaft 2']);
+  expect(validateQuestionAnswers(q, { cableType: 'Cat 6 (Twisted Pair)', reason1: '1 Gbit/s bis 100 m im angegebenen Profil', reason2: 'Geschirmte Variante im Katalog' })).toBe(true);
+  expect(validateQuestionAnswers(q, { cableType: 'Cat 6 (Twisted Pair)', reason1: '10 Gbit/s bis 55 m im angegebenen Profil', reason2: 'Geschirmte Variante im Katalog' })).toBe(false);
+});
+
+it('uses a covering profile for both eligibility and properties when rates repeat', () => {
+  const cable = CABLE_TYPES.find(c => c.type === 'Cat 6 (Twisted Pair)')!;
+  const previousLinks = cable.links;
+  const previousScenario = CABLE_SCENARIOS[3];
+  try {
+    cable.links = [{ speed: 10000, distance: 40 }, { speed: 10000, distance: 55 }];
+    CABLE_SCENARIOS[3] = { ...previousScenario, distance: 45 };
+    scenario(3);
+    const q = GENERATORS.cables();
+    expect(q.answerInputs![0].acceptedValues).toContain(cable.type);
+    const properties = q.cableChoices!.find(c => c.type === cable.type)!.pros;
+    expect(properties).toContain('10 Gbit/s bis 55 m im angegebenen Profil');
+    expect(properties).not.toContain('10 Gbit/s bis 40 m im angegebenen Profil');
+    expect(validateQuestionAnswers(q, { cableType: cable.type, reason1: '10 Gbit/s bis 55 m im angegebenen Profil', reason2: 'Geschirmte Variante im Katalog' })).toBe(true);
+    expect(validateQuestionAnswers(q, { cableType: cable.type, reason1: '10 Gbit/s bis 40 m im angegebenen Profil', reason2: 'Geschirmte Variante im Katalog' })).toBe(false);
+  } finally {
+    cable.links = previousLinks;
+    CABLE_SCENARIOS[3] = previousScenario;
+  }
+});
+
+it('uses the same kilometre spelling for the Singlemode catalogue and graded property', () => {
+  scenario(7);
+  const q = GENERATORS.cables();
+  const property = '10 Gbit/s bis 10 km im angegebenen Profil';
+  expect(q.answerInputs!.find(cfg => cfg.valueKey === 'reason1')!.valueOptions).toContain(property);
+  expect(q.cableChoices!.find(c => c.type.includes('Singlemode'))!.pros).toContain(property);
+  expect(q.questionText).toContain('10 Gbit/s bis 10 km (LR)');
+  expect(validateQuestionAnswers(q, { cableType: 'Singlemode Glasfaser (OS2)', reason1: property, reason2: 'Immun gegen EMI' })).toBe(true);
+});

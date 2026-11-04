@@ -178,7 +178,7 @@ export const GENERATORS: Record<RegistryModuleId, () => Question> = {
     const q = generateCableQuestion();
     const reasonInputs = Array.from({ length: q.reasonCount }, (_, i) => ({
       valueKey: `reason${i + 1}`,
-      label: `Vorteil ${i + 1}`,
+      label: `Eigenschaft ${i + 1}`,
       valueOptions: ALL_CABLE_PROS,
       acceptedValues: q.correctPros,
     }));
