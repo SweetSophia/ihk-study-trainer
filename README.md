@@ -191,8 +191,9 @@ npm start -- --port 3144
 node scripts/check-linux-feedback.mjs
 # Kabel-/RAID-Fairness und abhängige Auswahlfelder:
 node scripts/check-fairness.mjs
-# Mit IHK_TEST_URL=http://127.0.0.1:3144 auch auf demselben Server:
-IHK_TEST_URL=http://127.0.0.1:3144 node scripts/check-money-precision.mjs
+# Regressionsprüfungen des unabhängigen Prüfskripts, dann Browserprüfung:
+node --test scripts/check-money-precision.contract.mjs
+node scripts/check-money-precision.mjs
 ```
 
 Sie verwenden Playwrights verwaltetes Chromium (bei Bedarf separat mit `npx playwright install chromium` installieren). Alternativ lässt sich ein vorhandener Browser mit `CHROMIUM_PATH=/pfad/zu/chromium` auswählen. `IHK_TEST_URL` überschreibt die lokale URL; für die Linux-Prüfung ändert `IHK_QA_OUTPUT` das Screenshot-Verzeichnis. Alle Guards akzeptieren nur lokale Ziele und blockieren Account-/Netzwerkschreibzugriffe.
