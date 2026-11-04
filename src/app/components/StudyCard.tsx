@@ -13,6 +13,7 @@ import {
   Keyboard,
 } from 'lucide-react';
 import { Question } from '../types';
+import { getCableAnswerInputs } from '../lib/cableAnswerContract';
 import { fireFirstCorrectConfetti } from '../lib/celebrations';
 import { CHANGELOG_ENTRIES } from '../lib/changelog';
 import { ALL_MODULES, LEGACY_CALCULATION } from '../lib/modules';
@@ -153,10 +154,23 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
     ? Object.keys(question.expectedAnswers).filter((k) => k !== 'unit')
     : [];
 
+  const answerInputs = question ? getCableAnswerInputs(question, answers) : undefined;
+  const changeAnswer = (key: string, value: string) => {
+    setAnswers(previous => {
+      const next = { ...previous, [key]: value };
+      if (question?.cableChoices && key === 'cableType') {
+        for (const cfg of question.answerInputs ?? []) {
+          if (/^reason\d+$/.test(cfg.valueKey)) next[cfg.valueKey] = '';
+        }
+      }
+      return next;
+    });
+  };
+
   // Determine whether all required fields have been filled.
   const allAnswered = question
-    ? question.answerInputs
-      ? question.answerInputs.every(
+    ? answerInputs
+      ? answerInputs.every(
           (cfg) =>
             answers[cfg.valueKey]?.trim() &&
             (!cfg.unitKey || answers[cfg.unitKey]?.trim()),
@@ -566,9 +580,9 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
                 '',
             )}
           />
-        ) : question.answerInputs ? (
+        ) : answerInputs ? (
           /* Structured answer inputs – supports dropdown-only and value+unit pairs */
-          question.answerInputs.map((cfg, idx) => {
+          answerInputs.map((cfg, idx) => {
             // Attach the auto-focus ref to the first input only.
             const attachFirst = idx === 0;
             return (
@@ -583,9 +597,9 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
                       ref={attachFirst ? (firstInputRef as Ref<HTMLSelectElement>) : undefined}
                       value={answers[cfg.valueKey] || ''}
                       onChange={(e) =>
-                        setAnswers({ ...answers, [cfg.valueKey]: e.target.value })
+                        changeAnswer(cfg.valueKey, e.target.value)
                       }
-                      disabled={checked}
+                      disabled={checked || cfg.valueOptions?.length === 0}
                       className={selectClass}
                     >
                       <option value="">Bitte wählen…</option>
@@ -602,7 +616,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
                       type="text"
                       value={answers[cfg.valueKey] || ''}
                       onChange={(e) =>
-                        setAnswers({ ...answers, [cfg.valueKey]: e.target.value })
+                        changeAnswer(cfg.valueKey, e.target.value)
                       }
                       disabled={checked}
                       className={inputClass()}
@@ -854,7 +868,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
               <div className="mt-6 pt-4 border-t border-line">
                 <p className="text-sm text-muted">
                   <span className="text-accent font-medium">
-                    Erwartete Antworten:
+                    {question.cableChoices ? 'Beispiel einer gültigen Antwort:' : 'Erwartete Antworten:'}
                   </span>
                 </p>
                 <div className="mt-2 space-y-1">

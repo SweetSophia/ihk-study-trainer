@@ -209,7 +209,7 @@ export function generateRaidQuestion(): RaidQuestion {
     theme: 'RAID-Konfigurationen',
     questionText:
       `Du baust ein ${level}-Array aus ${choiceText}. ` +
-      `Berechne die nutzbare Kapazität sowie die Anzahl der Festplattenausfälle, die das Array toleriert.\n\n` +
+      `Berechne die nutzbare Kapazität und die maximale Anzahl beliebiger gleichzeitig ausfallender Festplatten, die das Array unabhängig von ihrer Verteilung garantiert toleriert. Betrachte Ausfälle vor einem Rebuild, ohne Hot Spares.\n\n` +
       `Gib die Kapazität mit passender Einheit (GB oder TB) an.`,
     expectedAnswers: {
       usableCapacity: expectedValue,
@@ -225,7 +225,7 @@ export function generateRaidQuestion(): RaidQuestion {
       },
       {
         valueKey: 'faultTolerance',
-        label: 'Ausfallsicherheit (Festplattenausfälle)',
+        label: 'Garantiert tolerierte beliebige Ausfälle',
         valueOptions: ['0', '1', '2', '3', '4'],
         acceptedValues: [String(result.faultTolerance)],
       },
@@ -286,13 +286,13 @@ function buildSolutionSteps(params: {
       case 'RAID 0':
         return `Keine Redundanz — ein Ausfall = Datenverlust.`;
       case 'RAID 1':
-        return `${disks - 1} Ausfälle toleriert (alle Spiegelplatten müssen ausfallen).`;
+        return `${disks - 1 === 1 ? '1 beliebiger Ausfall wird' : `Bis zu ${disks - 1} beliebige Ausfälle werden`} garantiert toleriert. Erst wenn alle ${disks} Spiegelplatten ausfallen, gehen die Daten verloren.`;
       case 'RAID 5':
         return `1 Ausfall wird toleriert (Daten einer beliebigen ausgefallenen Platte können aus den übrigen Daten und der verteilten Parität rekonstruiert werden).`;
       case 'RAID 6':
         return `2 Ausfälle werden toleriert (doppelte Parität).`;
       case 'RAID 10':
-        return `Mindestens 1 Ausfall garantiert (eine Platte pro Mirror-Pair). Worst case: alle Spiegel einer Seite.`;
+        return `Genau 1 beliebiger Ausfall ist garantiert tolerierbar. Fallen beide Platten desselben Spiegelpaares aus, fällt das Array aus. Bis zu ${disks / 2} Ausfälle sind möglich, wenn höchstens eine Platte je Spiegelpaar ausfällt; das ist keine Garantie für beliebige Ausfälle.`;
     }
   })();
 
@@ -308,11 +308,11 @@ function buildSolutionSteps(params: {
     ``,
     `Anzeige: ${displayValue} ${unit}`,
     ``,
-    `Ausfallsicherheit (${level}):`,
+    `Garantiert tolerierte beliebige Ausfälle (${level}):`,
     `  ${tolFormula}`,
     ``,
     `Ergebnis:`,
     `  Nutzbare Kapazität: ${displayValue} ${unit}`,
-    `  Ausfallsicherheit: ${faultTolerance}`,
+    `  Garantiert tolerierte beliebige Ausfälle: ${faultTolerance}`,
   ];
 }

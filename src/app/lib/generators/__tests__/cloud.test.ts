@@ -61,3 +61,17 @@ describe('cloud generator difficulty fallback', () => {
     expect(question.answerInputs.length).toBeGreaterThan(0);
   });
 });
+
+it('teaches EC2 term commitment without requiring upfront payment or regional capacity guarantees', () => {
+  const bank = resolveCloudQuestionsForDifficulty('medium');
+  const index = bank.findIndex(q => q.question.includes('Reserved Instances gegenüber'));
+  expect(index).toBeGreaterThanOrEqual(0);
+  vi.spyOn(Math, 'random').mockReturnValue((index + .5) / bank.length);
+  const q = generateCloudQuestion('medium');
+  expect(q.expectedAnswers.answer).toBe('Rabattierte Preise gegen Laufzeitbindung');
+  expect(q.answerInputs[0].acceptedValues).toEqual(['Rabattierte Preise gegen Laufzeitbindung']);
+  const solution = q.solutionSteps.join('\n');
+  expect(solution).toContain('No Upfront');
+  expect(solution).toContain('Vorauszahlung ist keine Voraussetzung');
+  expect(solution).toContain('Regionale Reservierungen reservieren keine Kapazität');
+});

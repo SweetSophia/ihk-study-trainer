@@ -180,16 +180,18 @@ npm run build
 npm run start
 ```
 
-Die lokale Linux-Browserprüfung startet gegen einen separaten Produktionsserver:
+Die lokalen manuellen Linux- und Fairness-Browserprüfungen starten gegen einen separaten Produktionsserver:
 
 ```bash
 npm run build
 npm start -- --port 3144
 # In einem zweiten Terminal:
 node scripts/check-linux-feedback.mjs
+# Kabel-/RAID-Fairness und abhängige Auswahlfelder:
+node scripts/check-fairness.mjs
 ```
 
-Sie verwendet Playwrights verwaltetes Chromium (bei Bedarf separat mit `npx playwright install chromium` installieren). Alternativ lässt sich ein vorhandener Browser mit `CHROMIUM_PATH=/pfad/zu/chromium` auswählen. `IHK_TEST_URL` überschreibt die lokale URL, `IHK_QA_OUTPUT` das Screenshot-Verzeichnis. Der Guard akzeptiert nur lokale Ziele und blockiert Account-/Netzwerkschreibzugriffe.
+Sie verwenden Playwrights verwaltetes Chromium (bei Bedarf separat mit `npx playwright install chromium` installieren). Alternativ lässt sich ein vorhandener Browser mit `CHROMIUM_PATH=/pfad/zu/chromium` auswählen. `IHK_TEST_URL` überschreibt die lokale URL; für die Linux-Prüfung ändert `IHK_QA_OUTPUT` das Screenshot-Verzeichnis. Beide Guards akzeptieren nur lokale Ziele und blockieren Account-/Netzwerkschreibzugriffe.
 
 Die AP2-Erweiterungen wurden mit Unit-/Komponententests, Seitenintegration sowie Desktop-/Mobile-Prüfungen eines lokalen Produktions-Builds geprüft. Das bestätigt keine durchgängige Prüfung der Live-Account-Persistenz; diese bleibt separat zu verifizieren. Browser-Fallback und Supabase-Speicherung sind unterschiedliche Betriebsarten.
 
