@@ -1,3 +1,4 @@
+import { parseMoneyCents } from './moneyPrecision';
 import type { CalculationLearningRow, Question } from '../types';
 import { parseLocaleFloat, validateQuestionAnswers, validateStructuredAnswer } from './answerValidation';
 
@@ -107,7 +108,8 @@ export function getCalculationHints(question: Question, answers: Record<string, 
   for (const row of question.calculationLearning.rows) {
     const expected = { [row.valueKey]: question.expectedAnswers[row.valueKey] };
     const actual = { [row.valueKey]: answers[row.valueKey] ?? '' };
-    if (validateStructuredAnswer([{ valueKey: row.valueKey }], expected, actual)) continue;
+    const config = question.answerInputs?.find(input => input.valueKey === row.valueKey) ?? { valueKey: row.valueKey };
+    if (validateStructuredAnswer([config], expected, actual)) continue;
     const value = parseLocaleFloat(actual[row.valueKey]);
     const pattern = Number.isFinite(value)
       ? row.alternatives?.find(item => cents(value) === item.value) : undefined;
@@ -116,7 +118,9 @@ export function getCalculationHints(question: Question, answers: Record<string, 
       label: question.answerInputs?.find(input => input.valueKey === row.valueKey)?.label ?? row.valueKey,
       text: !Number.isFinite(value)
         ? 'Bitte gib einen vollständigen Zahlenwert ein, mit Komma oder Punkt als Dezimaltrennzeichen und ohne Eurozeichen.'
-        : pattern?.hint ?? row.hint,
+        : config.numericRule === 'moneyCents' && parseMoneyCents(actual[row.valueKey]) === null
+          ? `Gib den Geldbetrag auf den Cent genau ein. Bruchteile eines Cents werden nicht weggerundet. ${row.hint}`
+          : pattern?.hint ?? row.hint,
     });
     if (hints.length === 2) break;
   }

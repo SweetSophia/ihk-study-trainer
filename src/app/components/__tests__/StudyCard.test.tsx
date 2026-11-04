@@ -371,8 +371,8 @@ describe('StudyCard – welcome screen (no question)', () => {
     await userEvent.click(screen.getByText('Was ist neu?'));
     // Full descriptions remain readable, and only the newest release is current.
     // Deliberate release marker for this content refresh; update it with the next release.
-    expect(CHANGELOG_ENTRIES[0].date).toBe('03/11/2026');
-    expect(CHANGELOG_ENTRIES[0].summary).toContain('Neue Themen-Navigation');
+    expect(CHANGELOG_ENTRIES[0].date).toBe('04/11/2026');
+    expect(CHANGELOG_ENTRIES[0].summary).toContain('Centgenaue Geldprüfung');
     for (const entry of CHANGELOG_ENTRIES) {
       const summary = screen.getByText(entry.summary, { exact: true });
       expect(summary).toBeInTheDocument();
@@ -386,7 +386,7 @@ describe('StudyCard – welcome screen (no question)', () => {
     expect(screen.getAllByText('Aktuell', { exact: true })).toHaveLength(1);
     expect(CHANGELOG_ENTRIES.filter(entry => entry.highlight)).toEqual([CHANGELOG_ENTRIES[0]]);
     expect(CHANGELOG_ENTRIES.filter(entry => entry.tag === 'Aktuell')).toEqual([CHANGELOG_ENTRIES[0]]);
-    expect(screen.getByText('Aktuell').parentElement).toHaveTextContent('03/11/2026');
+    expect(screen.getByText('Aktuell').parentElement).toHaveTextContent('04/11/2026');
   });
 });
 
@@ -1109,4 +1109,26 @@ it('lets a learner submit an unsuitable cable with its reasons and records a wro
   fireEvent.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
   expect(check).toHaveBeenCalledTimes(1);
   expect(check).toHaveReturnedWith(false);
+});
+
+describe('cent-accurate monetary input feedback', () => {
+  it('rejects an in-old-tolerance amount once, leaves reveal unscored and resets before accepting comma cents', () => {
+    const q=makeQuestion({module:'handelskalkulationVorwaerts',expectedAnswers:{amount:1000},answerInputs:[{valueKey:'amount',label:'Geldbetrag',numericRule:'moneyCents'}],calculationLearning:{rows:[{valueKey:'amount',hint:'Prüfe den gegebenen Betrag.'}]}});
+    const check=vi.fn((answers:Record<string,string>)=>validateQuestionAnswers(q,answers));
+    const {rerender}=render(<StudyCard question={q} onCheckAnswer={check} onNextQuestion={noNextQuestion}/>);
+    fireEvent.change(screen.getByLabelText('Geldbetrag'),{target:{value:'1040'}});
+    const submit=screen.getByRole('button',{name:/Antwort prüfen/});fireEvent.click(submit);
+    expect(screen.queryByRole('button',{name:/Antwort prüfen/})).not.toBeInTheDocument();
+    expect(check).toHaveBeenCalledTimes(1);expect(check).toHaveReturnedWith(false);
+    expect(screen.getByRole('region',{name:'Hinweise zur Kalkulation'})).toHaveTextContent('Geldbetrag');
+    fireEvent.click(screen.getByRole('button',{name:'Lösung anzeigen'}));
+    fireEvent.click(screen.getByRole('button',{name:'Lösung ausblenden'}));
+    expect(check).toHaveBeenCalledTimes(1);
+    rerender(<StudyCard question={{...q,id:'next-cent-question'}} onCheckAnswer={check} onNextQuestion={noNextQuestion}/>);
+    expect(screen.getByLabelText('Geldbetrag')).toHaveValue('');
+    expect(screen.queryByRole('region',{name:'Hinweise zur Kalkulation'})).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Geldbetrag'),{target:{value:'1000,00'}});
+    fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/}));
+    expect(check).toHaveBeenCalledTimes(2);expect(check).toHaveLastReturnedWith(true);
+  });
 });

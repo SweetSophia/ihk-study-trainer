@@ -128,3 +128,23 @@ it.each([true, false])('keeps learning hints/reveal/navigation separate from att
  expect(screen.getAllByRole('textbox').every(input=>(input as HTMLInputElement).value==='')).toBe(true);
  expect(updateProgress).toHaveBeenCalledTimes(authenticated ? 1 : 0);
 });
+
+it('records a cent-precision failure under the existing forward identity only once',async()=>{
+ const random=vi.spyOn(Math,'random').mockReturnValue(.5);
+ try {
+  const {generateVorwaertsKalkulationQuestion}=await import('../lib/generators/handelskalkulation');
+  const fixture=generateVorwaertsKalkulationQuestion('standard');
+  render(<Home/>);await screen.findByRole('button',{name:'Fehler üben'});
+  await chooseModule('handelskalkulationVorwaerts');
+  await screen.findByText(/^Berechne die Vorwärtskalkulation!/);
+  for(const config of fixture.answerInputs!) fireEvent.change(screen.getByLabelText(config.label!),{target:{value:String(fixture.expectedAnswers[config.valueKey])}});
+  const first=fixture.answerInputs![0];
+  fireEvent.change(screen.getByLabelText(first.label!),{target:{value:String(Number(fixture.expectedAnswers[first.valueKey])*1.04)}});
+  const submit=screen.getByRole('button',{name:/Antwort prüfen/});fireEvent.click(submit);fireEvent.click(submit);
+  await waitFor(()=>expect(updateProgress).toHaveBeenCalledTimes(1));
+  expect(updateProgress).toHaveBeenCalledWith('test-user-hash','handelskalkulationVorwaerts',false);
+  fireEvent.click(screen.getByRole('button',{name:'Lösung anzeigen'}));
+  fireEvent.click(screen.getByRole('button',{name:'Lösung ausblenden'}));
+  expect(updateProgress).toHaveBeenCalledTimes(1);
+ }finally{random.mockRestore();}
+},15000);

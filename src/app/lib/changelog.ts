@@ -8,10 +8,14 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   // New releases use UTC merge dates; older entries retain their originally recorded dates.
   {
-    date: '03/11/2026',
-    summary: 'Neue Themen-Navigation: fünf aufklappbare Gruppen, eigener AP2-Trainingslauf und mobile Aufgabenauswahl statt Kachelwand. System-, Hell- und Dunkelmodus für alle Lernansichten. Öffnen der Navigation und Farbwechsel erhalten Eingaben; vor dem Verlassen eines Trainingslaufs wird gewarnt. Keine neue Entwurfsspeicherung. Linux: mehr passende Werkzeug-Antworten, eindeutigere Auswahlfragen und erklärendes Feedback mit den hinterlegten Befehlsformen; keine Befehlsausführung.',
+    date: '04/11/2026',
+    summary: 'Kalkulation: Centgenaue Geldprüfung in Vorwärts-, Rückwärts- und Differenzaufgaben. Jede Rechenzeile wird auf Cent gerundet und mit diesem Betrag weitergerechnet; keine 5%-Toleranz für diese Geldantworten. Messwert- und Schätztoleranzen sowie gespeicherter Fortschritt bleiben erhalten.',
     highlight: true,
     tag: 'Aktuell',
+  },
+  {
+    date: '03/11/2026',
+    summary: 'Neue Themen-Navigation: fünf aufklappbare Gruppen, eigener AP2-Trainingslauf und mobile Aufgabenauswahl statt Kachelwand. System-, Hell- und Dunkelmodus für alle Lernansichten. Öffnen der Navigation und Farbwechsel erhalten Eingaben; vor dem Verlassen eines Trainingslaufs wird gewarnt. Keine neue Entwurfsspeicherung. Linux: mehr passende Werkzeug-Antworten, eindeutigere Auswahlfragen und erklärendes Feedback mit den hinterlegten Befehlsformen; keine Befehlsausführung.',
   },
   {
     date: '29/10/2026',

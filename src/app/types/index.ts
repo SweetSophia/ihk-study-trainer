@@ -10,6 +10,8 @@ export interface AnswerInputConfig {
   label?: string;
   /** Answer text is preserved for the strict validator, including signs, commas and exponents. No restricted decimal keypad is requested; structured text such as IPv4 also uses the text control. */
   inputType?: 'number' | 'text';
+  /** Opt-in exact-cent comparison; untagged numeric fields keep their existing policy. */
+  numericRule?: 'moneyCents';
   /** When present, the value field renders as a dropdown instead of a text input */
   valueOptions?: string[];
   /** When present, validation accepts any value in this list (order-independent multi-correct) */
