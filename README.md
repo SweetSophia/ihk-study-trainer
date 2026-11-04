@@ -70,7 +70,7 @@ Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist an
 12. **Ports** – Dienste, Portnummern und Protokolle korrekt zuordnen
 13. **OSI-Modell** – Schichten, Aufgaben und Zuordnungen trainieren
 14. **Kabel** – passende Kabeltypen anhand von Strecke, Geschwindigkeit und Umgebung wählen
-15. **Linux** – Linux-Befehle und typische Admin-Kommandos üben
+15. **Linux** – Befehlsnamen und Shell-Operatoren zuordnen, mit gezielt hinterlegten Werkzeug-Alternativen und erklärendem Feedback. Die Übung vergleicht Befehlsformen; sie parst oder führt keine vollständigen Kommandozeilen aus.
 16. **Cloud** – Cloud-Computing-Konzepte, Provider-Modelle und Sicherheitsgrundlagen wiederholen
 17. **Differenzkalkulation** – Vorwärts- und marktpreisbasierte Rückwärtsrechnung gezielt vergleichen
 18. **Vorwärtskalkulation** – vom Listeneinkaufspreis zum Bruttoverkaufspreis
@@ -179,6 +179,17 @@ npx tsc --noEmit
 npm run build
 npm run start
 ```
+
+Die lokale Linux-Browserprüfung startet gegen einen separaten Produktionsserver:
+
+```bash
+npm run build
+npm start -- --port 3144
+# In einem zweiten Terminal:
+node scripts/check-linux-feedback.mjs
+```
+
+Sie verwendet Playwrights verwaltetes Chromium (bei Bedarf separat mit `npx playwright install chromium` installieren). Alternativ lässt sich ein vorhandener Browser mit `CHROMIUM_PATH=/pfad/zu/chromium` auswählen. `IHK_TEST_URL` überschreibt die lokale URL, `IHK_QA_OUTPUT` das Screenshot-Verzeichnis. Der Guard akzeptiert nur lokale Ziele und blockiert Account-/Netzwerkschreibzugriffe.
 
 Die AP2-Erweiterungen wurden mit Unit-/Komponententests, Seitenintegration sowie Desktop-/Mobile-Prüfungen eines lokalen Produktions-Builds geprüft. Das bestätigt keine durchgängige Prüfung der Live-Account-Persistenz; diese bleibt separat zu verifizieren. Browser-Fallback und Supabase-Speicherung sind unterschiedliche Betriebsarten.
 

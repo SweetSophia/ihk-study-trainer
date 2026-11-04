@@ -210,6 +210,7 @@ export const GENERATORS: Record<RegistryModuleId, () => Question> = {
       questionText: q.questionText,
       expectedAnswers: q.expectedAnswers,
       solutionSteps: q.solutionSteps,
+      answerExplanation: q.answerExplanation,
       difficulty: q.difficulty,
       answerInputs: q.answerInputs,
       direction: q.direction,

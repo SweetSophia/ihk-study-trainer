@@ -557,7 +557,9 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
             }
             onSubmit={handleCheck}
             isCorrect={isCorrect}
-            checked={checked}
+            checked={checked && gradedQuestionId === questionId}
+            acceptedAnswers={linuxTerminalConfig.acceptedValues}
+            answerExplanation={question.answerExplanation}
             correctAnswer={String(
               question.expectedAnswers[linuxTerminalConfig.valueKey] ??
                 question.expectedAnswers.answer ??
@@ -662,7 +664,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
 
         {/* Feedback — wrapped in a live region so screen readers announce
             correctness when the user submits. */}
-        <div role="status" aria-live="polite" aria-atomic="true">
+        {!isLinuxTerminal && <div role="status" aria-live="polite" aria-atomic="true">
           <AnimatePresence>
             {checked && (
               <motion.div
@@ -693,7 +695,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </div>}
           {calculationHints.length > 0 && (
             <section aria-label="Hinweise zur Kalkulation" className="mt-3 rounded-lg border border-line bg-canvas p-4">
               <h3 className="text-sm font-medium text-ink mb-2">Zum Nachprüfen</h3>

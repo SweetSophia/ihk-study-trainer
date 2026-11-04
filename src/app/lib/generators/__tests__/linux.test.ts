@@ -64,7 +64,7 @@ describe('linux generator', () => {
       },
       {
         command: 'nslookup',
-        accepted: ['nslookup', 'dig'],
+        accepted: ['nslookup', 'dig', 'host'],
         rejected: ['ping'],
       },
       {

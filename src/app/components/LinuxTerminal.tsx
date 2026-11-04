@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, type KeyboardEvent } from 'react';
+import { useRef, useEffect, useId, type KeyboardEvent } from 'react';
 import { Terminal } from 'lucide-react';
 
 interface LinuxTerminalProps {
@@ -19,6 +19,10 @@ interface LinuxTerminalProps {
   checked: boolean;
   /** The correct answer to show after checking */
   correctAnswer?: string;
+  /** Curated recognized forms from the same configuration used by the validator. */
+  acceptedAnswers?: string[];
+  /** Explanation of correctAnswer, not of every accepted tool. */
+  answerExplanation?: string;
 }
 
 export default function LinuxTerminal({
@@ -30,8 +34,12 @@ export default function LinuxTerminal({
   isCorrect,
   checked,
   correctAnswer,
+  acceptedAnswers,
+  answerExplanation,
 }: LinuxTerminalProps) {
+  const instructionId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const accepted = acceptedAnswers?.length ? acceptedAnswers : correctAnswer ? [correctAnswer] : [];
   const terminalRef = useRef<HTMLDivElement>(null);
 
   // Auto-focus the hidden input when terminal is clicked
@@ -77,7 +85,7 @@ export default function LinuxTerminal({
     <div className="w-full">
       {/* Terminal window chrome */}
       <div
-        className={`rounded-lg overflow-hidden border ${
+        className={`rounded-lg overflow-hidden border focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2 focus-within:ring-offset-canvas ${
           checked
             ? isCorrect
               ? 'border-success'
@@ -106,7 +114,7 @@ export default function LinuxTerminal({
         >
           {/* Welcome header */}
           <div className="text-success text-xs mb-3">
-            <div>Willkommen bei IHK-Study-Trainer OS (GNU/Linux 6.8.0-106-generic x86_64)</div>
+            <div>Linux-Zuordnungsübung – keine Befehlsausführung</div>
           </div>
 
           {/* Command prompt with input */}
@@ -128,21 +136,28 @@ export default function LinuxTerminal({
             )}
           </div>
 
-          {/* After checking, show result */}
-          {checked && (
-            <div className={`mt-3 text-xs ${isCorrect ? 'text-success' : 'text-danger'}`}>
-              {isCorrect ? (
-                <div>✓ Richtig! Befehl akzeptiert.</div>
-              ) : (
-                <>
-                  <div>✗ Falsch. Der richtige Befehl lautet:</div>
-                  <div className="text-success mt-1">
-                    user@lernmaschine:~$ {correctAnswer}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+          {/* The parent suppresses its generic verdict here: one live region,
+              with the same curated forms the real validator recognizes. */}
+          <div role="status" aria-label="Linux-Antwort" aria-atomic="true" className="text-xs">
+            {checked && (
+              <div className="mt-3 space-y-2 text-ink">
+                <p className={isCorrect ? 'text-success' : 'text-danger'}>
+                  {isCorrect ? '✓ Richtig! Deine Antwort wird in dieser Aufgabe akzeptiert.' : '✗ Diese Antwort wurde in dieser Aufgabe nicht akzeptiert.'}
+                </p>
+                {!isCorrect && <p>Diese Übung vergleicht Befehlsformen, keine vollständigen Kommandozeilen. Deine Antwort muss einer der unten aufgeführten Formen entsprechen; Groß-/Kleinschreibung und Leerraum werden dabei normalisiert.</p>}
+                {accepted.length > 0 && <div>
+                  <p>Hier akzeptierte Antworten:</p>
+                  <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                    {accepted.map(form => <li key={form}><code className="break-all text-accent">{form}</code></li>)}
+                  </ul>
+                </div>}
+                {correctAnswer && answerExplanation && <div className="border-t border-line pt-2">
+                  <p className="font-semibold">Erklärung zum Beispiel {correctAnswer}:</p>
+                  <p className="mt-1">{answerExplanation}</p>
+                </div>}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Hidden real input for keyboard capture */}
@@ -156,6 +171,7 @@ export default function LinuxTerminal({
             disabled={disabled}
             className="sr-only"
             aria-label="Linux-Befehl eingeben"
+            aria-describedby={instructionId}
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
@@ -166,8 +182,8 @@ export default function LinuxTerminal({
 
       {/* Instruction hint */}
       {!checked && (
-        <p className="text-xs text-muted mt-2 pl-1">
-          Tippe den Befehl ein und drücke Enter zum Prüfen.
+        <p id={instructionId} className="text-xs text-muted mt-2 pl-1">
+          Gesucht ist der Befehlsname (bei Unterbefehlen: Befehl + Unterbefehl) oder der Operator, ohne zusätzliche Optionen oder Ziele. Es wird nichts ausgeführt. Diese Zuordnungsübung ignoriert Groß-/Kleinschreibung; eine echte Shell nicht. Drücke Enter zum Prüfen.
         </p>
       )}
     </div>
