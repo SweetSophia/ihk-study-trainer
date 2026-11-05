@@ -1,10 +1,11 @@
-// Manual LOCAL production guest check: npm run build; npm start -- --port 3146;
-// IHK_TEST_URL=http://127.0.0.1:3146 node scripts/check-money-precision.mjs
+// Manual LOCAL production guest check: npm run build; npm start -- --port 3144;
+// node scripts/check-money-precision.mjs (or set IHK_TEST_URL for another local port)
 // Optional CHROMIUM_PATH; otherwise install managed Chromium separately.
 // Independent integer/rational oracle reads displayed givens, never app answer keys.
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
-const url=process.env.IHK_TEST_URL||'http://127.0.0.1:3146';
+import { displayedMoneyCents, classifyRequest } from './lib/money-precision-reference.mjs';
+const url=process.env.IHK_TEST_URL||'http://127.0.0.1:3144';
 assert.ok(['localhost','127.0.0.1','[::1]'].includes(new URL(url).hostname));
 const forwardKeys=['lep','rabatt','zep','skonto','bep','bp','handlungskosten','selbstkosten','gewinn','bvp','kundenskonto','zvp','kundenrabatt','nettovk','ust','bruttovk'];
 const backwardKeys=['ust','nettovk','kundenrabatt','zvp','kundenskonto','bvp','gewinn','selbstkosten','handlungskosten','bp','bep','skonto','zep','rabatt','lep'];
@@ -12,7 +13,7 @@ const format=cents=>(cents/100).toFixed(2).replace('.',',');
 const ratio=(cents,n,d)=>Number((BigInt(cents)*BigInt(n)*2n+BigInt(d))/(2n*BigInt(d)));
 function givens(text){
  const read=label=>{const match=text.match(new RegExp('• '+label+': (-?\\d+(?:[.,]\\d+)?)\\s*[€%]'));assert.ok(match,`missing ${label}`);return match[1].replace(',','.');};
- const money=label=>{const [whole,fraction='']=read(label).split('.');assert.ok(fraction.length<=2);return Number(whole)*100+Number(fraction.padEnd(2,'0'));};
+ const money=label=>displayedMoneyCents(read(label));
  return {read,money,rebate:Number(read('Lieferantenrabatt')),skonto:Number(read('Lieferskonto')),costs:money('Bezugskosten'),handling:Number(read('Handlungskosten')),profit:Number(read('Gewinnzuschlag')),customerSkonto:Number(read('Kundenskonto')),customerRebate:Number(read('Kundenrabatt')),vat:Number(read('Umsatzsteuer'))};
 }
 function forward(g,lep){
@@ -43,7 +44,18 @@ function oracle(mode,text){
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||undefined});
 try{for(const width of[320,390,1440]){
  const context=await browser.newContext({viewport:{width,height:900},locale:'de-DE',reducedMotion:'reduce'});
- let writes=0;await context.route('**/*',route=>{if(new URL(route.request().url()).origin===new URL(url).origin&&['GET','HEAD'].includes(route.request().method()))return route.continue();writes++;return route.abort();});
+ let writes=0,blockedReads=0;
+ const blockedReadOrigins=new Set();
+ await context.route('**/*',route=>{
+  const kind=classifyRequest(route.request().url(),route.request().method(),new URL(url).origin);
+  if(kind==='local-read')return route.continue();
+  if(kind==='blocked-read'){
+   blockedReads++;
+   // Origins only: never log paths, query parameters or account identifiers.
+   if(blockedReadOrigins.size<3)blockedReadOrigins.add(new URL(route.request().url()).origin);
+  }else writes++;
+  return route.abort();
+ });
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(url);await page.getByRole('button',{name:'Schließen',exact:true}).click();
  const nav=page.getByRole('navigation',{name:'Lernmodule',exact:true}),appearance=page.getByRole('combobox',{name:'Darstellung'});
@@ -78,7 +90,9 @@ try{for(const width of[320,390,1440]){
  await choose('backward');await fill('backward');await submit(true);await overflow();
  await choose('differential','negative');values=await fill('differential');assert.ok(values.at(-1)<0,'negative-gap fixture');await submit(true);await overflow();
  await next('zero');values=await fill('differential');assert.equal(values.at(-1),0);await inputs().last().fill('-0,000');await submit(true);await overflow();
- assert.equal(writes,0);assert.deepEqual(errors,[]);assert.equal(await page.evaluate(()=>Object.keys(localStorage).some(k=>k==='ihk_access_hash'||k.startsWith('ihk_progress'))),false);
- console.log(JSON.stringify({width,independentDisplayedValueOracle:true,exactCommaAccepted:true,relativeAndSubcentRejected:true,negativeAndZero:true,freshFeedback:true,themeDraftRetained:true,guestNoWrites:true}));
+ assert.equal(writes,0,'guest must not attempt network writes');
+ assert.equal(blockedReads,0,`unexpected external reads invalidate this local-only check (origins: ${[...blockedReadOrigins].join(', ')})`);
+ assert.deepEqual(errors,[]);assert.equal(await page.evaluate(()=>Object.keys(localStorage).some(k=>k==='ihk_access_hash'||k.startsWith('ihk_progress'))),false);
+ console.log(JSON.stringify({width,independentDisplayedValueOracle:true,exactCommaAccepted:true,relativeAndSubcentRejected:true,negativeAndZero:true,freshFeedback:true,themeDraftRetained:true,guestNoWrites:true,blockedExternalReads:blockedReads}));
  await context.close();
 }}finally{await browser.close();}

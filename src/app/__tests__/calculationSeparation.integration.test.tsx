@@ -129,20 +129,21 @@ it.each([true, false])('keeps learning hints/reveal/navigation separate from att
  expect(updateProgress).toHaveBeenCalledTimes(authenticated ? 1 : 0);
 });
 
-it('records a cent-precision failure under the existing forward identity only once',async()=>{
+it.each([0,1])('records the rendered forward answer with a %i-cent error only once',async centError=>{
  const random=vi.spyOn(Math,'random').mockReturnValue(.5);
  try {
   const {generateVorwaertsKalkulationQuestion}=await import('../lib/generators/handelskalkulation');
   const fixture=generateVorwaertsKalkulationQuestion('standard');
   render(<Home/>);await screen.findByRole('button',{name:'Fehler üben'});
   await chooseModule('handelskalkulationVorwaerts');
-  await screen.findByText(/^Berechne die Vorwärtskalkulation!/);
+  const rendered=await screen.findByText(/^Berechne die Vorwärtskalkulation!/);
+  expect(rendered.textContent).toBe(fixture.questionText);
   for(const config of fixture.answerInputs!) fireEvent.change(screen.getByLabelText(config.label!),{target:{value:String(fixture.expectedAnswers[config.valueKey])}});
   const first=fixture.answerInputs![0];
-  fireEvent.change(screen.getByLabelText(first.label!),{target:{value:String(Number(fixture.expectedAnswers[first.valueKey])*1.04)}});
+  fireEvent.change(screen.getByLabelText(first.label!),{target:{value:((Math.round(Number(fixture.expectedAnswers[first.valueKey])*100)+centError)/100).toFixed(2)}});
   const submit=screen.getByRole('button',{name:/Antwort prüfen/});fireEvent.click(submit);fireEvent.click(submit);
   await waitFor(()=>expect(updateProgress).toHaveBeenCalledTimes(1));
-  expect(updateProgress).toHaveBeenCalledWith('test-user-hash','handelskalkulationVorwaerts',false);
+  expect(updateProgress).toHaveBeenCalledWith('test-user-hash','handelskalkulationVorwaerts',centError===0);
   fireEvent.click(screen.getByRole('button',{name:'Lösung anzeigen'}));
   fireEvent.click(screen.getByRole('button',{name:'Lösung ausblenden'}));
   expect(updateProgress).toHaveBeenCalledTimes(1);
