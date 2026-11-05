@@ -45,10 +45,15 @@ const browser=await chromium.launch({headless:true,executablePath:process.env.CH
 try{for(const width of[320,390,1440]){
  const context=await browser.newContext({viewport:{width,height:900},locale:'de-DE',reducedMotion:'reduce'});
  let writes=0,blockedReads=0;
+ const blockedReadOrigins=new Set();
  await context.route('**/*',route=>{
   const kind=classifyRequest(route.request().url(),route.request().method(),new URL(url).origin);
   if(kind==='local-read')return route.continue();
-  if(kind==='blocked-read')blockedReads++;else writes++;
+  if(kind==='blocked-read'){
+   blockedReads++;
+   // Origins only: never log paths, query parameters or account identifiers.
+   if(blockedReadOrigins.size<3)blockedReadOrigins.add(new URL(route.request().url()).origin);
+  }else writes++;
   return route.abort();
  });
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -86,7 +91,7 @@ try{for(const width of[320,390,1440]){
  await choose('differential','negative');values=await fill('differential');assert.ok(values.at(-1)<0,'negative-gap fixture');await submit(true);await overflow();
  await next('zero');values=await fill('differential');assert.equal(values.at(-1),0);await inputs().last().fill('-0,000');await submit(true);await overflow();
  assert.equal(writes,0,'guest must not attempt network writes');
- assert.equal(blockedReads,0,'unexpected external reads invalidate this local-only check');
+ assert.equal(blockedReads,0,`unexpected external reads invalidate this local-only check (origins: ${[...blockedReadOrigins].join(', ')})`);
  assert.deepEqual(errors,[]);assert.equal(await page.evaluate(()=>Object.keys(localStorage).some(k=>k==='ihk_access_hash'||k.startsWith('ihk_progress'))),false);
  console.log(JSON.stringify({width,independentDisplayedValueOracle:true,exactCommaAccepted:true,relativeAndSubcentRejected:true,negativeAndZero:true,freshFeedback:true,themeDraftRetained:true,guestNoWrites:true,blockedExternalReads:blockedReads}));
  await context.close();

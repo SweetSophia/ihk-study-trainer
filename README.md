@@ -176,6 +176,8 @@ Für eine neue Supabase-Instanz enthält `database/schema.sql` die Tabellen und 
 
 ```bash
 npm test
+# Nur die serverunabhängigen Skriptverträge (auch automatisch vor npm test):
+npm run test:contracts
 npm run lint
 npx tsc --noEmit
 npm run build
@@ -191,8 +193,7 @@ npm start -- --port 3144
 node scripts/check-linux-feedback.mjs
 # Kabel-/RAID-Fairness und abhängige Auswahlfelder:
 node scripts/check-fairness.mjs
-# Regressionsprüfungen des unabhängigen Prüfskripts, dann Browserprüfung:
-node --test scripts/check-money-precision.contract.mjs
+# Geldpräzision im Browser (Skriptverträge benötigen keinen Server):
 node scripts/check-money-precision.mjs
 ```
 
