@@ -1,4 +1,5 @@
 import { parseMoneyCents } from './moneyPrecision';
+import { parseDecimalStorageBytes } from './storagePrecision';
 import { getCableAnswerInputs } from './cableAnswerContract';
 import { AnswerInputConfig, Question } from '../types';
 
@@ -185,6 +186,14 @@ export function validateStructuredAnswer(
         const expectedUnit = String(expected[cfg.unitKey] ?? '').trim().toLowerCase();
         if (!expectedUnit || (answers[cfg.unitKey] ?? '').trim().toLowerCase() !== expectedUnit) return false;
       }
+      continue;
+    }
+
+    if (cfg.numericRule === 'decimalStorageBytes') {
+      if (!cfg.unitKey) return false;
+      const actualBytes = parseDecimalStorageBytes(userAnswer, answers[cfg.unitKey]);
+      const expectedBytes = parseDecimalStorageBytes(expectedStr, String(expected[cfg.unitKey] ?? ''));
+      if (actualBytes === null || expectedBytes === null || actualBytes !== expectedBytes) return false;
       continue;
     }
 

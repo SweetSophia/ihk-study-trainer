@@ -23,7 +23,7 @@ describe('opt-in exact-cent amounts', () => {
     ['-20', '-19.99'], ['-20', '-20.01'], ['-20', '20'], ['0', '1e-400'], ['0', '-1e-400'], ['1.13', '1.13000000000000000001'], ['0.01', '0.005'], ['0', '0.001'],
   ])('rejects wrong signed/sub-cent %s / %s', (expected, answer) => expect(check(expected, answer)).toBe(false));
   it.each(['', '1.000,00', '1 000', '1000€', '1000xyz', '1,0.0', 'NaN', 'Infinity', '1e1000000000', '1e', '--1000'])('rejects malformed or out-of-range%s', answer => expect(check(1000, answer)).toBe(false));
-  it('keeps the existing relative rule for untagged amounts and RAID capacity', () => {
+  it('keeps the existing relative rule for untagged amounts and legacy storage configurations', () => {
     expect(validateStructuredAnswer([{ valueKey: 'amount' }], { amount: 1000 }, { amount: '1040' })).toBe(true);
     expect(validateStructuredAnswer([{ valueKey: 'usableCapacity', unitKey: 'unit', unitOptions: ['GB', 'TB'] }], { usableCapacity: 4, unit: 'TB' }, { usableCapacity: '3.9', unit: 'TB' })).toBe(true);
   });

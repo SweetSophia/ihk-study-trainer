@@ -8,10 +8,14 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   // New releases use UTC merge dates; older entries retain their originally recorded dates.
   {
-    date: '04/11/2026',
-    summary: 'Kalkulation: Centgenaue Geldprüfung in Vorwärts-, Rückwärts- und Differenzaufgaben. Jede Rechenzeile wird auf Cent gerundet und mit diesem Betrag weitergerechnet; keine 5%-Toleranz für diese Geldantworten. Messwert- und Schätztoleranzen sowie gespeicherter Fortschritt bleiben erhalten.',
+    date: '06/11/2026',
+    summary: 'RAID-Kapazität: theoretische nutzbare Kapazitäten werden exakt mit dezimalen Einheiten geprüft. 1 TB entspricht 1000 GB; gleichwertige Antworten bleiben gültig. Dateisystem- und Formatierungsverluste werden ausdrücklich nicht berechnet. Messwerttoleranzen anderer Aufgaben und gespeicherter Fortschritt bleiben unverändert.',
     highlight: true,
     tag: 'Aktuell',
+  },
+  {
+    date: '04/11/2026',
+    summary: 'Kalkulation: Centgenaue Geldprüfung in Vorwärts-, Rückwärts- und Differenzaufgaben. Jede Rechenzeile wird auf Cent gerundet und mit diesem Betrag weitergerechnet; keine 5%-Toleranz für diese Geldantworten. Messwert- und Schätztoleranzen sowie gespeicherter Fortschritt bleiben erhalten.',
   },
   {
     date: '03/11/2026',

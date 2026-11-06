@@ -149,3 +149,35 @@ it.each([0,1])('records the rendered forward answer with a %i-cent error only on
   expect(updateProgress).toHaveBeenCalledTimes(1);
  }finally{random.mockRestore();}
 },15000);
+
+it.each([true,false])('grades exact RAID unit conversions with existing progress identity, authenticated: %s',async authenticated=>{
+ if(!authenticated)localStorage.removeItem('ihk_access_hash');
+ const random=vi.spyOn(Math,'random').mockReturnValue(.9);
+ try{
+  render(<Home/>);if(authenticated)await screen.findByRole('button',{name:'Fehler üben'});
+  await chooseModule('raid');
+  expect(await screen.findByText(/1 TB = 1000 GB/)).toHaveTextContent('theoretische');
+  fireEvent.change(screen.getByLabelText('Nutzbare Kapazität',{exact:true}),{target:{value:'31999'}});
+  fireEvent.change(screen.getByRole('combobox',{name:'Einheit für Nutzbare Kapazität'}),{target:{value:'GB'}});
+  fireEvent.change(screen.getByLabelText('Garantiert tolerierte beliebige Ausfälle'),{target:{value:'1'}});
+  const submit=screen.getByRole('button',{name:/Antwort prüfen/});expect(submit).toBeEnabled();fireEvent.click(submit);
+  expect(await screen.findByText('Das ist nicht ganz richtig.',{exact:true})).toBeInTheDocument();
+  fireEvent.keyDown(window,{key:'Enter'});
+  expect(screen.queryByRole('button',{name:/Antwort prüfen/})).not.toBeInTheDocument();
+  await waitFor(()=>expect(updateProgress).toHaveBeenCalledTimes(authenticated?1:0));
+  if(authenticated)expect(updateProgress).toHaveBeenLastCalledWith('test-user-hash','raid',false);
+  fireEvent.click(screen.getByRole('button',{name:'Lösung anzeigen'}));
+  fireEvent.click(screen.getByRole('button',{name:'Lösung ausblenden'}));
+  expect(updateProgress).toHaveBeenCalledTimes(authenticated?1:0);
+  fireEvent.click(screen.getByRole('button',{name:/Nächste Frage/}));
+  await waitFor(()=>expect(screen.queryByText('Das ist nicht ganz richtig.',{exact:true})).not.toBeInTheDocument());
+  expect(screen.getByLabelText('Nutzbare Kapazität',{exact:true})).toHaveValue('');
+  fireEvent.change(screen.getByLabelText('Nutzbare Kapazität',{exact:true}),{target:{value:'32,000'}});
+  fireEvent.change(screen.getByRole('combobox',{name:'Einheit für Nutzbare Kapazität'}),{target:{value:'TB'}});
+  fireEvent.change(screen.getByLabelText('Garantiert tolerierte beliebige Ausfälle'),{target:{value:'1'}});
+  fireEvent.keyDown(window,{key:'Enter'});
+  expect(await screen.findByText('Richtig! Sehr gut gemacht.',{exact:true})).toBeInTheDocument();
+  await waitFor(()=>expect(updateProgress).toHaveBeenCalledTimes(authenticated?2:0));
+  if(authenticated)expect(updateProgress).toHaveBeenLastCalledWith('test-user-hash','raid',true);
+ }finally{random.mockRestore();}
+},15000);

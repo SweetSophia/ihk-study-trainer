@@ -210,7 +210,9 @@ export function generateRaidQuestion(): RaidQuestion {
     questionText:
       `Du baust ein ${level}-Array aus ${choiceText}. ` +
       `Berechne die nutzbare Kapazität und die maximale Anzahl beliebiger gleichzeitig ausfallender Festplatten, die das Array unabhängig von ihrer Verteilung garantiert toleriert. Betrachte Ausfälle vor einem Rebuild, ohne Hot Spares.\n\n` +
-      `Gib die Kapazität mit passender Einheit (GB oder TB) an.`,
+      `Gesucht ist die theoretische nutzbare Kapazität gleich großer Festplatten vor Dateisystem-, Metadaten- oder Formatierungsverlusten. ` +
+      `Es gelten dezimale Einheiten: 1 GB = 10^9 Byte; 1 TB = 1000 GB = 10^12 Byte. ` +
+      `Gib den exakten Wert in GB oder TB an; gleichwertige Umrechnungen werden akzeptiert, eine 5%-Schätztoleranz gilt hier nicht.`,
     expectedAnswers: {
       usableCapacity: expectedValue,
       unit,
@@ -222,6 +224,7 @@ export function generateRaidQuestion(): RaidQuestion {
         unitKey: 'unit',
         label: 'Nutzbare Kapazität',
         unitOptions: ['GB', 'TB'],
+        numericRule: 'decimalStorageBytes',
       },
       {
         valueKey: 'faultTolerance',
@@ -300,6 +303,7 @@ function buildSolutionSteps(params: {
     `RAID-Level: ${level}`,
     ``,
     `Definition: ${description}`,
+    `Einheitenmodell: 1 GB = 10^9 Byte; 1 TB = 1000 GB = 10^12 Byte. Theoretische Kapazität vor Dateisystem-, Metadaten- oder Formatierungsverlusten.`,
     ``,
     `Gegeben: ${disks} Festplatten à ${diskSizeGb} GB`,
     ``,
@@ -307,6 +311,7 @@ function buildSolutionSteps(params: {
     `  ${capFormula}`,
     ``,
     `Anzeige: ${displayValue} ${unit}`,
+    `Gleichwertige exakte Antworten: ${usableCapacityGb} GB = ${usableCapacityGb / 1000} TB.`,
     ``,
     `Garantiert tolerierte beliebige Ausfälle (${level}):`,
     `  ${tolFormula}`,
