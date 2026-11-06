@@ -64,12 +64,13 @@ for (const path of ['generic', 'configured', 'leftover'] as const) {
   });
 }
 
-it('preserves generated RAID capacity conversion and measured tolerance', () => {
+it('preserves generated RAID capacity conversion with exact theoretical grading', () => {
   const question = generate('raid');
   const answers = correctAnswers(question);
   const cfg = question.answerInputs![0];
   const value = Number(answers[cfg.valueKey]);
-  expect(validateQuestionAnswers(question, { ...answers, [cfg.valueKey]: String(value * 1.04) })).toBe(true);
+  expect(validateQuestionAnswers(question, answers)).toBe(true);
+  expect(validateQuestionAnswers(question, { ...answers, [cfg.valueKey]: String(value * 1.04) })).toBe(false);
   expect(validateQuestionAnswers(question, { ...answers, [cfg.valueKey]: String(value * 1.06) })).toBe(false);
   const unit = answers[cfg.unitKey!];
   expect(validateQuestionAnswers(question, {

@@ -89,7 +89,9 @@ Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist an
 
 Alte gemischte Kalkulationsversuche bleiben als **„Kalkulation (gemischter Altbestand)“** im Fortschritt und in den Gesamtsummen erhalten. Sie werden keinem der drei getrennten Angebote nachträglich zugerechnet und nicht über „Fehler üben“ neu gestartet. Vorwärts- und Rückwärtsfortschritt behalten ihre bisherigen IDs; Differenzaufgaben starten mit einer eigenen Fortschritts-ID.
 
-In den drei getrennten Kalkulationsmodulen werden alle abgefragten Geldbeträge **centgenau** bewertet. Jede Rechenzeile wird kaufmännisch auf zwei Nachkommastellen gerundet; mit diesem Centbetrag wird weitergerechnet. Dezimalkomma und -punkt sowie gleichwertige Schreibweisen sind erlaubt. Zusätzliche Bruchteile eines Cents werden bei der Prüfung nicht weggerundet. Die bisherige 5%-Toleranz anderer Aufgaben, etwa Messwerte oder RAID-Kapazitäten, wird dadurch nicht verändert; gespeicherte frühere Versuche werden nicht nachträglich neu bewertet.
+In den drei getrennten Kalkulationsmodulen werden alle abgefragten Geldbeträge **centgenau** bewertet. Jede Rechenzeile wird kaufmännisch auf zwei Nachkommastellen gerundet; mit diesem Centbetrag wird weitergerechnet. Dezimalkomma und -punkt sowie gleichwertige Schreibweisen sind erlaubt. Zusätzliche Bruchteile eines Cents werden bei der Prüfung nicht weggerundet. Messwert- und Schätztoleranzen anderer Aufgaben bleiben erhalten; gespeicherte frühere Versuche werden nicht nachträglich neu bewertet.
+
+Im **RAID-Rechner** gilt für die theoretische nutzbare Kapazität eine exakte Prüfung nach dezimalen Einheiten: **1 GB = 10^9 Byte, 1 TB = 1000 GB = 10^12 Byte**. Gleichwertige Angaben wie 4 TB und 4000 GB werden akzeptiert, 3,9 TB oder 4096 GB bei gesuchten 4 TB dagegen nicht. Gemeint ist die Kapazität gleich großer Laufwerke vor Dateisystem-, Metadaten- und Formatierungsverlusten, ohne Hot Spares; diese Aufgabe verwendet keine 5%-Schätztoleranz. Die Frage zu garantiert tolerierten beliebigen Ausfällen bleibt unverändert.
 
 ## UI & Lernerlebnis
 

@@ -74,12 +74,27 @@ try {
     await page.getByText('Richtig! Sehr gut gemacht.', { exact: true }).waitFor();
     await overflow();
     await choose('Systeme & Sicherheit', 'RAID-Rechner', .9);
+    await page.getByText('Richtig! Sehr gut gemacht.', { exact: true }).waitFor({ state: 'detached' });
     await page.getByRole('heading', { name: 'RAID-Rechner', exact: true }).waitFor();
     await page.getByText(/Ausfälle vor einem Rebuild/).waitFor();
-    await page.getByLabel('Nutzbare Kapazität', { exact: true }).fill('32');
-    await page.getByRole('combobox', { name: 'Einheit für Nutzbare Kapazität' }).selectOption('TB');
+    await page.getByText(/1 TB = 1000 GB/).waitFor();
+    const capacity = page.getByLabel('Nutzbare Kapazität', { exact: true });
+    const unit = page.getByRole('combobox', { name: 'Einheit für Nutzbare Kapazität' });
+    await capacity.fill('31999');
+    await unit.selectOption('GB');
     await page.getByLabel('Garantiert tolerierte beliebige Ausfälle').selectOption('1');
     await page.getByRole('button', { name: /Antwort prüfen/ }).click();
+    await page.getByText('Das ist nicht ganz richtig.', { exact: true }).waitFor();
+    await page.getByRole('button', { name: /Nächste Frage/ }).evaluate(element => {
+      const original = Math.random; Math.random = () => .9;
+      try { element.click(); } finally { Math.random = original; }
+    });
+    await page.getByText('Das ist nicht ganz richtig.', { exact: true }).waitFor({ state: 'detached' });
+    assert.equal(await capacity.inputValue(), '');
+    await capacity.fill('32000');
+    await unit.selectOption('GB');
+    await page.getByLabel('Garantiert tolerierte beliebige Ausfälle').selectOption('1');
+    await capacity.focus(); await page.keyboard.press('Enter');
     await page.getByText('Richtig! Sehr gut gemacht.', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Lösung anzeigen' }).click();
     await page.getByRole('button', { name: 'Alle anzeigen', exact: true }).click();
@@ -90,7 +105,7 @@ try {
     assert.equal(writes, 0);
     assert.deepEqual(errors, []);
     assert.equal(await page.evaluate(() => Object.keys(localStorage).some(key => key === 'ihk_access_hash' || key.startsWith('ihk_progress'))), false);
-    console.log(JSON.stringify({ width, cableAlternative: true, dependentReset: true, keyboardSubmit: true, raidGuarantee: true, bothThemes: true, guestNoWrites: true }));
+    console.log(JSON.stringify({ width, cableAlternative: true, dependentReset: true, keyboardSubmit: true, raidGuarantee: true, exactRaidCapacity: true, equivalentDecimalUnits: true, bothThemes: true, guestNoWrites: true }));
     await context.close();
   }
 } finally { await browser.close(); }
