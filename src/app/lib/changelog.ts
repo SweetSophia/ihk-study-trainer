@@ -8,10 +8,14 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   // New releases use UTC merge dates; older entries retain their originally recorded dates.
   {
-    date: '06/11/2026',
-    summary: 'RAID-Kapazität: theoretische nutzbare Kapazitäten werden exakt mit dezimalen Einheiten geprüft. 1 TB entspricht 1000 GB; gleichwertige Antworten bleiben gültig. Dateisystem- und Formatierungsverluste werden ausdrücklich nicht berechnet. Messwerttoleranzen anderer Aufgaben und gespeicherter Fortschritt bleiben unverändert.',
+    date: '08/11/2026',
+    summary: 'Gezielt üben: Themen selbst anhand von Erfolgsquote und gewerteten Versuchen auswählen. Kleine Datenbasis (1–4 Versuche) ist getrennt gekennzeichnet. Die Zahlen nutzen den gesamten gespeicherten Verlauf und erklären die unterschiedlichen Zählweisen von SQL und AP2; Bewertung und gespeicherte Fortschritte bleiben unverändert. Die Fortschrittssumme heißt jetzt „Gewertete Versuche“ (Zahl unverändert).',
     highlight: true,
     tag: 'Aktuell',
+  },
+  {
+    date: '06/11/2026',
+    summary: 'RAID-Kapazität: theoretische nutzbare Kapazitäten werden exakt mit dezimalen Einheiten geprüft. 1 TB entspricht 1000 GB; gleichwertige Antworten bleiben gültig. Dateisystem- und Formatierungsverluste werden ausdrücklich nicht berechnet. Messwerttoleranzen anderer Aufgaben und gespeicherter Fortschritt bleiben unverändert.',
   },
   {
     date: '04/11/2026',

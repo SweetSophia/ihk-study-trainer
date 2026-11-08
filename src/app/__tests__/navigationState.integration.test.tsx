@@ -42,7 +42,7 @@ beforeEach(() => {
 
 
 it('retains draft and checked state across group browsing, appearance and active-module selection',async()=>{
- render(<Home/>);await screen.findByRole('button',{name:'Fehler üben'});
+ render(<Home/>);await screen.findByRole('button',{name:'Gezielt üben'});
  await chooseModule('handelskalkulationVorwaerts');
  await waitFor(()=>expect(screen.getByRole('heading',{name:'Vorwärtskalkulation'})).toHaveFocus());
  const first=screen.getAllByRole('textbox')[0];fireEvent.change(first,{target:{value:'123,45'}});
@@ -60,7 +60,7 @@ it('retains draft and checked state across group browsing, appearance and active
  expect(updateProgress).toHaveBeenCalledTimes(1);
 },15000);
 it('protects all run state when cancelling a module or mistake transition; confirms only actual departure',async()=>{
- render(<Home/>);await screen.findByRole('button',{name:'Fehler üben'});
+ render(<Home/>);await screen.findByRole('button',{name:'Gezielt üben'});
  await chooseModule('ap2TrainingRun');
  const first=screen.getAllByRole('textbox')[0];fireEvent.change(first,{target:{value:'123'}});
  fireEvent.click(screen.getByRole('button',{name:'Kostenvergleich prüfen'}));
@@ -74,7 +74,16 @@ it('protects all run state when cancelling a module or mistake transition; confi
  fireEvent.click(screen.getByRole('button',{name:/^Netzwerke/}));
  fireEvent.click(screen.getByRole('button',{name:'Weiterarbeiten'}));
  expect(screen.getByRole('button',{name:/^AP2-Trainingslauf/})).toHaveFocus();expect(first).toHaveValue('123');
- fireEvent.click(screen.getByRole('button',{name:'Fehler üben'}));
+ fireEvent.click(screen.getByRole('button',{name:'Gezielt üben'}));
+ expect(screen.queryByText(/Trainingslauf verlassen\?/)).not.toBeInTheDocument();
+ // jsdom has no layout; Home only restores focus to a visibly rendered trigger.
+ vi.spyOn(screen.getByRole('button',{name:'Gezielt üben'}),'getClientRects').mockReturnValue({length:1} as DOMRectList);
+ fireEvent.click(screen.getByRole('button',{name:'Subnetting üben'}));
+ fireEvent.click(screen.getByRole('button',{name:'Weiterarbeiten'}));
+ expect(screen.getByRole('button',{name:'Gezielt üben'})).toHaveFocus();
+ expect(first).toHaveValue('123');
+ fireEvent.click(screen.getByRole('button',{name:'Gezielt üben'}));
+ fireEvent.click(screen.getByRole('button',{name:'Subnetting üben'}));
  fireEvent.click(screen.getByRole('button',{name:'Trainingslauf verlassen'}));
  expect(screen.getByText(/Gegeben: IP-Adresse/)).toBeInTheDocument();
  expect(updateProgress).toHaveBeenCalledTimes(1);
@@ -89,7 +98,7 @@ it('keeps the guest AP2 database and run available without progress writes',asyn
  expect(updateProgress).not.toHaveBeenCalled();
 },15000);
 it('keeps module-navigation focus on the heading after a checked question resets, but next-question focuses input',async()=>{
- render(<Home/>);await screen.findByRole('button',{name:'Fehler üben'});
+ render(<Home/>);await screen.findByRole('button',{name:'Gezielt üben'});
  await chooseModule('handelskalkulationVorwaerts');
  for(const input of screen.getAllByRole('textbox')) fireEvent.change(input,{target:{value:'0'}});
  fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/}));
@@ -102,7 +111,7 @@ it('keeps module-navigation focus on the heading after a checked question resets
  await waitFor(()=>expect(screen.getAllByRole('textbox')[0]).toHaveFocus());
 },15000);
 it('does not route chrome keyboard input to the checked exercise next-question shortcut',async()=>{
- render(<Home/>);await screen.findByRole('button',{name:'Fehler üben'});await chooseModule('handelskalkulationVorwaerts');
+ render(<Home/>);await screen.findByRole('button',{name:'Gezielt üben'});await chooseModule('handelskalkulationVorwaerts');
  for(const input of screen.getAllByRole('textbox')) fireEvent.change(input,{target:{value:'0'}});
  fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/}));
  const oldQuestion=screen.getByText(/^Berechne die Vorwärtskalkulation!/).textContent;
@@ -118,7 +127,7 @@ it('moves focus between the progress disclosure and its visible actions at the b
  act(()=>{desktop=false;listeners.forEach(listener=>listener())});
  const toggle=screen.getByRole('button',{name:'Fortschritt'});expect(toggle).toHaveFocus();toggle.blur();
  act(()=>{desktop=true;listeners.forEach(listener=>listener())});
- expect(screen.getByRole('button',{name:'Fehler üben'})).toHaveFocus();
+ expect(screen.getByRole('button',{name:'Gezielt üben'})).toHaveFocus();
  vi.unstubAllGlobals();
 },15000);
 
@@ -138,5 +147,54 @@ it('uses the visible cancellation fallback when a mouse selection leaves body as
  (document.activeElement as HTMLElement).blur();expect(document.activeElement).toBe(document.body);
  await chooseModule('subnetting');fireEvent.click(screen.getByRole('button',{name:'Weiterarbeiten'}));
  expect(screen.getByRole('button',{name:/^AP2-Trainingslauf/})).toHaveFocus();
+ expect(updateProgress).not.toHaveBeenCalled();
+},15000);
+
+
+it('preserves the current topic draft when opening, closing and choosing it again',async()=>{
+ render(<Home/>);await screen.findByRole('button',{name:'Gezielt üben'});
+ await chooseModule('subnetting');
+ const first=screen.getAllByRole('textbox')[0];fireEvent.change(first,{target:{value:'192.168.1.0'}});
+ const practice=screen.getByRole('button',{name:'Gezielt üben'});
+ fireEvent.click(practice);
+ fireEvent.keyDown(screen.getByRole('heading',{name:'Thema zum Üben auswählen'}),{key:'Escape'});
+ expect(practice).toHaveFocus();expect(first).toHaveValue('192.168.1.0');
+ fireEvent.click(practice);fireEvent.click(screen.getByRole('button',{name:'Subnetting üben'}));
+ expect(screen.queryByRole('region',{name:'Thema zum Üben auswählen'})).not.toBeInTheDocument();
+ expect(first).toHaveValue('192.168.1.0');expect(screen.getByRole('heading',{name:'Subnetting'})).toHaveFocus();
+ expect(updateProgress).not.toHaveBeenCalled();
+},15000);
+
+it('does not retain an open practice selection across logout and a new account',async()=>{
+ const firstAccountProgress=[{module:'subnetting',questions_attempted:8,questions_correct:6,streak_days:1,last_session:null}];
+ vi.mocked(getAllProgress).mockImplementation(async hash=>hash==='other-user-hash' ? [{module:'linux',questions_attempted:2,questions_correct:1,streak_days:0,last_session:null}] : firstAccountProgress);
+ render(<Home/>);fireEvent.click(await screen.findByRole('button',{name:'Gezielt üben'}));
+ expect(screen.getByRole('region',{name:'Thema zum Üben auswählen'})).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'Abmelden'}));
+ fireEvent.click(await screen.findByRole('button',{name:'Test login'}));
+ expect(await screen.findByRole('button',{name:'Gezielt üben'})).toHaveAttribute('aria-expanded','false');
+ expect(screen.queryByRole('region',{name:'Thema zum Üben auswählen'})).not.toBeInTheDocument();
+ expect(getAllProgress).toHaveBeenCalledWith('other-user-hash');
+ fireEvent.click(screen.getByRole('button',{name:'Gezielt üben'}));
+ expect(screen.getByRole('button',{name:'Linux üben'})).toHaveTextContent('2 gewertete Versuche');
+ expect(screen.queryByRole('button',{name:'Subnetting üben'})).not.toBeInTheDocument();
+ expect(updateProgress).not.toHaveBeenCalled();
+},15000);
+
+
+it('returns focus to the mobile progress toggle before pointer collapse hides a focused topic',async()=>{
+ vi.stubGlobal('matchMedia',vi.fn(()=>({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
+ render(<Home/>);
+ const toggle=await screen.findByRole('button',{name:'Fortschritt'});
+ fireEvent.click(toggle);
+ fireEvent.click(screen.getByRole('button',{name:'Gezielt üben'}));
+ const topic=screen.getByRole('button',{name:'Subnetting üben'});topic.focus();
+ // Some pointer/touch browsers do not focus buttons when clicked.
+ fireEvent.click(toggle);
+ expect(toggle).toHaveFocus();
+ expect(toggle).toHaveAttribute('aria-expanded','false');
+ expect(screen.queryByRole('region',{name:'Thema zum Üben auswählen'})).not.toBeInTheDocument();
+ fireEvent.click(toggle);
+ expect(screen.getByRole('button',{name:'Subnetting üben'})).toBe(topic);
  expect(updateProgress).not.toHaveBeenCalled();
 },15000);

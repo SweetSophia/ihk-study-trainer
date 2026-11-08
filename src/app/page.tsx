@@ -268,20 +268,6 @@ export default function Home() {
     }
   };
 
-  const handlePracticeMistakes = () => {
-    // Find module with most mistakes and switch to it
-    const moduleWithMistakes = progress
-      .filter(p => isModuleId(toCanonicalModuleId(p.module)) && p.questions_attempted > p.questions_correct)
-      .sort((a, b) => 
-        (b.questions_attempted - b.questions_correct) - 
-        (a.questions_attempted - a.questions_correct)
-      )[0];
-    
-    if (moduleWithMistakes) {
-      handleSelectModule(moduleWithMistakes.module);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
@@ -352,9 +338,12 @@ export default function Home() {
                 isAuthenticated={!!accessHash} onDismiss={cancelDeparture} />
             </div>
             {user && <section ref={progressRegion} className="order-2 lg:order-1 rounded-xl border border-line bg-surface p-3" aria-label="Lernfortschritt">
-              <button ref={progressToggle} type="button" className="min-h-11 w-full text-left font-semibold lg:hidden" aria-expanded={progressOpen} aria-controls="progress-panel" onClick={() => setProgressOpen(old => !old)}>Fortschritt</button>
+              <button ref={progressToggle} type="button" className="min-h-11 w-full text-left font-semibold lg:hidden" aria-expanded={progressOpen} aria-controls="progress-panel" onClick={() => {
+                if (progressOpen && progressPanel.current?.contains(document.activeElement)) progressToggle.current?.focus();
+                setProgressOpen(old => !old);
+              }}>Fortschritt</button>
               <div ref={progressPanel} id="progress-panel" hidden={!desktop && !progressOpen}>
-                <ProgressDashboard progress={progress} streakDays={streakDays} onPracticeMistakes={handlePracticeMistakes} />
+                <ProgressDashboard key={accessHash} progress={progress} streakDays={streakDays} onSelectModule={handleSelectModule} />
               </div>
             </section>}
           </aside>

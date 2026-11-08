@@ -16,7 +16,7 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 - **Generierte Einzelaufgaben und feste AP2-Szenarien** für Rechenwege, Planung und begründete Entscheidungen
 - **Schritt-für-Schritt-Lösungen** für Rechen- und Verständnisaufgaben
 - **Fortschritts-Tracking pro Modul** inklusive Genauigkeit und Lern-Streaks
-- **"Fehler üben"-Modus**, um gezielt schwache Themen zu wiederholen
+- **„Gezielt üben“** mit freier Themenwahl, Erfolgsquote und Anzahl gewerteter Versuche **(nur nach Anmeldung)**
 - **Anmeldung per persönlicher Account-ID** ohne E-Mail/Passwort-Flow
 - **Responsive Lernoberfläche** mit fünf Themengruppen und System-/Hell-/Dunkelmodus
 - **SQL im Browser** mit PGlite: feste AP2-Aufgaben sowie ein separates Modul mit KI-generierten Übungen
@@ -87,11 +87,25 @@ Die Nummerierung dient als Lese-Reihenfolge; die Modul-Auswahl in der App ist an
 29. **AP2 Berechtigungen** – effektive Gruppenrechte, begrenzte Korrektur und geplante Kontrolle
 30. **SQL** – KI-generierte SQL-Aufgaben lokal ausführen und validieren **(nur nach Anmeldung)**
 
-Alte gemischte Kalkulationsversuche bleiben als **„Kalkulation (gemischter Altbestand)“** im Fortschritt und in den Gesamtsummen erhalten. Sie werden keinem der drei getrennten Angebote nachträglich zugerechnet und nicht über „Fehler üben“ neu gestartet. Vorwärts- und Rückwärtsfortschritt behalten ihre bisherigen IDs; Differenzaufgaben starten mit einer eigenen Fortschritts-ID.
+Alte gemischte Kalkulationsversuche bleiben als **„Kalkulation (gemischter Altbestand)“** im Fortschritt und in den Gesamtsummen erhalten. Sie werden keinem der drei getrennten Angebote nachträglich zugerechnet und nicht über „Gezielt üben“ neu gestartet. Vorwärts- und Rückwärtsfortschritt behalten ihre bisherigen IDs; Differenzaufgaben starten mit einer eigenen Fortschritts-ID.
 
 In den drei getrennten Kalkulationsmodulen werden alle abgefragten Geldbeträge **centgenau** bewertet. Jede Rechenzeile wird kaufmännisch auf zwei Nachkommastellen gerundet; mit diesem Centbetrag wird weitergerechnet. Dezimalkomma und -punkt sowie gleichwertige Schreibweisen sind erlaubt. Zusätzliche Bruchteile eines Cents werden bei der Prüfung nicht weggerundet. Messwert- und Schätztoleranzen anderer Aufgaben bleiben erhalten; gespeicherte frühere Versuche werden nicht nachträglich neu bewertet.
 
 Im **RAID-Rechner** gilt für die theoretische nutzbare Kapazität eine exakte Prüfung nach dezimalen Einheiten: **1 GB = 10^9 Byte, 1 TB = 1000 GB = 10^12 Byte**. Gleichwertige Angaben wie 4 TB und 4000 GB werden akzeptiert, 3,9 TB oder 4096 GB bei gesuchten 4 TB dagegen nicht. Gemeint ist die Kapazität gleich großer Laufwerke vor Dateisystem-, Metadaten- und Formatierungsverlusten, ohne Hot Spares; diese Aufgabe verwendet keine 5%-Schätztoleranz. Die Frage zu garantiert tolerierten beliebigen Ausfällen bleibt unverändert.
+
+## Gezieltes Üben und Fortschrittszahlen
+
+**„Gezielt üben“** öffnet eine Auswahl, statt automatisch zum Thema mit den meisten bisherigen Fehlern zu wechseln. Angezeigt werden aktive Themen mit gespeicherten Versuchen, ihre Erfolgsquote und die Anzahl richtiger sowie gewerteter Versuche. Auch Themen mit 100 % bleiben auswählbar. Ohne passende Daten bleibt die normale Modulauswahl verfügbar. Die Gesamtsumme im Dashboard enthält zusätzlich den ruhenden Altbestand und kann deshalb größer sein als die Summe der hier aufgeführten Themen.
+
+Die Auswahl verwendet den **gesamten gespeicherten Verlauf**. Themen mit **1–4 Versuchen** werden als „Wenige Versuche“ getrennt nach den Themen mit mindestens 5 Versuchen angezeigt. Innerhalb dieser Gruppen stehen niedrigere Erfolgsquoten zuerst. Die Grenze ist nur ein Hinweis auf eine kleine Datenbasis, kein statistischer Vertrauensnachweis. Weder viele Versuche noch eine hohe Quote belegen Prüfungsreife. Es gibt keine automatische Wiederholung bestimmter alter Fragen und kein Spaced Repetition.
+
+**Gewertete Versuche sind keine Anzahl unterschiedlicher Aufgaben:**
+- Einzelaufgaben zählen ihre gewertete Antwortprüfung.
+- Das separate SQL-Modul zählt jede gewertete falsche Prüfung und die erste erfolgreiche Prüfung einer Übung. Technische Prüfungsfehler zählen nicht.
+- AP2 zählt pro Durchlauf nur die erste gewertete objektive Prüfung je Abschnitt oder SQL-Aufgabe. Wiederholungen, Selbstbewertung und zuvor aufgedeckte Teile zählen nicht.
+- Der AP2-Trainingslauf schreibt bei seinen ursprünglichen Themen, nicht zusätzlich beim Lauf. Die Zählweisen sind deshalb nicht direkt vergleichbar.
+
+Gespeicherte Zähler, Bewertung und Aufgaben bleiben unverändert. Öffnen oder Schließen der Auswahl erhält die laufenden Eingaben; ein gewähltes Thema nutzt dieselbe Navigation und denselben Schutz beim Verlassen eines AP2-Trainingslaufs wie die normale Themenauswahl.
 
 ## UI & Lernerlebnis
 
