@@ -77,107 +77,107 @@ describe('ProgressDashboard – MODULE_NAMES PR additions', () => {
   }
 
   it('displays "Bildgröße" for the canonical imageCalc module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('imageCalc')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('imageCalc')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Bildgröße')).toBeInTheDocument();
   });
 
   it('displays "Bildgröße" for the legacy image-calc module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('image-calc')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('image-calc')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Bildgröße')).toBeInTheDocument();
   });
 
   it('displays "Bild-Transfer" for the canonical imageTransferCombo module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('imageTransferCombo')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('imageTransferCombo')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Bild-Transfer')).toBeInTheDocument();
   });
 
   it('displays "Bild-Transfer" for the legacy image-transfer-combo module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('image-transfer-combo')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('image-transfer-combo')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Bild-Transfer')).toBeInTheDocument();
   });
 
   it('displays "Einheiten" for the canonical unitConversion module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('unitConversion')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('unitConversion')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Einheiten')).toBeInTheDocument();
   });
 
   it('displays "Einheiten" for the legacy unit-conversion module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('unit-conversion')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('unit-conversion')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Einheiten')).toBeInTheDocument();
   });
 
   it('displays "Linux" for the linux module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('linux')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('linux')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Linux')).toBeInTheDocument();
   });
 
   it('displays "Cloud" for the cloud module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('cloud')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('cloud')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Cloud')).toBeInTheDocument();
   });
 
   it('labels mixed history as legacy rather than pure differential', async () => {
-    render(<ProgressDashboard progress={makeProgress('handelskalkulation')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('handelskalkulation')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Kalkulation (gemischter Altbestand)')).toBeInTheDocument();
     expect(screen.queryByText('Differenzkalkulation')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Fehler üben' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Gezielt üben' })).toBeEnabled();
   });
 
   it('keeps mixed totals and new differential totals separate and allows active mistake practice', async () => {
     render(<ProgressDashboard progress={[
       { module: 'handelskalkulation', questions_attempted: 20, questions_correct: 5 },
       { module: 'handelskalkulationDifferenz', questions_attempted: 2, questions_correct: 1 },
-    ]} streakDays={0} onPracticeMistakes={noOp} />);
+    ]} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Kalkulation (gemischter Altbestand)')).toBeInTheDocument();
     expect(screen.getByText('Differenzkalkulation')).toBeInTheDocument();
     expect(screen.getByText('5/20')).toBeInTheDocument();
     expect(screen.getByText('1/2')).toBeInTheDocument();
     expect(screen.getByText('22')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Fehler üben' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Gezielt üben' })).toBeEnabled();
   });
 
   it('displays "Vorwärtskalkulation" for the canonical split module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('handelskalkulationVorwaerts')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('handelskalkulationVorwaerts')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Vorwärtskalkulation')).toBeInTheDocument();
   });
 
   it('displays "Rückwärtskalkulation" for the canonical split module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('handelskalkulationRueckwaerts')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('handelskalkulationRueckwaerts')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Rückwärtskalkulation')).toBeInTheDocument();
   });
 
   it('displays "Vorwärtskalkulation" for the stored split module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('handelskalkulation-vorwaerts')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('handelskalkulation-vorwaerts')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Vorwärtskalkulation')).toBeInTheDocument();
   });
 
   it('displays "Rückwärtskalkulation" for the stored split module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('handelskalkulation-rueckwaerts')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('handelskalkulation-rueckwaerts')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('Rückwärtskalkulation')).toBeInTheDocument();
   });
 
   it('displays "SQL" for the sql module ID', async () => {
-    render(<ProgressDashboard progress={makeProgress('sql')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('sql')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('SQL')).toBeInTheDocument();
   });
 
   it('falls back to the raw module ID when no mapping is found', async () => {
-    render(<ProgressDashboard progress={makeProgress('unknown-module-xyz')} streakDays={0} onPracticeMistakes={noOp} />);
+    render(<ProgressDashboard progress={makeProgress('unknown-module-xyz')} streakDays={0} onSelectModule={noOp} />);
     await openDetails();
     expect(screen.getByText('unknown-module-xyz')).toBeInTheDocument();
   });
@@ -199,7 +199,7 @@ describe('ProgressDashboard – "gestartet" counter (PR change: removed hard-cod
           { module: 'imageCalc', questions_attempted: 0, questions_correct: 0 },
         ]}
         streakDays={0}
-        onPracticeMistakes={noOp}
+        onSelectModule={noOp}
       />
     );
     expect(screen.getByText('gestartet')).toBeInTheDocument();
@@ -216,7 +216,7 @@ describe('ProgressDashboard – "gestartet" counter (PR change: removed hard-cod
           { module: 'sql', questions_attempted: 2, questions_correct: 1 },
         ]}
         streakDays={0}
-        onPracticeMistakes={noOp}
+        onSelectModule={noOp}
       />
     );
     // 2 out of 3 modules were started (bandwidth and sql)
@@ -236,7 +236,7 @@ describe('ProgressDashboard – showDetails persistence (PR 4)', () => {
       <ProgressDashboard
         progress={[{ module: 'bandwidth', questions_attempted: 1, questions_correct: 1 }]}
         streakDays={0}
-        onPracticeMistakes={noOp}
+        onSelectModule={noOp}
       />
     );
     expect(screen.getByText('Details anzeigen')).toBeInTheDocument();
@@ -248,7 +248,7 @@ describe('ProgressDashboard – showDetails persistence (PR 4)', () => {
       <ProgressDashboard
         progress={[{ module: 'bandwidth', questions_attempted: 1, questions_correct: 1 }]}
         streakDays={0}
-        onPracticeMistakes={noOp}
+        onSelectModule={noOp}
       />
     );
     expect(await screen.findByText('Details ausblenden')).toBeInTheDocument();
@@ -259,7 +259,7 @@ describe('ProgressDashboard – showDetails persistence (PR 4)', () => {
       <ProgressDashboard
         progress={[{ module: 'bandwidth', questions_attempted: 1, questions_correct: 1 }]}
         streakDays={0}
-        onPracticeMistakes={noOp}
+        onSelectModule={noOp}
       />
     );
     await userEvent.click(screen.getByText('Details anzeigen'));
@@ -273,7 +273,7 @@ describe('ProgressDashboard – showDetails persistence (PR 4)', () => {
       <ProgressDashboard
         progress={[{ module: 'bandwidth', questions_attempted: 1, questions_correct: 1 }]}
         streakDays={0}
-        onPracticeMistakes={noOp}
+        onSelectModule={noOp}
       />
     );
     await userEvent.click(await screen.findByText('Details ausblenden'));
@@ -316,7 +316,7 @@ describe('ProgressDashboard – streak milestone confetti', () => {
 
         streakDays={7}
 
-        onPracticeMistakes={noOp}
+        onSelectModule={noOp}
 
       />,
 
@@ -338,7 +338,7 @@ describe('ProgressDashboard – streak milestone confetti', () => {
 
         streakDays={5}
 
-        onPracticeMistakes={noOp}
+        onSelectModule={noOp}
 
       />,
 
@@ -360,7 +360,7 @@ describe('ProgressDashboard – streak milestone confetti', () => {
 
         streakDays={0}
 
-        onPracticeMistakes={noOp}
+        onSelectModule={noOp}
 
       />,
 
@@ -386,7 +386,7 @@ describe('ProgressDashboard – streak milestone confetti', () => {
 
           streakDays={days}
 
-          onPracticeMistakes={noOp}
+          onSelectModule={noOp}
 
         />,
 
@@ -412,7 +412,7 @@ describe('ProgressDashboard – streak milestone confetti', () => {
 
         streakDays={7}
 
-        onPracticeMistakes={noOp}
+        onSelectModule={noOp}
 
       />,
 

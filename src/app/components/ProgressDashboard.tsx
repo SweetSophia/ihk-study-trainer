@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useSyncExternalStore } from 'react';
+import TargetedPractice from './TargetedPractice';
 import { toCanonicalModuleId } from '../lib/moduleIds';
 import { MODULE_NAMES, isModuleId, LEGACY_CALCULATION } from '../lib/modules';
 import {
@@ -12,7 +13,6 @@ import {
   Trophy, 
   Target, 
   Flame, 
-  RotateCcw, 
   TrendingUp,
   BarChart3,
   CheckCircle,
@@ -28,7 +28,7 @@ interface ProgressData {
 interface ProgressDashboardProps {
   progress: ProgressData[];
   streakDays: number;
-  onPracticeMistakes: () => void;
+  onSelectModule: (module: string) => void;
 }
 
 /** localStorage key for the persistent "Details anzeigen" toggle. */
@@ -67,7 +67,7 @@ function subscribeShowDetails(onStoreChange: () => void): () => void {
 export default function ProgressDashboard({ 
   progress, 
   streakDays, 
-  onPracticeMistakes 
+  onSelectModule
 }: ProgressDashboardProps) {
   // SSR-safe localStorage binding: `false` is the server snapshot, then
   // useSyncExternalStore reads the browser value after hydration without a
@@ -89,9 +89,6 @@ export default function ProgressDashboard({
     }
   }, [streakDays]);
 
-  const hasActiveMistakes = progress.some(p =>
-    isModuleId(toCanonicalModuleId(p.module)) && p.questions_attempted > p.questions_correct,
-  );
   const hasMixedHistory = progress.some(p => p.module === LEGACY_CALCULATION.id);
 
   const totalAttempted = progress.reduce((sum, p) => sum + p.questions_attempted, 0);
@@ -126,7 +123,7 @@ export default function ProgressDashboard({
             <span className="text-xs font-medium text-muted uppercase">Gesamt</span>
           </div>
           <p className="text-2xl font-bold text-ink">{totalAttempted}</p>
-          <p className="text-xs text-muted">Fragen beantwortet</p>
+          <p className="text-xs text-muted">Gewertete Versuche</p>
         </motion.div>
 
         <motion.div
@@ -180,14 +177,7 @@ export default function ProgressDashboard({
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
-        <button
-          onClick={onPracticeMistakes}
-          disabled={!hasActiveMistakes}
-          className="flex items-center gap-2 px-4 py-2.5 bg-danger-soft hover:bg-danger-soft-hover border border-danger text-danger rounded-lg transition-colors disabled:bg-subtle disabled:text-muted disabled:border-line disabled:hover:bg-subtle disabled:hover:text-muted disabled:cursor-not-allowed"
-        >
-          <RotateCcw className="w-4 h-4" />
-          <span className="text-sm font-medium">Fehler üben</span>
-        </button>
+        <TargetedPractice progress={progress} onSelectModule={onSelectModule} />
 
         <button
           onClick={toggleShowDetails}

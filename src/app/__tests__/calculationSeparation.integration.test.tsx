@@ -39,14 +39,17 @@ beforeEach(() => {
 });
 
 
-it('skips retired mixed history when choosing an active mistake target, using canonical progress returned by auth', async () => {
+it('offers active topics without jumping automatically and excludes retired history', async () => {
  vi.mocked(getAllProgress).mockResolvedValue([
   {module:'handelskalkulation',questions_attempted:100,questions_correct:0,streak_days:0,last_session:null},
   {module:'handelskalkulationRueckwaerts',questions_attempted:4,questions_correct:1,streak_days:0,last_session:null},
   {module:'handelskalkulationDifferenz',questions_attempted:2,questions_correct:0,streak_days:0,last_session:null},
  ]);
  render(<Home/>);
- fireEvent.click(await screen.findByRole('button',{name:'Fehler üben'}));
+ fireEvent.click(await screen.findByRole('button',{name:'Gezielt üben'}));
+ expect(screen.queryByText(/^Berechne die Rückwärtskalkulation!/)).not.toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'Kalkulation (gemischter Altbestand) üben'})).not.toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'Rückwärtskalkulation üben'}));
  expect(await screen.findByText(/^Berechne die Rückwärtskalkulation!/)).toBeInTheDocument();
  expect(screen.queryByText(/^Berechne die Differenzkalkulation!/)).not.toBeInTheDocument();
  expect(updateProgress).not.toHaveBeenCalled();
@@ -55,7 +58,8 @@ it('skips retired mixed history when choosing an active mistake target, using ca
 it('routes differential mistakes to the dedicated module and records only one check per question', async () => {
  vi.mocked(getAllProgress).mockResolvedValue([{module:'handelskalkulationDifferenz',questions_attempted:2,questions_correct:0,streak_days:0,last_session:null}]);
  render(<Home/>);
- fireEvent.click(await screen.findByRole('button',{name:'Fehler üben'}));
+ fireEvent.click(await screen.findByRole('button',{name:'Gezielt üben'}));
+ fireEvent.click(screen.getByRole('button',{name:'Differenzkalkulation üben'}));
  expect(await screen.findByText(/^Berechne die Differenzkalkulation!/)).toBeInTheDocument();
  for(const input of screen.getAllByRole('textbox')) fireEvent.change(input,{target:{value:'0'}});
  const check=screen.getByRole('button',{name:/Antwort prüfen/});
@@ -65,26 +69,27 @@ it('routes differential mistakes to the dedicated module and records only one ch
  expect(updateProgress).toHaveBeenCalledWith('test-user-hash','handelskalkulationDifferenz',false);
 },15000);
 
-it('keeps the selected forward draft when legacy-only history disables the real mistake action', async () => {
+it('keeps the selected forward draft when legacy-only history shows an empty selection', async () => {
  vi.mocked(getAllProgress).mockResolvedValue([{module:'handelskalkulation',questions_attempted:100,questions_correct:0,streak_days:0,last_session:null}]);
  render(<Home/>);
- const practice=await screen.findByRole('button',{name:'Fehler üben'});
- expect(practice).toBeDisabled();
+ const practice=await screen.findByRole('button',{name:'Gezielt üben'});
+ expect(practice).toBeEnabled();
  await chooseModule('handelskalkulationVorwaerts');
  const question=await screen.findByText(/^Berechne die Vorwärtskalkulation!/);
  const text=question.textContent;
  const firstInput=screen.getAllByRole('textbox')[0];fireEvent.change(firstInput,{target:{value:'123,45'}});
  await act(async()=>{fireEvent.click(practice);});
- expect(practice).toBeDisabled();
+ expect(practice).toBeEnabled();
  expect(screen.getByText(/^Berechne die Vorwärtskalkulation!/).textContent).toBe(text);
  expect(firstInput).toHaveValue('123,45');
  expect(updateProgress).not.toHaveBeenCalled();
 });
 
-it('disables mistake practice for an active module with no incorrect attempts', async () => {
+it('allows explicit practice of a topic with a perfect history', async () => {
  vi.mocked(getAllProgress).mockResolvedValue([{module:'subnetting',questions_attempted:5,questions_correct:5,streak_days:0,last_session:null}]);
  render(<Home/>);
- expect(await screen.findByRole('button',{name:'Fehler üben'})).toBeDisabled();
+ fireEvent.click(await screen.findByRole('button',{name:'Gezielt üben'}));
+ expect(screen.getByRole('button',{name:'Subnetting üben'})).toHaveTextContent('100%');
 });
 
 it.each([false,true])('keeps SQL weak-topic navigation supported, with a competing drill: %s', async competing => {
@@ -93,7 +98,8 @@ it.each([false,true])('keeps SQL weak-topic navigation supported, with a competi
   ...(competing?[{module:'handelskalkulationDifferenz',questions_attempted:2,questions_correct:1,streak_days:0,last_session:null}]:[]),
  ]);
  render(<Home/>);
- const practice=await screen.findByRole('button',{name:'Fehler üben'});expect(practice).toBeEnabled();fireEvent.click(practice);
+ const practice=await screen.findByRole('button',{name:'Gezielt üben'});expect(practice).toBeEnabled();fireEvent.click(practice);
+ fireEvent.click(screen.getByRole('button',{name:'SQL üben'}));
  expect(await screen.findByRole('heading',{name:'SQL-Übungen (PostgreSQL)'})).toBeInTheDocument();
  expect(screen.getByRole('button',{name:'Neue Übung'})).toBeEnabled();
  expect(screen.queryByText(/^Berechne die Differenzkalkulation!/)).not.toBeInTheDocument();
@@ -103,7 +109,8 @@ it.each([false,true])('keeps SQL weak-topic navigation supported, with a competi
 it('keeps AP2 weak-topic navigation supported through its dedicated trainer', async () => {
  vi.mocked(getAllProgress).mockResolvedValue([{module:'ap2ProjectPlanning',questions_attempted:5,questions_correct:1,streak_days:0,last_session:null}]);
  render(<Home/>);
- const practice=await screen.findByRole('button',{name:'Fehler üben'});expect(practice).toBeEnabled();fireEvent.click(practice);
+ const practice=await screen.findByRole('button',{name:'Gezielt üben'});expect(practice).toBeEnabled();fireEvent.click(practice);
+ fireEvent.click(screen.getByRole('button',{name:'AP2 Projektplanung üben'}));
  expect(await screen.findByRole('heading',{name:'AP2 Projektplanung'})).toBeInTheDocument();
  expect(screen.getByRole('button',{name:'Basisplan prüfen'})).toBeEnabled();
  expect(updateProgress).not.toHaveBeenCalled();
@@ -134,7 +141,7 @@ it.each([0,1])('records the rendered forward answer with a %i-cent error only on
  try {
   const {generateVorwaertsKalkulationQuestion}=await import('../lib/generators/handelskalkulation');
   const fixture=generateVorwaertsKalkulationQuestion('standard');
-  render(<Home/>);await screen.findByRole('button',{name:'Fehler üben'});
+  render(<Home/>);await screen.findByRole('button',{name:'Gezielt üben'});
   await chooseModule('handelskalkulationVorwaerts');
   const rendered=await screen.findByText(/^Berechne die Vorwärtskalkulation!/);
   expect(rendered.textContent).toBe(fixture.questionText);
@@ -154,7 +161,7 @@ it.each([true,false])('grades exact RAID unit conversions with existing progress
  if(!authenticated)localStorage.removeItem('ihk_access_hash');
  const random=vi.spyOn(Math,'random').mockReturnValue(.9);
  try{
-  render(<Home/>);if(authenticated)await screen.findByRole('button',{name:'Fehler üben'});
+  render(<Home/>);if(authenticated)await screen.findByRole('button',{name:'Gezielt üben'});
   await chooseModule('raid');
   expect(await screen.findByText(/1 TB = 1000 GB/)).toHaveTextContent('theoretische');
   fireEvent.change(screen.getByLabelText('Nutzbare Kapazität',{exact:true}),{target:{value:'31999'}});
