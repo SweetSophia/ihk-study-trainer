@@ -27,17 +27,16 @@ export default function TargetedPractice({ progress, onSelectModule }: TargetedP
   };
 
   return (
-    <div className="w-full min-w-0">
-      <button ref={trigger} type="button" aria-expanded={open} aria-controls={`${id}-panel`}
+    <div className="w-full min-w-0" onKeyDown={event => {
+      if (open && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
+    }}>
+      <button ref={trigger} type="button" aria-expanded={open} aria-controls={open ? `${id}-panel` : undefined}
         onClick={() => open ? close() : setOpen(true)}
         className="min-h-11 rounded-lg border border-control bg-subtle px-4 py-2.5 text-sm font-medium text-ink hover:bg-subtle-hover">
         Gezielt üben
       </button>
       {open && <section id={`${id}-panel`} aria-labelledby={`${id}-title`}
-        className="mt-3 space-y-4 rounded-lg border border-line bg-canvas p-3"
-        onKeyDown={event => {
-          if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
-        }}>
+        className="mt-3 space-y-4 rounded-lg border border-line bg-canvas p-3">
         <h3 ref={heading} id={`${id}-title`} tabIndex={-1} className="font-semibold text-ink">
           Thema zum Üben auswählen
         </h3>
@@ -56,7 +55,7 @@ export default function TargetedPractice({ progress, onSelectModule }: TargetedP
           </ul>
         </details>
         {topics.length === 0 ? (
-          <p className="text-sm text-muted">Noch keine gewerteten Versuche für auswählbare Themen. Wähle zunächst eine Aufgabe in der Themenauswahl. Altbestand bleibt in der Fortschrittsübersicht erhalten.</p>
+          <p className="text-sm text-muted">Noch keine gewerteten Versuche für auswählbare Themen. Wähle zunächst eine Aufgabe in der normalen Modulauswahl. Altbestand bleibt in der Fortschrittsübersicht erhalten.</p>
         ) : <ul className="space-y-2">
           {topics.map((topic, index) => <li key={topic.module}>
             {(index === 0 || topics[index - 1].lowSample !== topic.lowSample) && <div className="space-y-2 pb-2 pt-2">

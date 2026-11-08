@@ -166,11 +166,35 @@ it('preserves the current topic draft when opening, closing and choosing it agai
 },15000);
 
 it('does not retain an open practice selection across logout and a new account',async()=>{
+ const firstAccountProgress=[{module:'subnetting',questions_attempted:8,questions_correct:6,streak_days:1,last_session:null}];
+ vi.mocked(getAllProgress).mockImplementation(async hash=>hash==='other-user-hash' ? [{module:'linux',questions_attempted:2,questions_correct:1,streak_days:0,last_session:null}] : firstAccountProgress);
  render(<Home/>);fireEvent.click(await screen.findByRole('button',{name:'Gezielt üben'}));
  expect(screen.getByRole('region',{name:'Thema zum Üben auswählen'})).toBeInTheDocument();
  fireEvent.click(screen.getByRole('button',{name:'Abmelden'}));
  fireEvent.click(await screen.findByRole('button',{name:'Test login'}));
  expect(await screen.findByRole('button',{name:'Gezielt üben'})).toHaveAttribute('aria-expanded','false');
  expect(screen.queryByRole('region',{name:'Thema zum Üben auswählen'})).not.toBeInTheDocument();
+ expect(getAllProgress).toHaveBeenCalledWith('other-user-hash');
+ fireEvent.click(screen.getByRole('button',{name:'Gezielt üben'}));
+ expect(screen.getByRole('button',{name:'Linux üben'})).toHaveTextContent('2 gewertete Versuche');
+ expect(screen.queryByRole('button',{name:'Subnetting üben'})).not.toBeInTheDocument();
+ expect(updateProgress).not.toHaveBeenCalled();
+},15000);
+
+
+it('returns focus to the mobile progress toggle before pointer collapse hides a focused topic',async()=>{
+ vi.stubGlobal('matchMedia',vi.fn(()=>({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()})));
+ render(<Home/>);
+ const toggle=await screen.findByRole('button',{name:'Fortschritt'});
+ fireEvent.click(toggle);
+ fireEvent.click(screen.getByRole('button',{name:'Gezielt üben'}));
+ const topic=screen.getByRole('button',{name:'Subnetting üben'});topic.focus();
+ // Some pointer/touch browsers do not focus buttons when clicked.
+ fireEvent.click(toggle);
+ expect(toggle).toHaveFocus();
+ expect(toggle).toHaveAttribute('aria-expanded','false');
+ expect(screen.queryByRole('region',{name:'Thema zum Üben auswählen'})).not.toBeInTheDocument();
+ fireEvent.click(toggle);
+ expect(screen.getByRole('button',{name:'Subnetting üben'})).toBe(topic);
  expect(updateProgress).not.toHaveBeenCalled();
 },15000);

@@ -14,6 +14,7 @@ it('waits for explicit topic choice and displays ratio, sample size and counting
   render(<TargetedPractice progress={progress} onSelectModule={select} />);
   const opener = screen.getByRole('button', { name: 'Gezielt üben' });
   expect(opener).toHaveAttribute('aria-expanded', 'false');
+  expect(opener).not.toHaveAttribute('aria-controls');
   await userEvent.click(opener);
   const panel = screen.getByRole('region', { name: 'Thema zum Üben auswählen' });
   expect(opener).toHaveAttribute('aria-controls', panel.id);
@@ -25,6 +26,13 @@ it('waits for explicit topic choice and displays ratio, sample size and counting
   expect(topics[0]).toHaveTextContent('2 von 10 richtig');
   expect(topics[0]).toHaveTextContent('10 gewertete Versuche');
   expect(topics[2]).toHaveTextContent('Wenige Versuche');
+  expect(topics[2]).toHaveTextContent('1 gewerteter Versuch');
+  const largerGroup = within(panel).getByRole('heading', { name: 'Ab 5 gewerteten Versuchen' });
+  const smallerGroup = within(panel).getByRole('heading', { name: 'Wenige Versuche (1–4)' });
+  expect(largerGroup.compareDocumentPosition(topics[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(topics[1].compareDocumentPosition(smallerGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(smallerGroup.compareDocumentPosition(topics[2]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(within(panel).getAllByText('Niedrigere Erfolgsquoten zuerst.')).toHaveLength(2);
   expect(within(panel).getByText(/gesamten gespeicherten Verlauf/)).toBeInTheDocument();
   expect(within(panel).getByText(/Prüfungsreife/)).toBeInTheDocument();
   await userEvent.click(within(panel).getByText('Wie werden Versuche gezählt?'));
@@ -52,6 +60,19 @@ it('closes with Escape or the close button and restores focus across repeated op
   expect(select).not.toHaveBeenCalled();
 });
 
+it('closes with Escape after Shift+Tab returns focus to the opener', async () => {
+  render(<TargetedPractice progress={progress} onSelectModule={vi.fn()} />);
+  const opener = screen.getByRole('button', { name: 'Gezielt üben' });
+  await userEvent.click(opener);
+  await userEvent.tab({ shift: true });
+  expect(opener).toHaveFocus();
+  await userEvent.keyboard('{Escape}');
+  expect(opener).toHaveAttribute('aria-expanded', 'false');
+  expect(opener).not.toHaveAttribute('aria-controls');
+  expect(screen.queryByRole('region')).not.toBeInTheDocument();
+  expect(opener).toHaveFocus();
+});
+
 it('provides an empty state instead of suggesting a topic without scored history', async () => {
   render(<TargetedPractice progress={[
     {module:'handelskalkulation',questions_attempted:80,questions_correct:0},
@@ -62,6 +83,7 @@ it('provides an empty state instead of suggesting a topic without scored history
   const panel=screen.getByRole('region');
   expect(within(panel).getByText(/Noch keine gewerteten Versuche für auswählbare Themen/)).toBeInTheDocument();
   expect(within(panel).queryAllByRole('button', { name: / üben$/ })).toHaveLength(0);
+  expect(within(panel).getByText(/normalen Modulauswahl/)).toBeInTheDocument();
   expect(within(panel).queryByText('0%')).not.toBeInTheDocument();
 });
 

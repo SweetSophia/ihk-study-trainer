@@ -16,7 +16,7 @@ Die App bündelt klassische FiSi-Rechenthemen, Netzwerktechnik, Linux- und Cloud
 - **Generierte Einzelaufgaben und feste AP2-Szenarien** für Rechenwege, Planung und begründete Entscheidungen
 - **Schritt-für-Schritt-Lösungen** für Rechen- und Verständnisaufgaben
 - **Fortschritts-Tracking pro Modul** inklusive Genauigkeit und Lern-Streaks
-- **„Gezielt üben“** mit freier Themenwahl, Erfolgsquote und Anzahl gewerteter Versuche
+- **„Gezielt üben“** mit freier Themenwahl, Erfolgsquote und Anzahl gewerteter Versuche **(nur nach Anmeldung)**
 - **Anmeldung per persönlicher Account-ID** ohne E-Mail/Passwort-Flow
 - **Responsive Lernoberfläche** mit fünf Themengruppen und System-/Hell-/Dunkelmodus
 - **SQL im Browser** mit PGlite: feste AP2-Aufgaben sowie ein separates Modul mit KI-generierten Übungen
@@ -95,7 +95,7 @@ Im **RAID-Rechner** gilt für die theoretische nutzbare Kapazität eine exakte P
 
 ## Gezieltes Üben und Fortschrittszahlen
 
-**„Gezielt üben“** öffnet eine Auswahl, statt automatisch zum Thema mit den meisten bisherigen Fehlern zu wechseln. Angezeigt werden aktive Themen mit gespeicherten Versuchen, ihre Erfolgsquote und die Anzahl richtiger sowie gewerteter Versuche. Auch Themen mit 100 % bleiben auswählbar. Ohne passende Daten bleibt die normale Themenauswahl verfügbar.
+**„Gezielt üben“** öffnet eine Auswahl, statt automatisch zum Thema mit den meisten bisherigen Fehlern zu wechseln. Angezeigt werden aktive Themen mit gespeicherten Versuchen, ihre Erfolgsquote und die Anzahl richtiger sowie gewerteter Versuche. Auch Themen mit 100 % bleiben auswählbar. Ohne passende Daten bleibt die normale Modulauswahl verfügbar. Die Gesamtsumme im Dashboard enthält zusätzlich den ruhenden Altbestand und kann deshalb größer sein als die Summe der hier aufgeführten Themen.
 
 Die Auswahl verwendet den **gesamten gespeicherten Verlauf**. Themen mit **1–4 Versuchen** werden als „Wenige Versuche“ getrennt nach den Themen mit mindestens 5 Versuchen angezeigt. Innerhalb dieser Gruppen stehen niedrigere Erfolgsquoten zuerst. Die Grenze ist nur ein Hinweis auf eine kleine Datenbasis, kein statistischer Vertrauensnachweis. Weder viele Versuche noch eine hohe Quote belegen Prüfungsreife. Es gibt keine automatische Wiederholung bestimmter alter Fragen und kein Spaced Repetition.
 

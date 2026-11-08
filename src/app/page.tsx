@@ -338,7 +338,10 @@ export default function Home() {
                 isAuthenticated={!!accessHash} onDismiss={cancelDeparture} />
             </div>
             {user && <section ref={progressRegion} className="order-2 lg:order-1 rounded-xl border border-line bg-surface p-3" aria-label="Lernfortschritt">
-              <button ref={progressToggle} type="button" className="min-h-11 w-full text-left font-semibold lg:hidden" aria-expanded={progressOpen} aria-controls="progress-panel" onClick={() => setProgressOpen(old => !old)}>Fortschritt</button>
+              <button ref={progressToggle} type="button" className="min-h-11 w-full text-left font-semibold lg:hidden" aria-expanded={progressOpen} aria-controls="progress-panel" onClick={() => {
+                if (progressOpen && progressPanel.current?.contains(document.activeElement)) progressToggle.current?.focus();
+                setProgressOpen(old => !old);
+              }}>Fortschritt</button>
               <div ref={progressPanel} id="progress-panel" hidden={!desktop && !progressOpen}>
                 <ProgressDashboard key={accessHash} progress={progress} streakDays={streakDays} onSelectModule={handleSelectModule} />
               </div>

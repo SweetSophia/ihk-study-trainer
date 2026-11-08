@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock framer-motion to avoid animation complexity in tests
@@ -129,7 +129,10 @@ describe('ProgressDashboard – MODULE_NAMES PR additions', () => {
     await openDetails();
     expect(screen.getByText('Kalkulation (gemischter Altbestand)')).toBeInTheDocument();
     expect(screen.queryByText('Differenzkalkulation')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Gezielt üben' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Gezielt üben' }));
+    const panel = screen.getByRole('region', { name: 'Thema zum Üben auswählen' });
+    expect(within(panel).getByText(/Noch keine gewerteten Versuche für auswählbare Themen/)).toBeInTheDocument();
+    expect(within(panel).queryAllByRole('button', { name: / üben$/ })).toHaveLength(0);
   });
 
   it('keeps mixed totals and new differential totals separate and allows active mistake practice', async () => {
@@ -143,7 +146,9 @@ describe('ProgressDashboard – MODULE_NAMES PR additions', () => {
     expect(screen.getByText('5/20')).toBeInTheDocument();
     expect(screen.getByText('1/2')).toBeInTheDocument();
     expect(screen.getByText('22')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Gezielt üben' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Gezielt üben' }));
+    const panel = screen.getByRole('region', { name: 'Thema zum Üben auswählen' });
+    expect(within(panel).getAllByRole('button', { name: / üben$/ }).map(button => button.getAttribute('aria-label'))).toEqual(['Differenzkalkulation üben']);
   });
 
   it('displays "Vorwärtskalkulation" for the canonical split module ID', async () => {

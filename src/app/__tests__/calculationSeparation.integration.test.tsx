@@ -1,7 +1,7 @@
 import { chooseModule } from '../../test/navigation';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import Home from '../page';
 vi.mock('../lib/databaseWorkerClient', () => ({ checkDatabaseTask: vi.fn() }));
 import { getAllProgress, getUserByHash, updateProgress } from '../lib/auth';
@@ -48,7 +48,8 @@ it('offers active topics without jumping automatically and excludes retired hist
  render(<Home/>);
  fireEvent.click(await screen.findByRole('button',{name:'Gezielt üben'}));
  expect(screen.queryByText(/^Berechne die Rückwärtskalkulation!/)).not.toBeInTheDocument();
- expect(screen.queryByRole('button',{name:'Kalkulation (gemischter Altbestand) üben'})).not.toBeInTheDocument();
+ const panel=screen.getByRole('region',{name:'Thema zum Üben auswählen'});
+ expect(within(panel).getAllByRole('button',{name:/ üben$/}).map(button=>button.getAttribute('aria-label'))).toEqual(['Differenzkalkulation üben','Rückwärtskalkulation üben']);
  fireEvent.click(screen.getByRole('button',{name:'Rückwärtskalkulation üben'}));
  expect(await screen.findByText(/^Berechne die Rückwärtskalkulation!/)).toBeInTheDocument();
  expect(screen.queryByText(/^Berechne die Differenzkalkulation!/)).not.toBeInTheDocument();
@@ -73,13 +74,14 @@ it('keeps the selected forward draft when legacy-only history shows an empty sel
  vi.mocked(getAllProgress).mockResolvedValue([{module:'handelskalkulation',questions_attempted:100,questions_correct:0,streak_days:0,last_session:null}]);
  render(<Home/>);
  const practice=await screen.findByRole('button',{name:'Gezielt üben'});
- expect(practice).toBeEnabled();
  await chooseModule('handelskalkulationVorwaerts');
  const question=await screen.findByText(/^Berechne die Vorwärtskalkulation!/);
  const text=question.textContent;
  const firstInput=screen.getAllByRole('textbox')[0];fireEvent.change(firstInput,{target:{value:'123,45'}});
  await act(async()=>{fireEvent.click(practice);});
- expect(practice).toBeEnabled();
+ const panel=screen.getByRole('region',{name:'Thema zum Üben auswählen'});
+ expect(within(panel).getByText(/Noch keine gewerteten Versuche für auswählbare Themen/)).toBeInTheDocument();
+ expect(within(panel).queryAllByRole('button',{name:/ üben$/})).toHaveLength(0);
  expect(screen.getByText(/^Berechne die Vorwärtskalkulation!/).textContent).toBe(text);
  expect(firstInput).toHaveValue('123,45');
  expect(updateProgress).not.toHaveBeenCalled();
