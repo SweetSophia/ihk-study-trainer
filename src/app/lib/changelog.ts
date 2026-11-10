@@ -8,10 +8,14 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   // New releases use UTC merge dates; older entries retain their originally recorded dates.
   {
-    date: '08/11/2026',
-    summary: 'Gezielt üben: Themen selbst anhand von Erfolgsquote und gewerteten Versuchen auswählen. Kleine Datenbasis (1–4 Versuche) ist getrennt gekennzeichnet. Die Zahlen nutzen den gesamten gespeicherten Verlauf und erklären die unterschiedlichen Zählweisen von SQL und AP2; Bewertung und gespeicherte Fortschritte bleiben unverändert. Die Fortschrittssumme heißt jetzt „Gewertete Versuche“ (Zahl unverändert).',
+    date: '10/11/2026',
+    summary: 'Subnetting-Fehler: Künftig falsch geprüfte Aufgaben können mit dem Konto für eine ungewertete Wiederholung synchronisiert werden. Maximal 100 Aufgaben sind 90 Tage verfügbar; alte Fortschrittszahlen werden nicht übernommen. Synchronisiertes Löschen lässt den Fortschritt bestehen. Die Funktion benötigt die separat eingerichtete Datenbankmigration und ist bis dahin nicht verfügbar.',
     highlight: true,
     tag: 'Aktuell',
+  },
+  {
+    date: '08/11/2026',
+    summary: 'Gezielt üben: Themen selbst anhand von Erfolgsquote und gewerteten Versuchen auswählen. Kleine Datenbasis (1–4 Versuche) ist getrennt gekennzeichnet. Die Zahlen nutzen den gesamten gespeicherten Verlauf und erklären die unterschiedlichen Zählweisen von SQL und AP2; Bewertung und gespeicherte Fortschritte bleiben unverändert. Die Fortschrittssumme heißt jetzt „Gewertete Versuche“ (Zahl unverändert).',
   },
   {
     date: '06/11/2026',

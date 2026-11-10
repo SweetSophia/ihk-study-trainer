@@ -3,6 +3,8 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { Shield, User, LogOut, GraduationCap } from 'lucide-react';
 import StudyCard from './components/StudyCard';
+import SubnettingReplay from './components/SubnettingReplay';
+import { useSubnettingReplay } from './lib/useSubnettingReplay';
 import AuthModal from './components/AuthModal';
 import ThemeSelector, { useDesktopNavigation } from './components/ThemeSelector';
 import AppearanceSelector from './components/AppearanceSelector';
@@ -31,6 +33,20 @@ import { getModuleTopic } from './lib/moduleTopics';
 import { isModuleId, MODULE_NAMES } from './lib/modules';
 import { GENERATORS } from './lib/generators/registry';
 
+// Capture identities require secure randomness. If unavailable, normal grading
+// still works and the replay hook reports that the attempt was not saved.
+function createReplayAttemptId(): string | null {
+  try {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    if (!globalThis.crypto?.getRandomValues) return null;
+    const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  } catch { return null; }
+}
+
 export default function Home() {
   const [user, setUser] = useState<UserType | null>(null);
   const [accessHash, setAccessHash] = useState<string | null>(null);
@@ -44,6 +60,13 @@ export default function Home() {
   const [pendingModule, setPendingModule] = useState<string | null>(null);
   const [progressOpen, setProgressOpen] = useState(false);
   const [autoFocusAnswers, setAutoFocusAnswers] = useState(true);
+  const [replayOpen, setReplayOpen] = useState(false);
+  const [replayHasStarted, setReplayHasStarted] = useState(false);
+  const [replaySession, setReplaySession] = useState(0);
+  const replay = useSubnettingReplay(accessHash, replaySession);
+  const { invalidate: invalidateReplay } = replay;
+  const pendingReplay = useRef<(() => void) | null>(null);
+  const attempt = useRef<{ question: Question; id: string | null; checked: boolean } | null>(null);
   const desktop = useDesktopNavigation();
   const workspace = useRef<HTMLDivElement>(null);
   const pageTitle = useRef<HTMLHeadingElement>(null);
@@ -53,10 +76,11 @@ export default function Home() {
   const progressRegion = useRef<HTMLElement>(null);
   const lastProgressFocus = useLastFocusWithin(progressRegion);
   const progressToggle = useRef<HTMLButtonElement>(null);
+  const replayEntry = useRef<HTMLButtonElement>(null);
   const previousDesktop = useRef(desktop);
   const focusSelection = useRef(false);
   const focusWorkspaceHeading = useCallback(() => {
-    const heading = workspace.current?.querySelector<HTMLElement>('h2');
+    const heading = Array.from(workspace.current?.querySelectorAll<HTMLElement>('h2') ?? []).find(item => !item.closest('[hidden]'));
     if (heading) { heading.tabIndex = -1; heading.focus(); }
   }, []);
 
@@ -69,6 +93,11 @@ export default function Home() {
     return () => cancelAnimationFrame(frame);
   }, [currentModule, focusWorkspaceHeading]);
   useEffect(() => { if (pendingModule) continueButton.current?.focus(); }, [pendingModule]);
+  useEffect(() => {
+    if (!replayOpen) return;
+    const frame = requestAnimationFrame(focusWorkspaceHeading);
+    return () => cancelAnimationFrame(frame);
+  }, [replayOpen, focusWorkspaceHeading]);
   useLayoutEffect(() => {
     if (previousDesktop.current !== desktop) {
       const active = document.activeElement;
@@ -106,8 +135,9 @@ export default function Home() {
   const recordProgress = useCallback(async (hash: string, module: string, correct: boolean) => {
     const session = progressSession.current;
     try {
-      await updateProgress(hash, module, correct);
+      const saved = await updateProgress(hash, module, correct);
       if (progressIdentity.current !== hash || progressSession.current !== session) return;
+      if (saved === null) setProgressError(previous => previous?.kind === 'write' ? previous : { kind: 'write', message: 'Die Speicherung des Fortschritts konnte nicht bestätigt werden. Spätere erfolgreiche Prüfungen tragen den betroffenen Versuch nicht automatisch nach; bitte die Verbindung prüfen.' });
       await loadProgress(hash);
     } catch {
       if (progressIdentity.current === hash && progressSession.current === session) {
@@ -120,6 +150,10 @@ export default function Home() {
     try {
       const userData = await getUserByHash(hash);
       if (userData) {
+        invalidateReplay();
+        setReplaySession(value => value + 1);
+        pendingReplay.current = null;
+        setReplayOpen(false);
         ++progressSession.current;
         progressIdentity.current = hash;
         ++progressRequest.current;
@@ -144,7 +178,7 @@ export default function Home() {
       console.error('Login error:', error);
       return { success: false, error: 'Verbindungsfehler. Bitte versuche es erneut.' };
     }
-  }, [loadProgress]);
+  }, [loadProgress, invalidateReplay]);
 
   useEffect(() => {
     const verifyStoredHash = async () => {
@@ -196,6 +230,8 @@ export default function Home() {
   };
 
   const handleLogout = () => {
+    invalidateReplay();
+    setReplaySession(value => value + 1);
     ++progressSession.current;
     progressIdentity.current = null;
     ++progressRequest.current;
@@ -203,6 +239,8 @@ export default function Home() {
     setUser(null);
     setAccessHash(null);
     setPendingModule(null);
+    pendingReplay.current = null;
+    setReplayOpen(false);
     setCurrentModule(null);
     setCurrentQuestion(null);
     setProgress([]);
@@ -212,6 +250,8 @@ export default function Home() {
   };
 
   const commitModule = (module: string) => {
+    pendingReplay.current = null;
+    setReplayOpen(false);
     setPendingModule(null);
     focusSelection.current = true;
     setAutoFocusAnswers(false);
@@ -221,9 +261,10 @@ export default function Home() {
   const handleSelectModule = (module: string) => {
     const canonicalModule = toCanonicalModuleId(module);
     if (!isModuleId(canonicalModule) || (canonicalModule === 'sql' && !accessHash)) return;
-    if (canonicalModule === currentModule) {
+    if (canonicalModule === currentModule && (!replayOpen || canonicalModule === 'ap2TrainingRun')) {
+      setReplayOpen(false);
       setPendingModule(null);
-      focusWorkspaceHeading();
+      if (replayOpen) requestAnimationFrame(focusWorkspaceHeading); else focusWorkspaceHeading();
       return;
     }
     if (currentModule === 'ap2TrainingRun') {
@@ -236,6 +277,7 @@ export default function Home() {
     commitModule(canonicalModule);
   };
   const cancelDeparture = () => {
+    pendingReplay.current = null;
     setPendingModule(null);
     const previous = selectionTrigger.current;
     const fallback = document.querySelector<HTMLElement>(desktop ? 'nav[aria-label="Lernmodule"] .navigation-panel button' : 'nav[aria-label="Lernmodule"] > button');
@@ -246,6 +288,7 @@ export default function Home() {
     // Dedicated trainers do not use the exact-answer question registry.
     if (!isModuleId(module) || module === 'ap2AccessControl' || module === 'ap2TrainingRun' || module === 'sql' || module === 'ap2NetworkPlanning' || module === 'ap2DatabaseDesign' || module === 'ap2ProjectPlanning' || module === 'ap2AlgorithmTracing' || module === 'ap2Troubleshooting' || module === 'ap2CostComparison' || module === 'ap2BackupRecovery') return;
     const question = GENERATORS[module]();
+    attempt.current = { question, id: module === 'subnetting' ? createReplayAttemptId() : null, checked: false };
     setCurrentQuestion(question);
   };
 
@@ -256,10 +299,15 @@ export default function Home() {
 
     if (accessHash) {
       recordProgress(accessHash, currentQuestion.module, correct);
+      const source = attempt.current;
+      if (source && source.question === currentQuestion && !source.checked) {
+        source.checked = true;
+        if (!correct && currentQuestion.module === 'subnetting') replay.capture(currentQuestion, source.id);
+      }
     }
 
     return correct;
-  }, [currentQuestion, accessHash, recordProgress]);
+  }, [currentQuestion, accessHash, recordProgress, replay]);
 
   const handleNextQuestion = () => {
     setAutoFocusAnswers(true);
@@ -334,6 +382,11 @@ export default function Home() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <aside data-study-chrome className="trainer-sidebar flex min-w-0 flex-col gap-4 lg:w-[260px] lg:shrink-0" aria-label="Lernbereich auswählen">
             <div className="order-1 lg:order-2 rounded-xl border border-line bg-surface p-3">
+              <button ref={replayEntry} type="button" onClick={() => { if (replayOpen) { focusWorkspaceHeading(); return; } setAutoFocusAnswers(false); setReplayHasStarted(false); setReplayOpen(true); replay.refresh(); }} className="font-semibold text-left">Gespeicherte Subnetting-Fehler</button>
+              <p className="text-sm text-muted">{replay.status === 'guest' ? 'Anmeldung erforderlich' : replay.status === 'loading' ? 'Verbindung wird hergestellt …' : replay.status === 'unavailable' ? 'Synchronisierung nicht verfügbar' : 'Fehlerliste verfügbar'}</p>
+              {replay.message && <p role="status" className="text-sm">{replay.message}</p>}
+            </div>
+            <div className="order-1 lg:order-2 rounded-xl border border-line bg-surface p-3">
               <ThemeSelector currentModule={currentModule} onSelectModule={handleSelectModule}
                 isAuthenticated={!!accessHash} onDismiss={cancelDeparture} />
             </div>
@@ -350,16 +403,21 @@ export default function Home() {
 
           <div ref={workspace} className="workspace min-w-0 flex-1">
             {currentModule && isModuleId(currentModule) && <p className="mb-3 text-sm text-muted">{getModuleTopic(currentModule)?.label}{getModuleTopic(currentModule) ? ' / ' : ''}{MODULE_NAMES[currentModule]}</p>}
-            {pendingModule && isModuleId(pendingModule) && <section role="group" aria-label="Trainingslauf verlassen" className="mb-5 space-y-3 rounded-xl border border-warning bg-warning-soft p-4" onKeyDown={event => {
+            {pendingModule && (isModuleId(pendingModule) || pendingModule === '__replay__') && <section role="group" aria-label="Trainingslauf verlassen" className="mb-5 space-y-3 rounded-xl border border-warning bg-warning-soft p-4" onKeyDown={event => {
               if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelDeparture(); }
             }}>
               <p className="font-semibold">Trainingslauf verlassen? Sitzungseingaben und Auswertung gehen verloren. Gespeicherter Themenfortschritt bleibt erhalten.</p>
-              <p>Ziel: {MODULE_NAMES[pendingModule]}</p>
+              <p>Ziel: {pendingModule === '__replay__' ? 'Subnetting-Wiederholung' : MODULE_NAMES[pendingModule as keyof typeof MODULE_NAMES]}</p>
               <div className="flex flex-wrap gap-2">
                 <button ref={continueButton} type="button" className="min-h-11 rounded-lg border border-control bg-surface px-4" onClick={cancelDeparture}>Weiterarbeiten</button>
-                <button type="button" className="min-h-11 rounded-lg bg-action px-4 font-semibold text-onaction" onClick={() => commitModule(pendingModule)}>Trainingslauf verlassen</button>
+                <button type="button" className="min-h-11 rounded-lg bg-action px-4 font-semibold text-onaction" onClick={() => { if (pendingModule === '__replay__') { const start = pendingReplay.current; pendingReplay.current = null; setPendingModule(null); setCurrentModule(null); setCurrentQuestion(null); setReplayHasStarted(true); start?.(); } else commitModule(pendingModule); }}>Trainingslauf verlassen</button>
               </div>
             </section>}
+            {replayOpen && <SubnettingReplay key={accessHash ?? 'guest'} records={replay.records} status={replay.status} message={replay.message} onRefresh={replay.refresh} onClear={replay.clear} onResolve={replay.resolve}
+              onStart={start => { if (currentModule === 'ap2TrainingRun') { selectionTrigger.current = document.activeElement as HTMLElement; pendingReplay.current = start; setPendingModule('__replay__'); } else { setCurrentModule(null); setCurrentQuestion(null); setReplayHasStarted(true); start(); } }}
+              onReturn={() => handleSelectModule('subnetting')} /> }
+            {replayOpen && <button type="button" onClick={() => { setPendingModule(null); pendingReplay.current = null; if (!replayHasStarted) { setReplayOpen(false); requestAnimationFrame(() => replayEntry.current?.focus()); } else commitModule('subnetting'); }}>Fehlerliste schließen</button>}
+            <div hidden={replayOpen} inert={replayOpen}>
             {currentModule === 'ap2AccessControl' ? (
               <AccessControlTrainer key={accessHash ?? 'guest'} isAuthenticated={!!accessHash}
                 onAttempt={correct => {
@@ -425,12 +483,14 @@ export default function Home() {
               />
             ) : (
               <StudyCard
-                autoFocusAnswers={autoFocusAnswers}
+                autoFocusAnswers={autoFocusAnswers && !replayOpen}
+                shortcutsActive={!replayOpen}
                 question={currentQuestion}
                 onCheckAnswer={handleCheckAnswer}
                 onNextQuestion={handleNextQuestion}
               />
             )}
+            </div>
           </div>
         </div>
       </main>
