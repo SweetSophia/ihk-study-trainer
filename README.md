@@ -50,6 +50,14 @@ Beim AP2-SQL-Training laufen Prüfungen in wegwerfbaren Browser-Datenbanken mit 
 - Genauere Prüfung diskreter Zahlen und Netzwerkangaben, korrekt ausgerichtete Aggregationsnetze und SQL-Bewertung mit getrennten Testdatenbanken
 - Verbesserte SQL-Fehlermeldungen, Schutz vor veralteten Fortschrittsantworten und zugängliche Rückmeldungen in den neuen Trainern
 
+### Gespeicherte Subnetting-Fehler
+
+Mit einem angemeldeten Konto können künftig falsch geprüfte normale Subnetting-Aufgaben für eine exakte, ungewertete Wiederholung synchronisiert werden. Bereits vorhandene Fortschrittszahlen enthalten keine wiederholbaren Aufgaben und werden nicht nachträglich übernommen. Die Wiederholung beginnt mit leeren Eingabefeldern; nur eine richtige Lösung ohne zuvor geöffnete Lösungshilfe setzt den synchronisierten Gelöst-Marker. Wiederholungen verändern weder Punkte noch Streak. Das Löschen der Fehlerliste entfernt sie für dieses Konto auf allen Geräten, nicht den normalen Fortschritt.
+
+Gespeichert werden Aufgabenstellung, berechnete Musterlösungen und Lösungsschritte sowie Zeitpunkte und der erste selbstständig gelöste Status, aber keine eingegebenen Antworten oder Zugangscodes im Snapshot. Es gilt die bestehende Kontogrenze: Wer den Zugangscode kennt, kann diese Daten lesen. Höchstens 100 Aufgaben pro Konto sind für 90 Tage ab Erstellung verfügbar; abgelaufene Einträge werden beim Zugriff bereinigt, nicht durch Wiederholung verlängert. Gäste speichern keine Fehler. Ohne erreichbare Replay-Datenbank wird die Liste als nicht verfügbar angezeigt; es gibt keinen lokalen Replay-Ersatz und keine spätere Übernahme ausgelassener Fehler.
+
+Für eine Einführung empfiehlt sich zuerst die geprüfte Datenbankmigration, danach das Frontend. Wird das Frontend zuerst bereitgestellt, bleibt die Fehlerliste bis zur Migration ausdrücklich nicht verfügbar. Bereitgestellter Code allein belegt keine aktive Synchronisation; Voraussetzungen, Datenschutz, Rücknahme und getrennte Abnahme stehen im [Datenbank-Runbook](database/README.md).
+
 ## Lernmodule
 
 ### 30 Lernmodule (29 direkt verfügbar + 1 nach Anmeldung)

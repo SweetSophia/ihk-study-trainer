@@ -26,6 +26,10 @@ import DragOrderExercise from './DragOrderExercise';
 
 interface StudyCardProps {
   autoFocusAnswers?: boolean;
+  shortcutsActive?: boolean;
+  onSolutionReveal?: () => void;
+  nextLabel?: string;
+  showSkip?: boolean;
   question: Question | null;
   onCheckAnswer: (answers: Record<string, string>) => boolean;
   onNextQuestion: () => void;
@@ -81,7 +85,7 @@ function useAutoFocusFirst<T extends HTMLElement>(
   return ref;
 }
 
-export default function StudyCard({ question, onCheckAnswer, onNextQuestion, autoFocusAnswers = true }: StudyCardProps) {
+export default function StudyCard({ question, onCheckAnswer, onNextQuestion, autoFocusAnswers = true, shortcutsActive = true, onSolutionReveal, nextLabel = 'Nächste Frage', showSkip = true }: StudyCardProps) {
   const controlId = useId();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showSolution, setShowSolution] = useState(false);
@@ -231,7 +235,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
   // stable regardless of `question` being null.
   // -----------------------------------------------------------------
   useEffect(() => {
-    if (!question) return;
+    if (!question || !shortcutsActive) return;
     const isTextEntryTarget = (target: EventTarget | null) => {
       if (!(target instanceof HTMLElement)) return false;
       if (target.isContentEditable) return true;
@@ -295,7 +299,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
     return () => window.removeEventListener('keydown', handler);
     // We re-attach when these change so the closure sees fresh state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checked, allAnswered, isLinuxTerminal, questionId, answers]);
+  }, [checked, allAnswered, isLinuxTerminal, questionId, answers, shortcutsActive]);
 
   // -----------------------------------------------------------------
   // Welcome state (no question selected yet)
@@ -743,10 +747,10 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
             type="button"
             onClick={handleNext}
             className="flex items-center gap-2 px-5 py-2.5 bg-action hover:bg-action-hover text-onaction font-semibold rounded-lg transition-colors"
-            title="Nächste Frage (N)"
+            title={`${nextLabel} (N)`}
           >
             <ArrowRight className="w-4 h-4" />
-            Nächste Frage
+            {nextLabel}
             <kbd className="hidden sm:inline-flex ml-1 px-1.5 py-0.5 bg-accent-soft border border-accent rounded text-[10px] font-mono text-accent">
               N
             </kbd>
@@ -755,7 +759,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
 
         <button
           type="button"
-          onClick={() => setShowSolution(!showSolution)}
+          onClick={() => { if (!showSolution) onSolutionReveal?.(); setShowSolution(!showSolution); }}
           aria-expanded={showSolution}
           aria-controls={`${controlId}-solution`}
           className="flex items-center gap-2 px-5 py-2.5 border border-line hover:border-control text-ink hover:text-ink rounded-lg transition-colors"
@@ -764,7 +768,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
           {showSolution ? 'Lösung ausblenden' : 'Lösung anzeigen'}
         </button>
 
-        <button
+        {showSkip && <button
           type="button"
           onClick={handleNext}
           className="flex items-center gap-2 px-5 py-2.5 border border-line hover:border-control text-muted hover:text-ink rounded-lg transition-colors ml-auto"
@@ -772,7 +776,7 @@ export default function StudyCard({ question, onCheckAnswer, onNextQuestion, aut
         >
           <RotateCcw className="w-4 h-4" />
           Überspringen
-        </button>
+        </button>}
       </div>
 
       {/* Stepped solution */}

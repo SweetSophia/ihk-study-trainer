@@ -371,8 +371,9 @@ describe('StudyCard – welcome screen (no question)', () => {
     await userEvent.click(screen.getByText('Was ist neu?'));
     // Full descriptions remain readable, and only the newest release is current.
     // Deliberate release marker for this content refresh; update it with the next release.
-    expect(CHANGELOG_ENTRIES[0].date).toBe('08/11/2026');
-    expect(CHANGELOG_ENTRIES[0].summary).toContain('Gezielt üben');
+    expect(CHANGELOG_ENTRIES[0].date).toBe('12/11/2026');
+    expect(CHANGELOG_ENTRIES[0].summary).toContain('Subnetting');
+    expect(CHANGELOG_ENTRIES[0].summary).toContain('Datenbankmigration');
     for (const entry of CHANGELOG_ENTRIES) {
       const summary = screen.getByText(entry.summary, { exact: true });
       expect(summary).toBeInTheDocument();
@@ -386,7 +387,7 @@ describe('StudyCard – welcome screen (no question)', () => {
     expect(screen.getAllByText('Aktuell', { exact: true })).toHaveLength(1);
     expect(CHANGELOG_ENTRIES.filter(entry => entry.highlight)).toEqual([CHANGELOG_ENTRIES[0]]);
     expect(CHANGELOG_ENTRIES.filter(entry => entry.tag === 'Aktuell')).toEqual([CHANGELOG_ENTRIES[0]]);
-    expect(screen.getByText('Aktuell').parentElement).toHaveTextContent('08/11/2026');
+    expect(screen.getByText('Aktuell').parentElement).toHaveTextContent('12/11/2026');
   });
 });
 
@@ -1131,4 +1132,34 @@ describe('cent-accurate monetary input feedback', () => {
     fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/}));
     expect(check).toHaveBeenCalledTimes(2);expect(check).toHaveLastReturnedWith(true);
   });
+});
+
+it('keeps inactive cards from grading or advancing with global shortcuts', () => {
+  const check = vi.fn(() => false); const next = vi.fn();
+  const props = { question: makeQuestion(), onCheckAnswer: check, onNextQuestion: next };
+  const { rerender } = render(<StudyCard {...props} />);
+  for (const input of screen.getAllByRole('textbox')) fireEvent.change(input, { target: { value: '1' } });
+  rerender(<StudyCard {...props} shortcutsActive={false} />);
+  fireEvent.keyDown(window, { key: 'Enter' });
+  expect(check).not.toHaveBeenCalled();
+  rerender(<StudyCard {...props} />);
+  fireEvent.keyDown(window, { key: 'Enter' });
+  expect(check).toHaveBeenCalledTimes(1);
+  rerender(<StudyCard {...props} shortcutsActive={false} />);
+  fireEvent.keyDown(window, { key: 'n' });
+  expect(next).not.toHaveBeenCalled();
+});
+
+it('reports each solution reveal and offers replay-specific next control without skip', () => {
+  const reveal = vi.fn(); const next = vi.fn();
+  render(<StudyCard question={makeQuestion()} onCheckAnswer={() => false} onNextQuestion={next}
+    onSolutionReveal={reveal} nextLabel="Erneut versuchen" showSkip={false} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Lösung anzeigen' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Lösung ausblenden' }));
+  expect(reveal).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('button', { name: 'Überspringen' })).not.toBeInTheDocument();
+  for (const input of screen.getAllByRole('textbox')) fireEvent.change(input, { target: { value: '1' } });
+  fireEvent.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Erneut versuchen/ }));
+  expect(next).toHaveBeenCalledTimes(1);
 });
