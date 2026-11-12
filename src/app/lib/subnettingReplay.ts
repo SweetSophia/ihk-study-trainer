@@ -32,7 +32,7 @@ export interface SubnettingReplayState {
 }
 
 export class SubnettingReplayError extends Error {
-  constructor(public readonly code: 'invalid' | 'unavailable' | 'transport') {
+  constructor(public readonly code: 'invalid' | 'unavailable' | 'rejected' | 'transport') {
     super(`Subnetting replay ${code}`);
     this.name = 'SubnettingReplayError';
   }

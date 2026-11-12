@@ -177,3 +177,20 @@ it('keeps normal training and queue usable without randomUUID and saves with sec
  await waitFor(()=>expect(replayApi.saveSubnettingReplay).toHaveBeenCalledTimes(1));
  expect(vi.mocked(replayApi.saveSubnettingReplay).mock.calls[0][2]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
 },15000);
+it('preserves the current normal draft when reselecting its module after inspecting the list', async () => {
+ const {GENERATORS}=await import('../lib/generators/registry'); const spy=vi.spyOn(GENERATORS,'subnetting');
+ render(<Home/>); await screen.findByRole('button',{name:'Gezielt üben'}); await chooseModule('subnetting');
+ const field=screen.getAllByRole('textbox')[0]; fireEvent.change(field,{target:{value:'draft'}}); const count=spy.mock.calls.length;
+ fireEvent.click(screen.getByRole('button',{name:'Gespeicherte Subnetting-Fehler'})); await screen.findByText(/Noch keine gespeicherten Fehler/);
+ await chooseModule('subnetting'); expect(spy).toHaveBeenCalledTimes(count); expect(screen.getAllByRole('textbox')[0]).toHaveValue('draft');
+},15000);
+it('renders a replay failure message once whether the list is open or closed', async () => {
+ vi.mocked(replayApi.saveSubnettingReplay).mockRejectedValue(new Error('offline'));
+ render(<Home/>); await screen.findByRole('button',{name:'Gezielt üben'}); await chooseModule('subnetting');
+ await screen.findByText('Fehlerliste verfügbar');
+ for(const field of screen.getAllByRole('textbox')) fireEvent.change(field,{target:{value:'1'}});
+ fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/})); await screen.findByText(/Eine frühere Änderung konnte nicht bestätigt/);
+ expect(screen.getAllByText(/Eine frühere Änderung konnte nicht bestätigt/)).toHaveLength(1);
+ fireEvent.click(screen.getByRole('button',{name:'Gespeicherte Subnetting-Fehler'})); await screen.findByText(/Noch keine gespeicherten Fehler/);
+ expect(screen.getAllByText(/Eine frühere Änderung konnte nicht bestätigt/)).toHaveLength(1);
+},15000);

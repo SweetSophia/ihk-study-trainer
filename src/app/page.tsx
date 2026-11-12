@@ -261,7 +261,8 @@ export default function Home() {
   const handleSelectModule = (module: string) => {
     const canonicalModule = toCanonicalModuleId(module);
     if (!isModuleId(canonicalModule) || (canonicalModule === 'sql' && !accessHash)) return;
-    if (canonicalModule === currentModule && (!replayOpen || canonicalModule === 'ap2TrainingRun')) {
+    if (canonicalModule === currentModule) {
+      pendingReplay.current = null;
       setReplayOpen(false);
       setPendingModule(null);
       if (replayOpen) requestAnimationFrame(focusWorkspaceHeading); else focusWorkspaceHeading();
@@ -384,7 +385,7 @@ export default function Home() {
             <div className="order-1 lg:order-2 rounded-xl border border-line bg-surface p-3">
               <button ref={replayEntry} type="button" onClick={() => { if (replayOpen) { focusWorkspaceHeading(); return; } setAutoFocusAnswers(false); setReplayHasStarted(false); setReplayOpen(true); replay.refresh(); }} className="font-semibold text-left">Gespeicherte Subnetting-Fehler</button>
               <p className="text-sm text-muted">{replay.status === 'guest' ? 'Anmeldung erforderlich' : replay.status === 'loading' ? 'Verbindung wird hergestellt …' : replay.status === 'unavailable' ? 'Synchronisierung nicht verfügbar' : 'Fehlerliste verfügbar'}</p>
-              {replay.message && <p role="status" className="text-sm">{replay.message}</p>}
+              {!replayOpen && replay.message && <p role="status" className="text-sm">{replay.message}</p>}
             </div>
             <div className="order-1 lg:order-2 rounded-xl border border-line bg-surface p-3">
               <ThemeSelector currentModule={currentModule} onSelectModule={handleSelectModule}

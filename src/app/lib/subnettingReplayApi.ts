@@ -39,7 +39,8 @@ async function call(name: string, args: Record<string, unknown>): Promise<unknow
     const error = envelope.error;
     const code = error && typeof error === 'object' && 'code' in error ? error.code : null;
     throw new SubnettingReplayError(
-      code === 'PGRST202' || code === '42883' || code === 'PGRST205' ? 'unavailable' : 'transport',
+      code === 'PGRST202' || code === '42883' || code === 'PGRST205' || code === '42501' || code === '42P01'
+        ? 'unavailable' : code === 'P0001' ? 'rejected' : 'transport',
     );
   }
   return envelope.data;

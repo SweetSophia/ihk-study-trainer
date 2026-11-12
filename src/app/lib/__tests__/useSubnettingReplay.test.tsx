@@ -3,10 +3,13 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { useSubnettingReplay } from '../useSubnettingReplay';
 import * as api from '../subnettingReplayApi';
 import { GENERATORS } from '../generators/registry';
+import { createSubnettingSnapshot } from '../subnettingReplay';
 vi.mock('../subnettingReplayApi', () => ({ isSubnettingReplayConfigured: vi.fn(() => true), loadSubnettingReplays: vi.fn(), saveSubnettingReplay: vi.fn(), resolveSubnettingReplay: vi.fn(), clearSubnettingReplays: vi.fn() }));
+const completeRecord = { id:'33333333-3333-4333-8333-333333333333', sourceAttemptId:'22222222-2222-4222-8222-222222222222', snapshot: createSnapshot(), createdAt:'2026-11-10T00:00:00Z', resolvedAt:null };
+function createSnapshot() { return createSubnettingSnapshot(GENERATORS.subnetting()); }
 const state = { generation: '11111111-1111-4111-8111-111111111111', records: [] };
 const deferred = <T,>() => { let resolve!: (value:T) => void; const promise = new Promise<T>(r => {resolve=r}); return {promise,resolve}; };
-beforeEach(() => { vi.clearAllMocks(); vi.mocked(api.isSubnettingReplayConfigured).mockReturnValue(true); });
+beforeEach(() => { vi.resetAllMocks(); vi.mocked(api.isSubnettingReplayConfigured).mockReturnValue(true); });
 it('bootstraps eagerly and reports an early wrong attempt unsaved without backfill', async () => {
  const load = deferred<typeof state>(); vi.mocked(api.loadSubnettingReplays).mockReturnValue(load.promise);
  const { result } = renderHook(() => useSubnettingReplay('account-a'));
@@ -145,4 +148,59 @@ it('preserves an uncertain-write warning across a successful explicit refresh', 
  expect(result.current.status).toBe('ready');
  expect(result.current.message).toBe(warning);
  expect(api.saveSubnettingReplay).toHaveBeenCalledTimes(1);
+});
+it('captures exactly once during ordinary and post-write refresh, then revokes on failed refresh', async () => {
+ const pending=deferred<typeof state>(); const afterWrite=deferred<typeof state>();
+ vi.mocked(api.loadSubnettingReplays).mockResolvedValueOnce(state).mockReturnValueOnce(pending.promise).mockReturnValueOnce(afterWrite.promise).mockRejectedValueOnce(new Error('offline'));
+ vi.mocked(api.saveSubnettingReplay).mockResolvedValue({status:'saved',generation:state.generation,record:completeRecord});
+ const {result}=renderHook(()=>useSubnettingReplay('A')); await waitFor(()=>expect(result.current.status).toBe('ready'));
+ act(()=>{void result.current.refresh();result.current.capture(GENERATORS.subnetting(),crypto.randomUUID());});
+ await waitFor(()=>expect(api.saveSubnettingReplay).toHaveBeenCalledTimes(1));
+ await waitFor(()=>expect(api.loadSubnettingReplays).toHaveBeenCalledTimes(3));
+ act(()=>result.current.capture(GENERATORS.subnetting(),crypto.randomUUID()));
+ await waitFor(()=>expect(api.saveSubnettingReplay).toHaveBeenCalledTimes(2));
+ await waitFor(()=>expect(result.current.status).toBe('unavailable'));
+ act(()=>result.current.capture(GENERATORS.subnetting(),crypto.randomUUID()));
+ expect(api.saveSubnettingReplay).toHaveBeenCalledTimes(2);
+ await act(async()=>{pending.resolve(state);afterWrite.resolve(state); await Promise.all([pending.promise,afterWrite.promise]);});
+ expect(result.current.status).toBe('unavailable');
+});
+it('retains earlier uncertainty after unrelated writes and clears it only on confirmed clear', async () => {
+ vi.mocked(api.loadSubnettingReplays).mockResolvedValue(state);
+ vi.mocked(api.saveSubnettingReplay).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({status:'saved',generation:state.generation,record:completeRecord});
+ vi.mocked(api.resolveSubnettingReplay).mockResolvedValue({status:'resolved',generation:state.generation,record:{...completeRecord,resolvedAt:'2026-11-10T01:00:00Z'}});
+ vi.mocked(api.clearSubnettingReplays).mockResolvedValue({status:'cleared',generation:state.generation});
+ const {result}=renderHook(()=>useSubnettingReplay('A')); await waitFor(()=>expect(result.current.status).toBe('ready'));
+ act(()=>result.current.capture(GENERATORS.subnetting(),crypto.randomUUID())); await waitFor(()=>expect(result.current.message).toMatch(/nicht bestätigt/));
+ act(()=>result.current.capture(GENERATORS.subnetting(),crypto.randomUUID())); await waitFor(()=>expect(api.saveSubnettingReplay).toHaveBeenCalledTimes(2));
+ await waitFor(()=>expect(result.current.status).toBe('ready'));
+ act(()=>result.current.resolve('id')); await waitFor(()=>expect(api.resolveSubnettingReplay).toHaveBeenCalledTimes(1));
+ await waitFor(()=>expect(result.current.status).toBe('ready')); expect(result.current.message).toMatch(/nicht bestätigt/);
+ await act(async()=>{await result.current.refresh()}); expect(result.current.message).toMatch(/nicht bestätigt/);
+ act(()=>result.current.capture(GENERATORS.subnetting(),null)); expect(result.current.message).toMatch(/nicht bestätigt/);
+ vi.mocked(api.saveSubnettingReplay).mockResolvedValueOnce({status:'stale',generation:state.generation,record:null});
+ act(()=>result.current.capture(GENERATORS.subnetting(),crypto.randomUUID())); await waitFor(()=>expect(result.current.message).toMatch(/hat sich geändert/));
+ expect(result.current.message).toMatch(/nicht bestätigt/); await waitFor(()=>expect(result.current.status).toBe('ready'));
+ act(()=>result.current.clear()); await waitFor(()=>expect(result.current.message).toMatch(/wurden gelöscht/));
+ expect(result.current.message).not.toMatch(/nicht bestätigt/);
+});
+it.each([['unavailable',true],['rejected',true],['invalid',false],['transport',false]] as const)('describes %s write certainty without retries', async (code,definite) => {
+ const {SubnettingReplayError}=await import('../subnettingReplay');
+ vi.mocked(api.loadSubnettingReplays).mockResolvedValue(state);
+ vi.mocked(api.saveSubnettingReplay).mockRejectedValue(new SubnettingReplayError(code));
+ const {result}=renderHook(()=>useSubnettingReplay('A')); await waitFor(()=>expect(result.current.status).toBe('ready'));
+ act(()=>result.current.capture(GENERATORS.subnetting(),crypto.randomUUID()));
+ await waitFor(()=>expect(result.current.message).toMatch(definite ? /nicht gespeichert/ : /nicht bestätigt/));
+ expect(api.saveSubnettingReplay).toHaveBeenCalledTimes(1);
+});
+
+it('does not revive old-account uncertainty from a delayed failure', async () => {
+ let reject!: (error: Error) => void;
+ const pending=new Promise<Awaited<ReturnType<typeof api.saveSubnettingReplay>>>((_, r)=>{reject=r});
+ vi.mocked(api.loadSubnettingReplays).mockResolvedValue(state); vi.mocked(api.saveSubnettingReplay).mockReturnValue(pending);
+ const {result,rerender}=renderHook(({session})=>useSubnettingReplay('A',session),{initialProps:{session:1}});
+ await waitFor(()=>expect(result.current.status).toBe('ready')); act(()=>result.current.capture(GENERATORS.subnetting(),crypto.randomUUID()));
+ rerender({session:2}); await waitFor(()=>expect(result.current.status).toBe('ready'));
+ await act(async()=>{reject(new Error('offline')); try { await pending; } catch { /* observed */ }});
+ expect(result.current.message).toBeNull();
 });

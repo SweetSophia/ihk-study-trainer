@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 import StudyCard from './StudyCard';
 import { createReplayQuestion, validateSubnettingReplayAnswers, type SubnettingReplayRecord } from '../lib/subnettingReplay';
 
@@ -22,6 +22,17 @@ export default function SubnettingReplay({ records, status, message, onRefresh, 
   const [feedback, setFeedback] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const revealed = useRef(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const triggers = useRef(new Map<string, HTMLButtonElement>());
+  const returning = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (selected && status === 'loading') heading.current?.focus();
+    if (!selected && returning.current) {
+      (triggers.current.get(returning.current) ?? heading.current)?.focus();
+      returning.current = null;
+    }
+  }, [selected, status]);
+  const backToList = () => { returning.current = selected; setSelected(null); setFeedback(null); };
   const record = records.find(item => item.id === selected);
   const start = (id: string) => onStart(() => {
     revealed.current = false; setFeedback(null); setSession(value => value + 1); setSelected(id);
@@ -29,14 +40,14 @@ export default function SubnettingReplay({ records, status, message, onRefresh, 
   const retry = () => { revealed.current = false; setFeedback(null); setSession(value => value + 1); };
 
   return <section className="space-y-4 rounded-xl border border-line bg-surface p-5">
-    <h2 className="text-lg font-semibold">Gespeicherte Subnetting-Fehler</h2>
+    <h2 ref={heading} tabIndex={-1} className="text-lg font-semibold">Gespeicherte Subnetting-Fehler</h2>
     <p>Nur künftig falsch geprüfte Subnetting-Aufgaben werden mit deinem Konto synchronisiert. Maximal 100 Aufgaben bleiben 90 Tage für die Wiederholung verfügbar. Dein ursprünglicher Fortschritt bleibt unverändert.</p>
     <p>Aufgabendetails, der erste Fehler und die erste erfolgreiche Wiederholung ohne Lösungshilfe werden beim bestehenden Anbieter gespeichert. Wer den Zugangscode kennt, kann sie lesen.</p>
     {status === 'guest' && <p>Melde dich an, um Fehler geräteübergreifend zu speichern.</p>}
     {status === 'loading' && <p role="status">Gespeicherte Fehler werden geladen …</p>}
     {status === 'unavailable' && <p role="status">Synchronisierte Fehlerliste ist derzeit nicht verfügbar.</p>}
     {message && <p role="status">{message}</p>}
-    {selected && !record && <p role="status">Diese Aufgabe ist nicht mehr verfügbar. Bitte die Fehlerliste aktualisieren.</p>}
+    {selected && !record && status === 'ready' && <p role="status">Diese Aufgabe ist nicht mehr verfügbar. Bitte die Fehlerliste aktualisieren.</p>}
     {selected && record && (status === 'ready' || status === 'loading') ? <>
       <p className="font-semibold">Wiederholung · ohne Wertung</p>
       <div hidden={status !== 'ready'} inert={status !== 'ready'}>
@@ -45,19 +56,20 @@ export default function SubnettingReplay({ records, status, message, onRefresh, 
         onCheckAnswer={answers => {
           const correct = validateSubnettingReplayAnswers(record.snapshot, answers);
           setFeedback(correct ? (revealed.current ? 'Richtig mit Lösungshilfe. Der Marker für selbstständiges Lösen bleibt unverändert.' : 'Richtig ohne Lösungshilfe.') : 'Noch nicht richtig. Versuche dieselbe Aufgabe erneut.');
-          if (correct && !revealed.current) onResolve(record.id);
+          if (correct && !revealed.current && !record.resolvedAt) onResolve(record.id);
           return correct;
         }} />
       </div>
       {feedback && <p role="status">{feedback}</p>}
-      <button type="button" onClick={() => { setSelected(null); setFeedback(null); }}>Zurück zur Fehlerliste</button>
+      <button type="button" onClick={backToList}>Zurück zur Fehlerliste</button>
     </> : <>
+      {selected && status === 'ready' && !record && <button type="button" onClick={backToList}>Zurück zur Fehlerliste</button>}
       {status === 'ready' && records.length === 0 && <p>Noch keine gespeicherten Fehler. Bisherige Fortschrittsdaten enthalten keine wiederholbaren Aufgaben.</p>}
       {status === 'ready' && records.length > 0 && <div className="space-y-3">
         {[false, true].map(solved => {
           const group = records.filter(item => !!item.resolvedAt === solved);
           return group.length > 0 && <section key={String(solved)}><h3 className="font-semibold">{solved ? 'In einer Wiederholung gelöst' : 'Noch nicht selbstständig gelöst'}</h3>
-            <ul>{group.map((item, index) => <li key={item.id} className="my-2"><button type="button" className="rounded border border-control px-3 py-2" onClick={() => start(item.id)}>Aufgabe wiederholen {index + 1}: {item.snapshot.ip}/{item.snapshot.cidr}</button></li>)}</ul>
+            <ul>{group.map((item, index) => <li key={item.id} className="my-2"><button ref={node => { if (node) triggers.current.set(item.id, node); else triggers.current.delete(item.id); }} type="button" className="rounded border border-control px-3 py-2" onClick={() => start(item.id)}>Aufgabe wiederholen {solved ? 'gelöst' : 'offen'} {index + 1}: {item.snapshot.ip}/{item.snapshot.cidr}</button></li>)}</ul>
           </section>;
         })}
       </div>}

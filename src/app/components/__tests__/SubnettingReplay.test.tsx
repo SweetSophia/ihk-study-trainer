@@ -66,3 +66,46 @@ it('groups resolved records and keeps wrong retries local to the session', () =>
  fireEvent.click(screen.getByRole('button',{name:/Erneut versuchen/}));
  expect(screen.getAllByRole('textbox')[0]).toHaveValue(''); expect(resolve).not.toHaveBeenCalled();
 });
+it('does not resolve an already resolved record again', () => {
+ const snapshot=createSubnettingSnapshot(GENERATORS.subnetting()); const resolve=vi.fn();
+ const record={id:'solved',sourceAttemptId:'s',snapshot,createdAt:'2026-11-10T00:00:00Z',resolvedAt:'2026-11-10T01:00:00Z'};
+ render(<SubnettingReplay records={[record]} status="ready" message={null} onRefresh={vi.fn()} onClear={vi.fn()} onResolve={resolve} onStart={fn=>fn()} onReturn={vi.fn()}/>);
+ fireEvent.click(screen.getByRole('button',{name:/Aufgabe wiederholen/}));
+ Object.values(snapshot.expectedAnswers).forEach((value,i)=>fireEvent.change(screen.getAllByRole('textbox')[i],{target:{value:String(value)}}));
+ fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/})); expect(screen.getByText(/Richtig ohne/)).toBeInTheDocument(); expect(resolve).not.toHaveBeenCalled();
+});
+it('distinguishes identical snapshots and returns focus to the moved record or heading', () => {
+ const snapshot=createSubnettingSnapshot(GENERATORS.subnetting()); const base={sourceAttemptId:'s',snapshot,createdAt:'2026-11-10T00:00:00Z'};
+ const a={...base,id:'a',resolvedAt:null}, b={...base,id:'b',resolvedAt:'2026-11-10T01:00:00Z'};
+ const props={message:null,onRefresh:vi.fn(),onClear:vi.fn(),onResolve:vi.fn(),onStart:(fn:()=>void)=>fn(),onReturn:vi.fn()};
+ const {rerender}=render(<SubnettingReplay {...props} records={[a,b]} status="ready"/>);
+ const buttons=screen.getAllByRole('button',{name:/Aufgabe wiederholen/}); expect(buttons[0].textContent).not.toBe(buttons[1].textContent);
+ fireEvent.click(buttons[0]); rerender(<SubnettingReplay {...props} records={[{...a,resolvedAt:b.resolvedAt},b]} status="ready"/>);
+ fireEvent.click(screen.getByRole('button',{name:'Zurück zur Fehlerliste'})); expect(screen.getAllByRole('button',{name:/Aufgabe wiederholen/})[0]).toHaveFocus();
+ fireEvent.click(screen.getAllByRole('button',{name:/Aufgabe wiederholen/})[0]); rerender(<SubnettingReplay {...props} records={[b]} status="ready"/>);
+ expect(screen.getByText(/nicht mehr verfügbar/)).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'Zurück zur Fehlerliste'}));
+ expect(screen.getByRole('heading',{name:'Gespeicherte Subnetting-Fehler'})).toHaveFocus();
+});
+it('focuses a visible heading on loading and distinguishes unavailable from removal', () => {
+ const snapshot=createSubnettingSnapshot(GENERATORS.subnetting()); const record={id:'a',sourceAttemptId:'s',snapshot,createdAt:'2026-11-10T00:00:00Z',resolvedAt:null};
+ const props={message:null,onRefresh:vi.fn(),onClear:vi.fn(),onResolve:vi.fn(),onStart:(fn:()=>void)=>fn(),onReturn:vi.fn()};
+ const {rerender}=render(<SubnettingReplay {...props} records={[record]} status="ready"/>); fireEvent.click(screen.getByRole('button',{name:/Aufgabe wiederholen/}));
+ screen.getAllByRole('textbox')[0].focus(); rerender(<SubnettingReplay {...props} records={[record]} status="loading"/>);
+ expect(screen.getByRole('heading',{name:'Gespeicherte Subnetting-Fehler'})).toHaveFocus(); fireEvent.keyDown(window,{key:'Enter'}); fireEvent.keyDown(window,{key:'n'}); expect(props.onResolve).not.toHaveBeenCalled();
+ rerender(<SubnettingReplay {...props} records={[]} status="unavailable"/>); expect(screen.queryByText(/nicht mehr verfügbar/)).not.toBeInTheDocument();
+ rerender(<SubnettingReplay {...props} records={[record]} status="ready"/>); expect(screen.getAllByRole('textbox')).toHaveLength(6);
+ rerender(<SubnettingReplay {...props} records={[]} status="ready"/>); expect(screen.getByText(/nicht mehr verfügbar/)).toBeInTheDocument(); expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+});
+
+it('selects the correct ID for identical snapshots in different groups', () => {
+ const snapshot=createSubnettingSnapshot(GENERATORS.subnetting()); const base={sourceAttemptId:'s',snapshot,createdAt:'2026-11-10T00:00:00Z'};
+ const records=[{...base,id:'open-id',resolvedAt:null},{...base,id:'solved-id',resolvedAt:'2026-11-10T01:00:00Z'}]; const resolve=vi.fn();
+ render(<SubnettingReplay records={records} status="ready" message={null} onRefresh={vi.fn()} onClear={vi.fn()} onResolve={resolve} onStart={fn=>fn()} onReturn={vi.fn()}/>);
+ fireEvent.click(screen.getByRole('button',{name:/Aufgabe wiederholen offen/}));
+ Object.values(snapshot.expectedAnswers).forEach((value,i)=>fireEvent.change(screen.getAllByRole('textbox')[i],{target:{value:String(value)}}));
+ fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/})); expect(resolve).toHaveBeenCalledExactlyOnceWith('open-id');
+ fireEvent.click(screen.getByRole('button',{name:'Zurück zur Fehlerliste'})); fireEvent.click(screen.getByRole('button',{name:/Aufgabe wiederholen gelöst/}));
+ Object.values(snapshot.expectedAnswers).forEach((value,i)=>fireEvent.change(screen.getAllByRole('textbox')[i],{target:{value:String(value)}}));
+ fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/})); expect(screen.getByText(/Richtig ohne/)).toBeInTheDocument(); expect(resolve).toHaveBeenCalledTimes(1);
+});

@@ -60,3 +60,7 @@ it('accepts an equal snapshot when JSONB has reordered object keys', async () =>
   setup.rpc.mockResolvedValueOnce({data:{status:'saved',generation,record:{id:'33333333-3333-4333-8333-333333333333',sourceAttemptId:attempt,snapshot:reordered,createdAt:'2026-11-10T00:00:00Z',resolvedAt:null}},error:null});
   expect((await saveSubnettingReplay(hash,generation,attempt,snapshot)).status).toBe('saved');
 });
+it.each([['42501','unavailable'],['42P01','unavailable'],['P0001','rejected'],['40401','transport']] as const)('classifies provider %s as %s', async (provider, code) => {
+ setup.rpc.mockResolvedValueOnce({data:null,error:{code:provider,message:'private details'}});
+ await expect(clearSubnettingReplays(hash,generation)).rejects.toMatchObject({code,message:`Subnetting replay ${code}`});
+});
