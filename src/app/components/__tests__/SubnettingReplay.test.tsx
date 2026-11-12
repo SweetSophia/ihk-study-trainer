@@ -109,3 +109,32 @@ it('selects the correct ID for identical snapshots in different groups', () => {
  Object.values(snapshot.expectedAnswers).forEach((value,i)=>fireEvent.change(screen.getAllByRole('textbox')[i],{target:{value:String(value)}}));
  fireEvent.click(screen.getByRole('button',{name:/Antwort prüfen/})); expect(screen.getByText(/Richtig ohne/)).toBeInTheDocument(); expect(resolve).toHaveBeenCalledTimes(1);
 });
+
+it('keeps solved replay content visible but inert while its record refreshes', () => {
+  const snapshot = createSubnettingSnapshot(GENERATORS.subnetting());
+  const record = { id: 'refresh-record', sourceAttemptId: 'attempt', snapshot, createdAt: '2026-11-10T00:00:00Z', resolvedAt: null };
+  const props = { message: null, onRefresh: vi.fn(), onClear: vi.fn(), onResolve: vi.fn(), onStart: (fn: () => void) => fn(), onReturn: vi.fn() };
+  const { rerender } = render(<SubnettingReplay {...props} records={[record]} status="ready" />);
+  fireEvent.click(screen.getByRole('button', { name: /Aufgabe wiederholen/ }));
+  Object.values(snapshot.expectedAnswers).forEach((value, index) => fireEvent.change(screen.getAllByRole('textbox')[index], { target: { value: String(value) } }));
+  fireEvent.click(screen.getByRole('button', { name: /Antwort prüfen/ }));
+  const retry = screen.getByRole('button', { name: /Erneut versuchen/ });
+  expect(props.onResolve).toHaveBeenCalledExactlyOnceWith(record.id);
+
+  rerender(<SubnettingReplay {...props} records={[record]} status="loading" />);
+  expect(retry).toBeVisible();
+  expect(retry.closest('[inert]')).not.toBeNull();
+  expect(screen.getByText('Richtig ohne Lösungshilfe.')).toBeVisible();
+  expect(screen.getByRole('heading', { name: 'Gespeicherte Subnetting-Fehler' })).toHaveFocus();
+  fireEvent.keyDown(window, { key: 'n' });
+  fireEvent.keyDown(window, { key: 'Enter' });
+  expect(props.onResolve).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Richtig ohne Lösungshilfe.')).toBeVisible();
+
+  rerender(<SubnettingReplay {...props} records={[{ ...record, resolvedAt: '2026-11-10T01:00:00Z' }]} status="ready" />);
+  expect(retry).toBeVisible();
+  expect(retry.closest('[inert]')).toBeNull();
+  rerender(<SubnettingReplay {...props} records={[]} status="ready" />);
+  expect(screen.queryByRole('button', { name: /Erneut versuchen/ })).not.toBeInTheDocument();
+  expect(screen.getByText(/Diese Aufgabe ist nicht mehr verfügbar/)).toBeVisible();
+});

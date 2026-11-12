@@ -50,7 +50,7 @@ export default function SubnettingReplay({ records, status, message, onRefresh, 
     {selected && !record && status === 'ready' && <p role="status">Diese Aufgabe ist nicht mehr verfügbar. Bitte die Fehlerliste aktualisieren.</p>}
     {selected && record && (status === 'ready' || status === 'loading') ? <>
       <p className="font-semibold">Wiederholung · ohne Wertung</p>
-      <div hidden={status !== 'ready'} inert={status !== 'ready'}>
+      <div inert={status !== 'ready'}>
       <StudyCard key={session} shortcutsActive={status === 'ready'} autoFocusAnswers={status === 'ready'} question={createReplayQuestion(record.snapshot, `${instance}-${session}`)} onSolutionReveal={() => { revealed.current = true; }}
         nextLabel="Erneut versuchen" showSkip={false} onNextQuestion={retry}
         onCheckAnswer={answers => {
