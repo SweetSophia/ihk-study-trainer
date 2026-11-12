@@ -371,7 +371,7 @@ describe('StudyCard – welcome screen (no question)', () => {
     await userEvent.click(screen.getByText('Was ist neu?'));
     // Full descriptions remain readable, and only the newest release is current.
     // Deliberate release marker for this content refresh; update it with the next release.
-    expect(CHANGELOG_ENTRIES[0].date).toBe('10/11/2026');
+    expect(CHANGELOG_ENTRIES[0].date).toBe('12/11/2026');
     expect(CHANGELOG_ENTRIES[0].summary).toContain('Subnetting');
     expect(CHANGELOG_ENTRIES[0].summary).toContain('Datenbankmigration');
     for (const entry of CHANGELOG_ENTRIES) {
@@ -387,7 +387,7 @@ describe('StudyCard – welcome screen (no question)', () => {
     expect(screen.getAllByText('Aktuell', { exact: true })).toHaveLength(1);
     expect(CHANGELOG_ENTRIES.filter(entry => entry.highlight)).toEqual([CHANGELOG_ENTRIES[0]]);
     expect(CHANGELOG_ENTRIES.filter(entry => entry.tag === 'Aktuell')).toEqual([CHANGELOG_ENTRIES[0]]);
-    expect(screen.getByText('Aktuell').parentElement).toHaveTextContent('10/11/2026');
+    expect(screen.getByText('Aktuell').parentElement).toHaveTextContent('12/11/2026');
   });
 });
 

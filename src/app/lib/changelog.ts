@@ -8,7 +8,7 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   // New releases use UTC merge dates; older entries retain their originally recorded dates.
   {
-    date: '10/11/2026',
+    date: '12/11/2026',
     summary: 'Subnetting-Fehler: Künftig falsch geprüfte Aufgaben können mit dem Konto für eine ungewertete Wiederholung synchronisiert werden. Maximal 100 Aufgaben sind 90 Tage verfügbar; alte Fortschrittszahlen werden nicht übernommen. Synchronisiertes Löschen lässt den Fortschritt bestehen. Die Funktion benötigt die separat eingerichtete Datenbankmigration und ist bis dahin nicht verfügbar.',
     highlight: true,
     tag: 'Aktuell',
